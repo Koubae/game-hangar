@@ -1,9 +1,10 @@
 package main
 
 import (
-	"net/http"
-
+	"encoding/base64"
+	"fmt"
 	"github.com/gin-gonic/gin"
+	"net/http"
 )
 
 var db = make(map[string]string)
@@ -36,25 +37,51 @@ func setupRouter() *gin.Engine {
 	//	  "foo":  "bar",
 	//	  "manu": "123",
 	//}))
-	authorized := r.Group("/", gin.BasicAuth(gin.Accounts{
-		"foo":  "bar", // user:foo password:bar
-		"manu": "123", // user:manu password:123
-	}))
+
+	var accounts gin.Accounts
+	//accounts = gin.Accounts{
+	//	"foo":  "bar",
+	//	"manu": "123",
+	//}
+	accounts = gin.Accounts{
+		"admin": "admin",
+		"foo":   "bar",
+		"manu":  "123",
+	}
+	//authorized := r.Group("/", gin.BasicAuth(gin.Accounts{
+	//	"foo":  "bar", // user:foo password:bar
+	//	"manu": "123", // user:manu password:123
+	//}))
+	authorized := r.Group("/", gin.BasicAuth(accounts))
 
 	/* example curl for /admin with basicauth header
-	   Zm9vOmJhcg== is base64("foo:bar")
+		Zm9vOmJhcg== is base64("foo:bar")
+
+		YWRtaW46YWRtaW4= base64("admin:admin")
+
+	curl -X POST \
+	http://localhost:8080/admin \
+	-H 'authorization: Basic YWRtaW46YWRtaW4=' \
+	-H 'content-type: application/json' \
+	-d '{"value":"admin"}'
 
 		curl -X POST \
-	  	http://localhost:8080/admin \
-	  	-H 'authorization: Basic Zm9vOmJhcg==' \
-	  	-H 'content-type: application/json' \
-	  	-d '{"value":"bar"}'
+		http://localhost:8080/admin \
+		-H 'authorization: Basic Zm9vOmJhcg==' \
+		-H 'content-type: application/json' \
+		-d '{"value":"bar"}'
 
 		curl -X POST \
-	  	http://localhost:8080/admin \
-	  	-H 'authorization: Basic bWFudToxMjM=' \
-	  	-H 'content-type: application/json' \
-	  	-d '{"value":"123"}'
+		http://localhost:8080/admin \
+		-H 'authorization: Basic bWFudToxMjM=' \
+		-H 'content-type: application/json' \
+		-d '{"value":"123"}'
+
+		curl -X POST \
+		http://localhost:8080/admin \
+		-H 'authorization: Basic blabla' \
+		-H 'content-type: application/json' \
+		-d '{"value":"123"}'
 
 	*/
 	authorized.POST("admin", func(c *gin.Context) {
@@ -69,6 +96,33 @@ func setupRouter() *gin.Engine {
 			db[user] = json.Value
 			c.JSON(http.StatusOK, gin.H{"status": "ok"})
 		}
+	})
+
+	/*
+		curl -X POST 'http://localhost:8080/admin/user_1?password=pass' -H 'authorization: Basic YWRtaW46YWRtaW4='
+	*/
+	authorized.POST("admin/:name", func(c *gin.Context) {
+		name := c.Params.ByName("name")
+		password, exists := c.GetQuery("password")
+		if !exists {
+			c.String(400, "Password parameter is required")
+			return
+		}
+
+		accounts[name] = password
+
+		credential := fmt.Sprintf("%s:%s", name, password)
+		encoded := base64.StdEncoding.EncodeToString([]byte(credential))
+
+		requestSample := fmt.Sprintf(`curl -X POST \
+		http://localhost:8080/admin \
+		-H 'authorization: Basic %s' \
+		-H 'content-type: application/json' \
+		-d '{"value":"%s"}'`, encoded, password)
+
+		//c.JSON(http.StatusOK, gin.H{"status": "ok", "credential": encoded, "accounts": accounts, "requestSample": requestSample})
+		fmt.Println(gin.DefaultWriter, accounts)
+		c.String(http.StatusOK, requestSample)
 	})
 
 	return r

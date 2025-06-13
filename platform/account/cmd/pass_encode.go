@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	str := "manu:123"
+	str := "admin:admin"
 	encoded := base64.StdEncoding.EncodeToString([]byte(str))
 	fmt.Println(encoded) // Output: bWFudToxMjM=
 }
