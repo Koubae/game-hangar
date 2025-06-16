@@ -1,15 +1,7 @@
 package main
 
-import "github.com/gin-gonic/gin"
+import "github.com/koubae/game-hangar/account/internal/infrastructure/api"
 
 func main() {
-	router := gin.Default()
-	router.GET("/", func(c *gin.Context) {
-		c.String(200, "Service Running...")
-	})
-
-	err := router.Run(":8080")
-	if err != nil {
-		panic(err.Error())
-	}
+	api.RunServer()
 }
