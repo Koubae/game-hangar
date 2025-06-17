@@ -26,6 +26,7 @@ func InitRoutes(router *gin.Engine) {
 	accountControllers := controllers.AccountControllers{}
 	accountV1 := v1.Group("/account")
 	{
+		accountV1.POST("", accountControllers.Create)
 		accountV1.GET("/:name", accountControllers.Get)
 	}
 
