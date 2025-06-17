@@ -1,4 +1,4 @@
-package api
+package internal
 
 import (
 	"github.com/gin-gonic/gin"
@@ -7,7 +7,7 @@ import (
 )
 
 func RunServer() {
-	errTemp := os.Setenv("PORT", "8000") // TODO: configurable, is Go/gin var
+	errTemp := os.Setenv("PORT", "8001") // TODO: configurable, is Go/gin var
 	if errTemp != nil {
 		panic(errTemp.Error())
 	}

@@ -1,0 +1,18 @@
+### Login V1
+POST localhost:8001/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "username": "user_1",
+  "password": "pass",
+  "client_id": "game_1.x.y.z"
+}
+
+> {%
+    // Save the token to an environment variable
+    client.global.set("access_token", response.body.access_token);
+%}
+
+### Request: Get Account
+GET localhost:8001/api/v1/account/user_1?full_profile=false
+Authorization: Bearer {{access_token}}

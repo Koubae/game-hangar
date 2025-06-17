@@ -1,7 +1,9 @@
 package main
 
-import "github.com/koubae/game-hangar/account/internal/infrastructure/api"
+import (
+	server "github.com/koubae/game-hangar/account/internal"
+)
 
 func main() {
-	api.RunServer()
+	server.RunServer()
 }

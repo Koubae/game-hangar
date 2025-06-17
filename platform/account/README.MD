@@ -1,6 +1,33 @@
 Account
 =======
 
+Generate Pub/Sub Keys for JWT Auth
+----------------------------------
+
+```bash
+openssl genrsa -out private.pem 2048
+openssl rsa -in private.pem -pubout -out public.pem
+```
+
+Use Login with JWT:
+
+```bash
+# 1. Get token from auth
+curl -X POST http://localhost:8081/auth/token \
+  -H "Content-Type: application/json" \
+  -d '{"username":"test", "password":"password", "client_id":"game_1"}'
+
+# 2. Use token with storage
+curl -H "Authorization: Bearer <PASTE_TOKEN>" http://localhost:8082/storage/secure
+
+curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfaWQiOiJnYW1lXzEueC55LnoiLCJleHAiOjE3NTAxNTEyNTEsImlzcyI6ImdhbWUtaGFuZ2FyIiwicm9sZSI6InVzZXIiLCJzdWIiOiJ1c2VyXzEifQ.DD28dMwDQQvQFqt3s4l0JXq6mVI1cnTiuKr7KJqyaFE" 
+
+curl --location 'localhost:8000/api/v1/account/user_1?full_profile=false' \
+--header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfaWQiOiJnYW1lXzEueC55LnoiLCJleHAiOjE3NTAxNTEyNTEsImlzcyI6ImdhbWUtaGFuZ2FyIiwicm9sZSI6InVzZXIiLCJzdWIiOiJ1c2VyXzEifQ.DD28dMwDQQvQFqt3s4l0JXq6mVI1cnTiuKr7KJqyaFE' 
+
+
+```
+
 
 Hexagonal / DDD Architecture
 ----------------------------

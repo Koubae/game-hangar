@@ -18,8 +18,12 @@ func (controller *AccountControllers) Get(c *gin.Context) {
 		return
 	}
 
+	// TODO should be able to get admin/no admin roles?
+	clientID := c.MustGet("client_id").(string)
+	userID := c.MustGet("user_id").(string)
+
 	// TODO :)
-	c.JSON(200, gin.H{"username": username, "request": request})
+	c.JSON(200, gin.H{"username": username, "request": request, "client_id": clientID, "user_id": userID})
 }
 
 type CreateRequest struct {
@@ -29,6 +33,7 @@ type CreateRequest struct {
 
 type Account struct {
 	Username string `json:"username"`
+	ClientID string `json:"client_id"`
 }
 
 func (controller *AccountControllers) Create(c *gin.Context) {
@@ -40,6 +45,8 @@ func (controller *AccountControllers) Create(c *gin.Context) {
 		return
 	}
 
-	account := Account{Username: request.Username}
+	clientID := c.MustGet("client_id").(string)
+
+	account := Account{Username: request.Username, ClientID: clientID}
 	c.JSON(200, account)
 }
