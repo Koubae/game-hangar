@@ -7,7 +7,6 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"net/http"
 	"strings"
-	"time"
 )
 
 type JWTSecret interface {
@@ -29,27 +28,17 @@ func jwtMiddleware[S JWTSecret](c *gin.Context, method jwt.SigningMethod, secret
 		return secret, nil
 	})
 
-	if err != nil || !token.Valid {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized -- " + err.Error()})
+		return
+	} else if !token.Valid {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
 		return
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid claims"})
-		return
-	}
-
-	var exp float64
-	exp, ok = claims["exp"].(float64)
-	if !ok {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid claims exp"})
-		return
-	}
-
-	now := float64(time.Now().Unix())
-	if exp < now {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Token expired"})
 		return
 	}
 
