@@ -25,3 +25,11 @@ func GetPublicKey() (*rsa.PublicKey, error) {
 	}
 	return jwt.ParseRSAPublicKeyFromPEM(data)
 }
+
+func GetPublicKeyOrPanic() *rsa.PublicKey {
+	publicKey, err := GetPublicKey()
+	if err != nil {
+		panic(err.Error())
+	}
+	return publicKey
+}

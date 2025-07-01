@@ -35,11 +35,7 @@ func InitRoutes(router *gin.Engine) {
 
 	accountControllers := controllers.AccountControllers{}
 	// TODO - load on config on stasrt up!
-	publicKey, err := utils.GetPublicKey()
-	if err != nil {
-		panic(err.Error())
-	}
-	// TODO
+	publicKey := utils.GetPublicKeyOrPanic()
 	accountV1 := v1.Group("/account", middlewares2.IsAuthorizedJWTWithRSAMiddleware(publicKey))
 	{
 		accountV1.POST("", accountControllers.Create)
