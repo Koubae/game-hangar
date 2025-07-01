@@ -9,7 +9,7 @@ import (
 )
 
 type Config struct {
-	port           uint8
+	Port           uint16
 	Environment    string
 	TrustedProxies []string
 }
@@ -17,9 +17,11 @@ type Config struct {
 var config *Config
 
 func GetConfig() *Config {
+	if config == nil {
+		panic("Config is not initialized, call NewConfig() first!")
+	}
 	return config
 }
-
 func NewConfig() *Config {
 	port := utils.GetEnvInt("APP_PORT", 8001)
 
@@ -34,9 +36,10 @@ func NewConfig() *Config {
 	}
 	trustedProxies := utils.GetEnvStringSlice("APP_NETWORKING_PROXIES", []string{})
 
-	return &Config{
-		port:           uint8(port),
+	config = &Config{
+		Port:           uint16(port),
 		Environment:    environment,
 		TrustedProxies: trustedProxies,
 	}
+	return config
 }
