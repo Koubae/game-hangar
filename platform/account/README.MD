@@ -35,6 +35,12 @@ curl --location 'localhost:8000/api/v1/account/user_1?full_profile=false' \
 ```
 
 
+Related
+-------
+
+* [code-heim/go_36_gin_jwt](https://github.com/code-heim/go_36_gin_jwt)
+  * [#36 Golang - Mastering JWT Authentication](https://www.youtube.com/watch?v=XFxm6NEWakQ)
+
 Hexagonal / DDD Architecture
 ----------------------------
 
