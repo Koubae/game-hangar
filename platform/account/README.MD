@@ -1,6 +1,32 @@
 Account
 =======
 
+
+### QuickStart
+
+* 1) Install [air-verse/air](https://github.com/air-verse/air) globally
+
+```bash
+go install github.com/air-verse/air@latest
+
+# Make sure that GOPATH and GOROOT is in your PATH
+export GOROOT=/usr/local/go
+export GOPATH=$HOME/go
+export PATH=$PATH:$GOROOT/bin
+```
+
+* 2) Install dependencies
+
+```bash
+go mod tidy
+```
+
+* 3) Start with HotReload
+
+```bash
+make run-reload
+```
+
 Generate Pub/Sub Keys for JWT Auth
 ----------------------------------
 
@@ -34,6 +60,12 @@ curl --location 'localhost:8000/api/v1/account/user_1?full_profile=false' \
 
 ```
 
+
+Related
+-------
+
+* [code-heim/go_36_gin_jwt](https://github.com/code-heim/go_36_gin_jwt)
+  * [#36 Golang - Mastering JWT Authentication](https://www.youtube.com/watch?v=XFxm6NEWakQ)
 
 Hexagonal / DDD Architecture
 ----------------------------
