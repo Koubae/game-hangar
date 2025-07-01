@@ -2,9 +2,17 @@ package internal
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 	"github.com/koubae/game-hangar/account/internal/infrastructure/api/routes"
 	"os"
 )
+
+func init() {
+	err := godotenv.Load()
+	if err != nil {
+		panic(err.Error())
+	}
+}
 
 func RunServer() {
 	errTemp := os.Setenv("PORT", "8001") // TODO: configurable, is Go/gin var
