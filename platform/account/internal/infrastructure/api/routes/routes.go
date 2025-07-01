@@ -30,12 +30,12 @@ func InitRoutes(router *gin.Engine) {
 	authV1 := v1.Group("/auth")
 	{
 		authV1.POST("/login", authController.LoginV1)
+		authV1.POST("/signup", authController.SignUpV1)
 	}
 
 	accountControllers := controllers.AccountControllers{}
 	accountV1 := v1.Group("/account", authMiddleWare)
 	{
-		accountV1.POST("", accountControllers.Create)
 		accountV1.GET("/:name", accountControllers.Get)
 	}
 }

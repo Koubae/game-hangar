@@ -35,3 +35,25 @@ func (controller *AuthController) LoginV1(c *gin.Context) {
 
 	c.JSON(http.StatusOK, handler.Response)
 }
+
+func (controller *AuthController) SignUpV1(c *gin.Context) {
+	var request = handlers.SignUpRequest{}
+
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+	if err := request.Validate(); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	handler := handlers.SignUpHandler{Command: request}
+	if err := handler.Handle(); err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(200, handler.Response)
+
+}

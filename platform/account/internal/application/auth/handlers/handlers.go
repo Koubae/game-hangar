@@ -4,6 +4,7 @@ import (
 	"crypto/rsa"
 	"errors"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/koubae/game-hangar/account/internal/domain/account/model"
 	"github.com/koubae/game-hangar/account/internal/settings"
 	"github.com/koubae/game-hangar/account/pkg/utils"
 	"strings"
@@ -85,4 +86,47 @@ func loadAndGetPrivateKey() *rsa.PrivateKey {
 		}
 	}
 	return privateKey
+}
+
+type SignUpRequest struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+func (r *SignUpRequest) Validate() error {
+	// Normalize Data
+	r.Username = strings.TrimSpace(r.Username)
+	r.Password = strings.TrimSpace(r.Password)
+
+	if r.Username == "" {
+		return errors.New("username is required")
+	} else if r.Password == "" {
+		return errors.New("password is required")
+	}
+
+	return nil
+}
+
+type SignUpResponse struct {
+	model.Account
+}
+
+type SignUpHandler struct {
+	Command  SignUpRequest
+	Response SignUpResponse
+}
+
+func (h *SignUpHandler) Handle() error {
+	// TODO: check that user DOES NMOT exists in db
+	UserID := uint(1) // TODO: Create from db for real
+	account := model.Account{
+		UserID:   UserID,
+		Username: h.Command.Username,
+	}
+
+	h.Response = SignUpResponse{
+		Account: account,
+	}
+
+	return nil
 }

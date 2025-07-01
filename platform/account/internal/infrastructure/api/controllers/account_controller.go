@@ -21,36 +21,10 @@ func (controller *AccountControllers) Get(c *gin.Context) {
 	}
 
 	handler := handlers.GetAccountHandler{Command: request}
-	err = handler.Handle()
-	if err != nil {
+	if err = handler.Handle(); err != nil {
 		c.JSON(400, gin.H{"error": err.Error()}) // TODO: check error type!
 		return
 	}
 
 	c.JSON(200, handler.Response)
-}
-
-type CreateRequest struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-}
-
-type Account struct {
-	Username string `json:"username"`
-	ClientID string `json:"client_id"`
-}
-
-func (controller *AccountControllers) Create(c *gin.Context) {
-	// TODO: Add body read
-	var request = CreateRequest{}
-
-	if err := c.ShouldBindJSON(&request); err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
-		return
-	}
-
-	clientID := c.MustGet("client_id").(string)
-
-	account := Account{Username: request.Username, ClientID: clientID}
-	c.JSON(200, account)
 }

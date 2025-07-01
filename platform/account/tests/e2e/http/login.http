@@ -1,3 +1,34 @@
+### Login V1 (Admin)
+
+POST localhost:8001/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "admin",
+  "client_id": "game_1.x.y.z"
+}
+
+> {%
+    // Save the token to an environment variable
+    client.global.set("access_token_admin", response.body.access_token);
+%}
+
+### SignUP
+
+POST localhost:8001/api/v1/auth/signup
+Content-Type: application/json
+
+{
+  "username": "user_1",
+  "password": "pass"
+}
+
+> {%
+    // Save the token to an environment variable
+    client.global.set("user_id", response.body.user_id);
+%}
+
 ### Login V1
 # access_token=$(curl -s --request POST  localhost:8001/api/v1/auth/login -H "Content-Type: application/json" -d '{"username": "user_1","password": "pass","client_id": "game_1.x.y.z"}' | jq -r '.access_token'); echo $access_token
 
