@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/koubae/game-hangar/account/internal/settings"
 	"github.com/koubae/game-hangar/account/pkg/utils"
 	"net/http"
 	"strings"
@@ -41,8 +42,6 @@ type LoginResponse struct {
 	Expires     int64  `json:"expires"`
 }
 
-const AuthTokenExpirationTime = time.Hour * 4
-
 func (controller *AuthController) LoginV1(c *gin.Context) {
 	var request = LoginRequest{}
 
@@ -55,7 +54,7 @@ func (controller *AuthController) LoginV1(c *gin.Context) {
 		return
 	}
 
-	expire := time.Now().Add(AuthTokenExpirationTime).Unix()
+	expire := time.Now().Add(settings.AuthTokenExpirationTime).Unix()
 	token, err := GenerateJWTWithRSA(request.Username, request.ClientID, expire)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
