@@ -12,9 +12,9 @@ import (
 )
 
 type LoginRequest struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-	ClientID string `json:"client_id"`
+	Username string `json:"username" binding:"required"`
+	Password string `json:"password" binding:"required"`
+	ClientID string `json:"client_id" binding:"required"`
 }
 
 func (r *LoginRequest) Validate() error {
@@ -89,8 +89,8 @@ func loadAndGetPrivateKey() *rsa.PrivateKey {
 }
 
 type SignUpRequest struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
+	Username string `json:"username" binding:"required"`
+	Password string `json:"password" binding:"required"`
 }
 
 func (r *SignUpRequest) Validate() error {
