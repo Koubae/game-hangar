@@ -3,6 +3,10 @@
 # ============================
 # 	Run
 # ============================
+
+run-reload:
+	@air
+
 run-local:
 	go run cmd/main.go
 
