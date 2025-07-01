@@ -1,6 +1,7 @@
 package utils
 
 import (
+	_ "github.com/koubae/game-hangar/account/pkg/testings"
 	"os"
 	"reflect"
 	"testing"

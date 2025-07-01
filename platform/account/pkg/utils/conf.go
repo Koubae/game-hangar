@@ -8,7 +8,9 @@ import (
 )
 
 func GetPrivateKey() (*rsa.PrivateKey, error) {
-	filePath := filepath.Join("conf", "cert_private.pem")
+	confDirName := GetEnvString("APP_CONF_DIR_NAME", "conf")
+
+	filePath := filepath.Join(confDirName, "cert_private.pem")
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, err
@@ -18,7 +20,9 @@ func GetPrivateKey() (*rsa.PrivateKey, error) {
 }
 
 func GetPublicKey() (*rsa.PublicKey, error) {
-	filePath := filepath.Join("conf", "cert_public.pem")
+	confDirName := GetEnvString("APP_CONF_DIR_NAME", "conf")
+
+	filePath := filepath.Join(confDirName, "cert_public.pem")
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, err
