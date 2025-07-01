@@ -9,7 +9,7 @@ import (
 
 func IsAuthorizedJWTWithRSAMiddleware(publicKey *rsa.PublicKey) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		jwtMiddleware(c, jwt.SigningMethodRS256, publicKey)
+		jwtMiddleware[*rsa.PublicKey](c, jwt.SigningMethodRS256, publicKey)
 	}
 }
 

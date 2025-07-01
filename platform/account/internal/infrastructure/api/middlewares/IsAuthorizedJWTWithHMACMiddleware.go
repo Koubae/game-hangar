@@ -7,6 +7,6 @@ import (
 
 func IsAuthorizedJWTWithHMACMiddleware(secret []byte) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		jwtMiddleware(c, jwt.SigningMethodHS256, secret)
+		jwtMiddleware[[]byte](c, jwt.SigningMethodHS256, secret)
 	}
 }

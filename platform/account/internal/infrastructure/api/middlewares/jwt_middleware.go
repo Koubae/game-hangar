@@ -1,6 +1,7 @@
 package middlewares
 
 import (
+	"crypto/rsa"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
@@ -9,7 +10,11 @@ import (
 	"time"
 )
 
-func jwtMiddleware(c *gin.Context, method jwt.SigningMethod, secret interface{}) {
+type JWTSecret interface {
+	[]byte | *rsa.PublicKey | *rsa.PrivateKey
+}
+
+func jwtMiddleware[S JWTSecret](c *gin.Context, method jwt.SigningMethod, secret S) {
 	authHeader := c.GetHeader("Authorization")
 	if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "missing or invalid token"})
