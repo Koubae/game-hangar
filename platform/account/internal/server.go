@@ -4,7 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/koubae/game-hangar/account/internal/infrastructure/api/routes"
-	"os"
+	"github.com/koubae/game-hangar/account/internal/settings"
 )
 
 func init() {
@@ -12,17 +12,23 @@ func init() {
 	if err != nil {
 		panic(err.Error())
 	}
+	settings.NewConfig()
 }
 
 func RunServer() {
-	errTemp := os.Setenv("PORT", "8001") // TODO: configurable, is Go/gin var
-	if errTemp != nil {
-		panic(errTemp.Error())
+	config := settings.GetConfig()
+
+	switch config.Environment {
+	case settings.EnvTesting:
+		gin.SetMode(gin.TestMode)
+	case settings.EnvDev, settings.EnvStaging:
+		gin.SetMode(gin.DebugMode)
+	default:
+		gin.SetMode(gin.ReleaseMode)
 	}
-	gin.SetMode(gin.DebugMode) // TODO: Configurable
 
 	router := gin.Default()
-	err := router.SetTrustedProxies([]string{"127.0.0.1", "192.168.1.2"}) // TODO: just an example!
+	err := router.SetTrustedProxies(config.TrustedProxies)
 	if err != nil {
 		panic(err.Error())
 	}
