@@ -2,8 +2,8 @@ package routes
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/koubae/game-hangar/account/internal/domain/api/middlewares"
 	"github.com/koubae/game-hangar/account/internal/infrastructure/api/controllers"
+	middlewares2 "github.com/koubae/game-hangar/account/internal/infrastructure/api/middlewares"
 	"github.com/koubae/game-hangar/account/pkg/utils"
 )
 
@@ -42,7 +42,7 @@ func InitRoutes(router *gin.Engine) {
 	}
 
 	accountControllers := controllers.AccountControllers{}
-	accountV1 := v1.Group("/account", middlewares.IsAuthorizedJWTWithHMACMiddleware(AUTH_SECRET))
+	accountV1 := v1.Group("/account", middlewares2.IsAuthorizedJWTWithHMACMiddleware(AUTH_SECRET))
 	{
 		accountV1.POST("", accountControllers.Create)
 		accountV1.GET("/:name", accountControllers.Get)
@@ -54,7 +54,7 @@ func InitRoutes(router *gin.Engine) {
 		panic(err.Error())
 	}
 	// TODO
-	accountV2 := v2.Group("/account", middlewares.IsAuthorizedJWTWithRSAMiddleware(publicKey))
+	accountV2 := v2.Group("/account", middlewares2.IsAuthorizedJWTWithRSAMiddleware(publicKey))
 	{
 		accountV2.POST("", accountControllers.Create)
 		accountV2.GET("/:name", accountControllers.Get)
