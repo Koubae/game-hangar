@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/koubae/game-hangar/account/pkg/utils"
 	"net/http"
 	"strings"
 )
@@ -38,4 +39,9 @@ func IsAuthorizedJWTWithRSAMiddleware(publicKey *rsa.PublicKey) gin.HandlerFunc 
 
 		c.Next()
 	}
+}
+
+func NewJWTRSAMiddleware() gin.HandlerFunc {
+	publicKey := utils.GetPublicKeyOrPanic()
+	return IsAuthorizedJWTWithRSAMiddleware(publicKey)
 }
