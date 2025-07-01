@@ -9,9 +9,13 @@ import (
 )
 
 type Config struct {
-	Port           uint16
+	port           uint16
 	Environment    string
 	TrustedProxies []string
+}
+
+func (c Config) GetAddr() string {
+	return fmt.Sprintf(":%d", c.port)
 }
 
 var config *Config
@@ -37,7 +41,7 @@ func NewConfig() *Config {
 	trustedProxies := utils.GetEnvStringSlice("APP_NETWORKING_PROXIES", []string{})
 
 	config = &Config{
-		Port:           uint16(port),
+		port:           uint16(port),
 		Environment:    environment,
 		TrustedProxies: trustedProxies,
 	}

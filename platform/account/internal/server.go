@@ -3,7 +3,6 @@ package accountpackage
 import (
 	"context"
 	"errors"
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/koubae/game-hangar/account/internal/infrastructure/api/routes"
@@ -42,11 +41,10 @@ func RunServer() {
 	if err != nil {
 		panic(err.Error())
 	}
-
 	routes.InitRoutes(router)
 
 	srv := &http.Server{
-		Addr:    fmt.Sprintf(":%d", config.Port),
+		Addr:    config.GetAddr(),
 		Handler: router,
 	}
 
