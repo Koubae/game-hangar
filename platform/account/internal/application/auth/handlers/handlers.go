@@ -45,7 +45,11 @@ type LoginHandler struct {
 
 func (h *LoginHandler) Handle() error {
 	expire := time.Now().Add(settings.AuthTokenExpirationTime).Unix()
-	token, err := generateJWTWithRSA(h.Command.Username, h.Command.ClientID, expire)
+
+	// TODO Mocking find userID in db | Add real database here!
+	userID := uint(1)
+
+	token, err := generateJWTWithRSA(userID, h.Command.Username, h.Command.ClientID, expire)
 	if err != nil {
 		return err
 	}
@@ -54,7 +58,7 @@ func (h *LoginHandler) Handle() error {
 	return nil
 }
 
-func generateJWTWithRSA(userID string, clientID string, expire int64) (string, error) {
+func generateJWTWithRSA(userID uint, userName string, clientID string, expire int64) (string, error) {
 	privateKey := loadAndGetPrivateKey()
 	claims := jwt.MapClaims{
 		"sub": userID,
@@ -62,6 +66,7 @@ func generateJWTWithRSA(userID string, clientID string, expire int64) (string, e
 		"iss": "game-hangar", // could be dynamic? services would send their identifier and other have default
 
 		"role":      "user",
+		"user_name": userName,
 		"client_id": clientID,
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)

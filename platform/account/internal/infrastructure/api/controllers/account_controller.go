@@ -1,29 +1,33 @@
 package controllers
 
-import "github.com/gin-gonic/gin"
+import (
+	"github.com/gin-gonic/gin"
+	"github.com/koubae/game-hangar/account/internal/application/account/handlers"
+)
 
 type AccountControllers struct{}
 
-type GetRequest struct {
-	FullProfile bool `form:"full_profile" json:"full_profile"`
-}
-
 func (controller *AccountControllers) Get(c *gin.Context) {
-	username := c.Params.ByName("name")
+	var request = handlers.GetAccountRequest{
+		Username: c.Params.ByName("name"),
+		ClientID: c.MustGet("client_id").(string),
+		UserID:   c.MustGet("user_id").(uint),
+	}
 
-	request := GetRequest{}
 	err := c.Bind(&request)
 	if err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
 
-	// TODO should be able to get admin/no admin roles?
-	clientID := c.MustGet("client_id").(string)
-	userID := c.MustGet("user_id").(string)
+	handler := handlers.GetAccountHandler{Command: request}
+	err = handler.Handle()
+	if err != nil {
+		c.JSON(400, gin.H{"error": err.Error()}) // TODO: check error type!
+		return
+	}
 
-	// TODO :)
-	c.JSON(200, gin.H{"username": username, "request": request, "client_id": clientID, "user_id": userID})
+	c.JSON(200, handler.Response)
 }
 
 type CreateRequest struct {

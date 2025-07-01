@@ -16,6 +16,6 @@ Content-Type: application/json
 %}
 
 ### Request: Get Account
-# curl localhost:8001/api/v1/account/user_1?full_profile=false -H "Authorization: Bearer $access_token"
-GET localhost:8001/api/v1/account/user_1?full_profile=false
+# curl localhost:8001/api/v1/account/1?full_profile=false -H "Authorization: Bearer $access_token"
+GET localhost:8001/api/v1/account/1?full_profile=false
 Authorization: Bearer {{access_token}}

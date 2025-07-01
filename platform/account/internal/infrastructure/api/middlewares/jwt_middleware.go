@@ -42,9 +42,11 @@ func jwtMiddleware[S JWTSecret](c *gin.Context, method jwt.SigningMethod, secret
 		return
 	}
 
-	c.Set("user_id", claims["sub"])
+	userId := uint(claims["sub"].(float64))
+	c.Set("user_id", userId)
 	c.Set("issuer", claims["iss"])
 	c.Set("role", claims["role"])
+	c.Set("user_name", claims["user_name"])
 	c.Set("client_id", claims["client_id"])
 
 	c.Next()
