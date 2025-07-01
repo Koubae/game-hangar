@@ -1,6 +1,13 @@
 .PHONY: run build stop tests
 
 # ============================
+# 	Docker
+# ============================
+
+up-mongo-db:
+	 @docker compose up db-mongodb-dashboard
+
+# ============================
 # 	Run
 # ============================
 

@@ -27,6 +27,20 @@ go mod tidy
 make run-reload
 ```
 
+Docker
+------
+
+### MongoDB
+
+```bash
+make up-mongo-db
+```
+
+Go to http://localhost:18081/
+
+* User: `admin`
+* Password: `pass`
+
 Generate Pub/Sub Keys for JWT Auth
 ----------------------------------
 
