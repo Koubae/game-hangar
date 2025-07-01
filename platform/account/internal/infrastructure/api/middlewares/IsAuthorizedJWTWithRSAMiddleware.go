@@ -7,13 +7,9 @@ import (
 	"github.com/koubae/game-hangar/account/pkg/utils"
 )
 
-func IsAuthorizedJWTWithRSAMiddleware(publicKey *rsa.PublicKey) gin.HandlerFunc {
+func NewJWTRSAMiddleware() gin.HandlerFunc {
+	publicKey := utils.GetPublicKeyOrPanic()
 	return func(c *gin.Context) {
 		jwtMiddleware[*rsa.PublicKey](c, jwt.SigningMethodRS256, publicKey)
 	}
-}
-
-func NewJWTRSAMiddleware() gin.HandlerFunc {
-	publicKey := utils.GetPublicKeyOrPanic()
-	return IsAuthorizedJWTWithRSAMiddleware(publicKey)
 }
