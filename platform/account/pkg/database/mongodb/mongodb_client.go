@@ -10,6 +10,8 @@ import (
 	"time"
 )
 
+var dbClient *MongoDBClient
+
 func NewClient(config *DatabaseConfig) (*MongoDBClient, error) {
 	var err error
 	var client *mongo.Client
@@ -29,13 +31,20 @@ func NewClient(config *DatabaseConfig) (*MongoDBClient, error) {
 	}
 
 	db := client.Database(config.DBName)
-	dbClient := &MongoDBClient{
+	dbClient = &MongoDBClient{
 		config: config,
 		client: client,
 		db:     db,
 	}
 	dbClient.Ping(ctx)
 	return dbClient, nil
+}
+
+func GetDB() *MongoDBClient {
+	if dbClient == nil {
+		panic("MongoDBClient is not initialized!")
+	}
+	return dbClient
 }
 
 type MongoDBClient struct {
