@@ -1,0 +1,37 @@
+version: "3.8"
+services:
+
+  mongo:
+    image: mongo:7
+    container_name: db-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    networks:
+      - game-hangar
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: pass
+    volumes:
+      - db-mongodb:/data/db
+  db-mongodb-dashboard:
+    image: mongo-express
+    container_name: db-mongodb-dashboard
+    restart: unless-stopped
+    ports:
+      - "18081:8081"
+    networks:
+      - game-hangar
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: root
+      ME_CONFIG_MONGODB_ADMINPASSWORD: pass
+      ME_CONFIG_MONGODB_SERVER: mongo
+    depends_on:
+      - mongo
+
+
+volumes:
+  db-mongodb:
+
+networks:
+  game-hangar:
