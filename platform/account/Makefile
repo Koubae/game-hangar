@@ -42,3 +42,11 @@ ifndef TEST
 else
 	go test ./... -v -run $(TEST)
 endif
+
+
+# ============================
+# 	Management
+# ============================
+
+script-prepare-mongo-database:
+	go run cmd/scripts/database/prepare_mongo_database.go

@@ -2,22 +2,18 @@ package settings
 
 import (
 	"fmt"
+	"github.com/koubae/game-hangar/account/pkg/database/mongodb"
 	"github.com/koubae/game-hangar/account/pkg/utils"
 	"os"
 	"slices"
 	"strconv"
 )
 
-type DatabaseConfig struct {
-	Driver string
-	Uri    string
-}
-
 type Config struct {
 	port           uint16
 	Environment    string
 	TrustedProxies []string
-	DatabaseConfig
+	*mongodb.DatabaseConfig
 }
 
 func (c Config) GetAddr() string {
@@ -46,17 +42,16 @@ func NewConfig() *Config {
 	}
 	trustedProxies := utils.GetEnvStringSlice("APP_NETWORKING_PROXIES", []string{})
 
-	databaseDriver := utils.GetEnvString("DATABASE_DRIVER", "")
-	databaseUri := utils.GetEnvString("APP_DATABASE_1_URI", "")
+	databaseConfig, err := mongodb.LoadDatabaseConfig()
+	if err != nil {
+		panic(err.Error())
+	}
 
 	config = &Config{
 		port:           uint16(port),
 		Environment:    environment,
 		TrustedProxies: trustedProxies,
-		DatabaseConfig: DatabaseConfig{
-			Driver: databaseDriver,
-			Uri:    databaseUri,
-		},
+		DatabaseConfig: databaseConfig,
 	}
 	return config
 }

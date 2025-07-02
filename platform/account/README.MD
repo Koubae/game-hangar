@@ -21,6 +21,15 @@ export PATH=$PATH:$GOROOT/bin
 go mod tidy
 ```
 
+### Start and Initialize database
+
+```bash
+# Start MongoDB
+make up-mongo-db
+# Create Database + indexes
+make script-prepare-mongo-database
+```
+
 * 3) Start with HotReload
 
 ```bash
