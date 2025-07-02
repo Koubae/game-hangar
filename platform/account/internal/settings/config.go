@@ -8,10 +8,16 @@ import (
 	"strconv"
 )
 
+type DatabaseConfig struct {
+	Driver string
+	Uri    string
+}
+
 type Config struct {
 	port           uint16
 	Environment    string
 	TrustedProxies []string
+	DatabaseConfig
 }
 
 func (c Config) GetAddr() string {
@@ -40,10 +46,17 @@ func NewConfig() *Config {
 	}
 	trustedProxies := utils.GetEnvStringSlice("APP_NETWORKING_PROXIES", []string{})
 
+	databaseDriver := utils.GetEnvString("DATABASE_DRIVER", "")
+	databaseUri := utils.GetEnvString("APP_DATABASE_1_URI", "")
+
 	config = &Config{
 		port:           uint16(port),
 		Environment:    environment,
 		TrustedProxies: trustedProxies,
+		DatabaseConfig: DatabaseConfig{
+			Driver: databaseDriver,
+			Uri:    databaseUri,
+		},
 	}
 	return config
 }
