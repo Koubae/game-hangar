@@ -32,6 +32,11 @@ Docker
 
 ### MongoDB
 
+* [MongoDB -- GO SKD QuickStart](https://www.mongodb.com/docs/drivers/go/current/quick-start/)
+* [go.mongodb.org/mongo-driver/v2/mongo](https://pkg.go.dev/go.mongodb.org/mongo-driver/v2/mongo)
+
+* [perfectgentlemande/go-mongodb-crud-example](https://github.dev/perfectgentlemande/go-mongodb-crud-example)
+
 ```bash
 make up-mongo-db
 ```
@@ -350,3 +355,164 @@ Key Differences:
         - Handling user registration
         - Coordinating order fulfillment
         - Managing inventory updates
+
+
+How to Handle Go Context
+-----------------------
+
+**Best Practices for High-Concurrency Applications:**
+
+* Use request-scoped contexts:
+
+```go
+func Handler(c *gin.Context) {
+    // Get the request's context from gin
+    reqCtx := c.Request.Context()
+    
+    // Create a timeout context as child of request context
+    ctx, cancel := context.WithTimeout(reqCtx, 5*time.Second)
+    defer cancel()
+    
+    // Use this context for database operations
+    result, err := collection.InsertOne(ctx, newDocument)
+}
+```
+
+* Propagate request context:
+
+```go
+func Handler(c *gin.Context) {
+    ctx := c.Request.Context()
+    
+    // Pass the context through your application layers
+    result, err := service.DoSomething(ctx)
+}
+
+func (s *Service) DoSomething(ctx context.Context) error {
+    // Create child context if needed
+    dbCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
+    defer cancel()
+    
+    return s.repository.Insert(dbCtx, data)
+}
+
+```
+
+* Handle timeouts appropriately:
+
+```go
+func Handler(c *gin.Context) {
+    // Different timeouts for different operations
+    readCtx, cancel := context.WithTimeout(c.Request.Context(), 2*time.Second)
+    defer cancel()
+    
+    // Read operation with shorter timeout
+    data, err := collection.FindOne(readCtx, filter).Decode(&result)
+    if err != nil {
+        // Handle timeout or other errors
+        return
+    }
+    
+    // Write operation with longer timeout
+    writeCtx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+    defer cancel()
+    
+    _, err = collection.InsertOne(writeCtx, newData)
+}
+```
+
+
+```go
+type MongoDBClient struct {
+    client *mongo.Client
+}
+
+func NewMongoDBClient(uri string) (*MongoDBClient, error) {
+    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+    defer cancel()
+
+    client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
+    if err != nil {
+        return nil, fmt.Errorf("failed to connect to MongoDB: %w", err)
+    }
+
+    // Ping the database to verify connection
+    if err := client.Ping(ctx, nil); err != nil {
+        return nil, fmt.Errorf("failed to ping MongoDB: %w", err)
+    }
+
+    return &MongoDBClient{client: client}, nil
+}
+
+func (m *MongoDBClient) Shutdown(ctx context.Context) error {
+    if m.client == nil {
+        return nil
+    }
+
+    if err := m.client.Disconnect(ctx); err != nil {
+        return fmt.Errorf("error disconnecting from MongoDB: %w", err)
+    }
+
+    return nil
+}
+
+func (m *MongoDBClient) Shutdown2(ctx context.Context) error {
+   // Wait for ongoing operations with timeout
+   done := make(chan struct{})
+   go func() {
+        m.wg.Wait()
+        close(done)                                                                              
+   }()
+   
+   select {
+   case <-done:
+        // All operations completed
+   case <-ctx.Done():
+        return fmt.Errorf("shutdown timeout waiting for operations to complete")
+   }
+   
+   return m.client.Disconnect(ctx)
+}
+
+
+// Usage in main application:
+func main() {
+    // Setup signal handling
+    ctx, stop := signal.NotifyContext(context.Background(),
+        syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+    defer stop()
+
+    // Initialize MongoDB
+    mongo, err := NewMongoDBClient("mongodb://localhost:27017")
+    if err != nil {
+        log.Fatalf("Failed to initialize MongoDB: %v", err)
+    }
+
+    // Application logic...
+
+    // Wait for shutdown signal
+    <-ctx.Done()
+    log.Println("Shutdown signal received")
+
+    // Shutdown with timeout
+    shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+    defer cancel()
+
+    if err := mongo.Shutdown(shutdownCtx); err != nil {
+        log.Printf("Error during MongoDB shutdown: %v", err)
+    } else {
+        log.Println("MongoDB shutdown completed")
+    }
+
+   /*if err := mongo.Shutdown(shutdownCtx); err != nil {
+      switch {
+      case errors.Is(err, context.DeadlineExceeded):
+            log.Printf("MongoDB shutdown timed out")
+      default:
+            log.Printf("MongoDB shutdown error: %v", err)
+      }
+   }*/
+
+}
+
+```

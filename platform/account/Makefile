@@ -6,6 +6,9 @@
 
 up-mongo-db:
 	 @docker compose up db-mongodb-dashboard
+down-mongo-db:
+	 @docker compose down db-mongodb-dashboard mongo
+
 
 # ============================
 # 	Run
