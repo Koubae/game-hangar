@@ -5,7 +5,7 @@ import (
 )
 
 type GetAccountRequest struct {
-	FullProfile bool `form:"full_profile" json:"full_profile" binding:"required"`
+	FullProfile bool `form:"full_profile" json:"full_profile"`
 	Username    string
 	ClientID    string
 	UserID      uint
