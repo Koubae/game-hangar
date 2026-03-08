@@ -1,0 +1,236 @@
+package temp
+
+import (
+	"errors"
+	"fmt"
+	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
+	"github.com/koubae/game-hangar/account/internal/infrastructure/api/routes"
+	"github.com/koubae/game-hangar/account/internal/settings"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
+	"golang.org/x/crypto/bcrypt"
+	"log"
+	"net/http"
+	"os/signal"
+	"syscall"
+	"time"
+)
+
+package accountpackage
+
+import (
+"context"
+"errors"
+"fmt"
+"github.com/gin-gonic/gin"
+"github.com/joho/godotenv"
+"github.com/koubae/game-hangar/account/internal/infrastructure/api/routes"
+"github.com/koubae/game-hangar/account/internal/settings"
+"go.mongodb.org/mongo-driver/bson"
+"go.mongodb.org/mongo-driver/mongo"
+"go.mongodb.org/mongo-driver/mongo/options"
+"go.mongodb.org/mongo-driver/mongo/readpref"
+"golang.org/x/crypto/bcrypt"
+"log"
+"net/http"
+"os/signal"
+"syscall"
+"time"
+)
+
+func init() {
+	err := godotenv.Load()
+	if err != nil {
+		panic(err.Error())
+	}
+	config := settings.NewConfig()
+	switch config.Environment {
+	case settings.EnvTesting:
+		gin.SetMode(gin.TestMode)
+	case settings.EnvDev, settings.EnvStaging:
+		gin.SetMode(gin.DebugMode)
+	default:
+		gin.SetMode(gin.ReleaseMode)
+	}
+}
+
+type User struct {
+	Username string `bson:"username"`
+	Password string `bson:"password"`
+}
+
+func RunServer() {
+	config := settings.GetConfig()
+
+	ctx, stop := signal.NotifyContext(context.Background(),
+		syscall.SIGHUP,
+		syscall.SIGINT,
+		syscall.SIGTERM,
+		syscall.SIGQUIT,
+	)
+	defer stop()
+
+	router := gin.Default()
+	err := router.SetTrustedProxies(config.TrustedProxies)
+	if err != nil {
+		panic(err.Error())
+	}
+	routes.InitRoutes(router)
+
+	srv := &http.Server{
+		Addr:    config.GetAddr(),
+		Handler: router,
+	}
+
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Fatalf("Error while shutting down server, error: %s\n", err)
+		}
+	}()
+
+	// ------------------ TODO
+	uri := "mongodb://root:pass@localhost:27017"
+	ctxDB, cancelDB := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancelDB()
+	// Connect to MongoDBe
+
+	//clientOpts := options.Client().
+	//	ApplyURI(uri).
+	//	SetMinPoolSize(5).
+	//	SetMaxPoolSize(100).
+	//	SetMaxConnIdleTime(30 * time.Minute)
+
+	client, err := mongo.Connect(ctxDB, options.Client().ApplyURI(uri))
+	if err != nil {
+		log.Fatalf("failed to connect: %v", err)
+	}
+
+	defer func() {
+		if err = client.Disconnect(ctx); err != nil {
+			log.Fatalf("failed to disconnect: %v", err)
+		}
+	}()
+
+	_ = client.Ping(ctx, readpref.Primary())
+
+	// Ping the database to verify connection
+	if err = client.Ping(ctx, nil); err != nil {
+		log.Fatalf("failed to ping MongoDB: %w", err)
+	}
+
+	fmt.Println("✅ Connected to MongoDB!")
+
+	// Use a filter to only select non-empty databases.
+	//result, err := client.ListDatabaseNames(
+	//	ctxDB,
+	//	bson.D{{"empty", false}})
+	//if err != nil {
+	//	log.Fatalf("failed to list databases: %v", err)
+	//}
+
+	log.Println("💾 Databases:")
+	for _, db := range result {
+		fmt.Printf(db)
+	}
+
+	// Select database and collection
+	collection := client.Database("myapp").Collection("users")
+
+	// CRETTE INDEX
+	//err = ensureIndexes(collection)
+	//if err != nil {
+	//	log.Printf("Error while creating indexes, this could be expected if the index is already created, error : %s\n",
+	//		err.Error())
+	//}
+
+	//indexModel := mongo.IndexModel{
+	//	Keys:    bson.M{"username": 1},           // index on "username" field
+	//	Options: options.Index().SetUnique(true), // enforce uniqueness
+	//}
+	//
+	//_, err = collection.Indexes().CreateOne(ctxDB, indexModel)
+	//if err != nil {
+	//	log.Fatalf("failed to create unique index: %v", err)
+	//}
+	// ---
+
+	// Create a new user
+	// Hash the password with bcrypt
+	rawPassword := "my_secret_pass"
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(rawPassword), bcrypt.DefaultCost)
+	if err != nil {
+		log.Fatalf("failed to hash password: %v", err)
+	}
+
+	username := "federico"
+	newUser := User{Username: username, Password: string(hashedPassword)}
+
+	// Insert the user
+	//insertResult, err := collection.InsertOne(ctx, newUser)
+	//if err != nil {
+	//	log.Fatalf("failed to insert user: %v", err)
+	//}
+
+	insertResult, err := collection.InsertOne(ctx, newUser)
+	if mongo.IsDuplicateKeyError(err) {
+		log.Println("🚫 Username already exists!")
+		var user User
+		err = collection.FindOne(ctx, bson.M{"username": username}).Decode(&user)
+		if err != nil {
+			log.Printf("Error while getting user %s, errro: %v\n", username, err.Error())
+		} else {
+			log.Printf("User %s found with password: %s\n", user.Username, user.Password)
+		}
+	} else if err != nil {
+		log.Fatalf("Insert failed: %v", err)
+	} else {
+		fmt.Printf("🆗 User inserted with ID: %v\n", insertResult.InsertedID)
+	}
+
+	// /!\/!\/!\ TODO /!\/!\/!\ CHECK PASSWORD
+	//err := bcrypt.CompareHashAndPassword([]byte(storedHashedPassword), []byte(providedPassword))
+	//if err != nil {
+	//	// ❌ Password doesn't match
+	//} else {
+	//	// ✅ Password is correct
+	//}
+	// /!\/!\/!\ TODO /!\/!\/!\ CHECK PASSWORD
+
+	// ------------------ TODO
+
+	// Listen for the interrupt signal.
+	<-ctx.Done()
+
+	// Restore default behavior on the interrupt signal and notify the user of shutdown.
+	stop()
+	log.Println("shutting down gracefully, press Ctrl+C again to force")
+
+	// The context is used to inform the server it has 5 seconds to finish
+	// the request it is currently handling
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// TODO
+	// Graceful shutdown of all services
+	// shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	//var wg sync.WaitGroup
+	//// Disconnect MongoDB
+	//wg.Add(1)
+	//go func() {
+	//	defer wg.Done()
+	//	mongoClient.Disconnect(shutdownCtx)
+	//}()
+
+	// Wait for all shutdowns to complete or timeout
+	//wg.Wait()
+	// TODO
+
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Fatal("Server forced to shutdown: ", err)
+	}
+
+	log.Println("Server exiting")
+}
