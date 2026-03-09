@@ -1,5 +1,4 @@
 Game Hangar
 ============
 
-_Game Platform & Manager_
-
+TODO
