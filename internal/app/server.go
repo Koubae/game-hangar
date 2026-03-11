@@ -4,21 +4,17 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"os"
-	"strings"
 	"time"
 
+	"github.com/koubae/game-hangar/pkg/common"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-
-	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 func RunServer() {
 	// TODO: load .env file
 	logLevel := "info"
 
-	logger := createLogger(logLevel)
+	logger := common.CreateLogger(logLevel)
 	defer func(logger *zap.Logger) {
 		err := logger.Sync()
 		if err != nil {
@@ -54,49 +50,4 @@ func RunServer() {
 	}
 
 	log.Fatal(srv.ListenAndServe())
-}
-
-func createLogger(logLevel string) *zap.Logger {
-	stdout := zapcore.AddSync(os.Stdout)
-
-	file := zapcore.AddSync(
-		&lumberjack.Logger{
-			Filename:   "logs/app.log",
-			MaxSize:    10, // megabytes
-			MaxBackups: 3,
-			MaxAge:     7, // days
-		},
-	)
-
-	zapLevel := zapcore.InfoLevel
-	switch strings.ToLower(logLevel) {
-	case "debug":
-		zapLevel = zapcore.DebugLevel
-	case "info":
-		zapLevel = zapcore.InfoLevel
-	case "warn":
-		zapLevel = zapcore.WarnLevel
-	case "error":
-		zapLevel = zapcore.ErrorLevel
-	default:
-		log.Fatal("Logger level invalid, must be one of: DEBUG, INFO, WARN, or ERROR")
-	}
-	level := zap.NewAtomicLevelAt(zapLevel)
-
-	productionCfg := zap.NewProductionEncoderConfig()
-	productionCfg.TimeKey = "timestamp"
-	productionCfg.EncodeTime = zapcore.ISO8601TimeEncoder
-
-	developmentCfg := zap.NewDevelopmentEncoderConfig()
-	developmentCfg.EncodeLevel = zapcore.CapitalColorLevelEncoder
-
-	consoleEncoder := zapcore.NewConsoleEncoder(developmentCfg)
-	fileEncoder := zapcore.NewJSONEncoder(productionCfg)
-
-	core := zapcore.NewTee(
-		zapcore.NewCore(consoleEncoder, stdout, level),
-		zapcore.NewCore(fileEncoder, file, level),
-	)
-
-	return zap.New(core, zap.AddStacktrace(zapcore.ErrorLevel))
 }
