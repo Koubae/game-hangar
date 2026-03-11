@@ -6,6 +6,8 @@
 # //////////////////////
 # 	local
 # //////////////////////
+run-server-local:
+	@go run ./cmd/main.go
 
 # //////////////////////
 # 	docker
@@ -14,12 +16,15 @@
 # ============================
 # 	Init
 # ============================
-init: install-deps
+init: install-deps update-env-file
 
 install-deps:
 	go mod tidy
 
-
+update-env-file:
+	@echo 'Updating .env from .env.example 🖋️...'
+	@cp .env.example .env
+	@echo '.env Updated ✨'
 
 # ============================
 # 	Tests
