@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"go.uber.org/zap"
@@ -14,11 +15,14 @@ import (
 )
 
 func RunServer() {
-	logger := createLogger()
+	// TODO: load .env file
+	logLevel := "info"
+
+	logger := createLogger(logLevel)
 	defer func(logger *zap.Logger) {
 		err := logger.Sync()
 		if err != nil {
-			panic(err)
+			log.Fatal(err)
 		}
 	}(logger)
 
@@ -52,7 +56,7 @@ func RunServer() {
 	log.Fatal(srv.ListenAndServe())
 }
 
-func createLogger() *zap.Logger {
+func createLogger(logLevel string) *zap.Logger {
 	stdout := zapcore.AddSync(os.Stdout)
 
 	file := zapcore.AddSync(
@@ -64,7 +68,20 @@ func createLogger() *zap.Logger {
 		},
 	)
 
-	level := zap.NewAtomicLevelAt(zap.InfoLevel)
+	zapLevel := zapcore.InfoLevel
+	switch strings.ToLower(logLevel) {
+	case "debug":
+		zapLevel = zapcore.DebugLevel
+	case "info":
+		zapLevel = zapcore.InfoLevel
+	case "warn":
+		zapLevel = zapcore.WarnLevel
+	case "error":
+		zapLevel = zapcore.ErrorLevel
+	default:
+		log.Fatal("Logger level invalid, must be one of: DEBUG, INFO, WARN, or ERROR")
+	}
+	level := zap.NewAtomicLevelAt(zapLevel)
 
 	productionCfg := zap.NewProductionEncoderConfig()
 	productionCfg.TimeKey = "timestamp"
