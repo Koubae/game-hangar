@@ -4,10 +4,30 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"time"
+
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 func RunServer() {
+	logger := createLogger()
+	defer func(logger *zap.Logger) {
+		err := logger.Sync()
+		if err != nil {
+			panic(err)
+		}
+	}(logger)
+
+	logger.Info(
+		"server started",
+		zap.String("addr", ":8080"),
+		zap.String("env", "dev"),
+	)
+
 	mux := http.NewServeMux()
 
 	mux.HandleFunc(
@@ -30,4 +50,36 @@ func RunServer() {
 	}
 
 	log.Fatal(srv.ListenAndServe())
+}
+
+func createLogger() *zap.Logger {
+	stdout := zapcore.AddSync(os.Stdout)
+
+	file := zapcore.AddSync(
+		&lumberjack.Logger{
+			Filename:   "logs/app.log",
+			MaxSize:    10, // megabytes
+			MaxBackups: 3,
+			MaxAge:     7, // days
+		},
+	)
+
+	level := zap.NewAtomicLevelAt(zap.InfoLevel)
+
+	productionCfg := zap.NewProductionEncoderConfig()
+	productionCfg.TimeKey = "timestamp"
+	productionCfg.EncodeTime = zapcore.ISO8601TimeEncoder
+
+	developmentCfg := zap.NewDevelopmentEncoderConfig()
+	developmentCfg.EncodeLevel = zapcore.CapitalColorLevelEncoder
+
+	consoleEncoder := zapcore.NewConsoleEncoder(developmentCfg)
+	fileEncoder := zapcore.NewJSONEncoder(productionCfg)
+
+	core := zapcore.NewTee(
+		zapcore.NewCore(consoleEncoder, stdout, level),
+		zapcore.NewCore(fileEncoder, file, level),
+	)
+
+	return zap.New(core, zap.AddStacktrace(zapcore.ErrorLevel))
 }
