@@ -1,7 +1,9 @@
 package main
 
-import "github.com/koubae/game-hangar/internal/app"
+import (
+	"github.com/koubae/game-hangar/internal/run"
+)
 
 func main() {
-	app.RunServer()
+	run.RunServer()
 }

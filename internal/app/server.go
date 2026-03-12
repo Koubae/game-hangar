@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -36,14 +35,6 @@ type httpServerWrapper struct {
 
 func (s *httpServerWrapper) Handler() http.Handler {
 	return s.Server.Handler
-}
-
-func RunServer() {
-	app := NewApp()
-	app.Start(context.Background())
-	if err := app.Stop(); err != nil {
-		log.Fatalf("Error while shutting down the server, error: %s", err)
-	}
 }
 
 func NewApp() *App {
