@@ -28,6 +28,7 @@ type Config struct {
 	Env         Environment
 	LogLevel    common.LogLevel
 	LogFilePath string
+	CORSConfig  *common.CORSConfig
 }
 
 func (c Config) GetAppURL() string {
@@ -60,6 +61,8 @@ func NewConfig(logger *zap.Logger) *Config {
 	}
 	logFilePath := common.GetEnvString("APP_LOG_FILE", "logs/app.log")
 
+	corsConfig := common.NewCors(logger)
+
 	config = &Config{
 		Host:        host,
 		Port:        port,
@@ -67,6 +70,7 @@ func NewConfig(logger *zap.Logger) *Config {
 		Env:         env,
 		LogLevel:    logLevel,
 		LogFilePath: logFilePath,
+		CORSConfig:  corsConfig,
 	}
 	return config
 }

@@ -38,20 +38,10 @@ func RunServer() {
 
 	handler := cors.New(
 		cors.Options{
-			AllowedOrigins: []string{"*"},
-			AllowedMethods: []string{
-				http.MethodGet,
-				http.MethodPost,
-				http.MethodPut,
-				http.MethodDelete,
-				http.MethodOptions,
-			},
-			AllowedHeaders: []string{
-				"Origin",
-				"Content-Type",
-				"Authorization",
-			},
-			AllowCredentials: true,
+			AllowedOrigins:   config.CORSConfig.AllowedOrigins,
+			AllowedMethods:   config.CORSConfig.AllowedMethods,
+			AllowedHeaders:   config.CORSConfig.AllowedHeaders,
+			AllowCredentials: config.CORSConfig.AllowCredentials,
 		},
 	).Handler(mux)
 
