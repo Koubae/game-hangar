@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/koubae/game-hangar/pkg/common"
+	"github.com/rs/cors"
 	"go.uber.org/zap"
 )
 
@@ -35,13 +36,32 @@ func RunServer() {
 		},
 	)
 
+	handler := cors.New(
+		cors.Options{
+			AllowedOrigins: []string{"*"},
+			AllowedMethods: []string{
+				http.MethodGet,
+				http.MethodPost,
+				http.MethodPut,
+				http.MethodDelete,
+				http.MethodOptions,
+			},
+			AllowedHeaders: []string{
+				"Origin",
+				"Content-Type",
+				"Authorization",
+			},
+			AllowCredentials: true,
+		},
+	).Handler(mux)
+
 	srv := http.Server{
-		Addr:         config.GetAppURL(),
-		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 15 * time.Second,
-		// Use CrossOriginProtection.Handler to block all non-safe cross-origin
-		// browser requests to mux.
-		Handler: http.NewCrossOriginProtection().Handler(mux),
+		Addr:           config.GetAppURL(),
+		ReadTimeout:    15 * time.Second,
+		WriteTimeout:   15 * time.Second,
+		IdleTimeout:    60 * time.Second,
+		MaxHeaderBytes: 5120,
+		Handler:        handler,
 	}
 
 	go func() {
