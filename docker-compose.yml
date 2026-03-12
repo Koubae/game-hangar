@@ -1,0 +1,47 @@
+services:
+  db-postgres:
+    image: postgres:16-alpine
+    container_name: game-hangar-db-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - game-hangar
+    environment:
+      POSTGRES_DB: game_hangar
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      PGDATA: /var/lib/postgresql/data/pgdata
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U admin -d game_hangar" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  db-postgres-dashboard:
+    image: dpage/pgadmin4:latest
+    container_name: game-hangar-db-postgres-dashboard
+    restart: unless-stopped
+    ports:
+      - "5050:80"
+    depends_on:
+      - db-postgres
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+      - ./docker/postgres/pgadmin_servers.json:/pgadmin4/servers.json
+    networks:
+      - game-hangar
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
+
+
+volumes:
+  postgres-data:
+  pgadmin-data:
+
+networks:
+  game-hangar:

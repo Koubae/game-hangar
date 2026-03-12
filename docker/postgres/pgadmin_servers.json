@@ -1,0 +1,15 @@
+{
+  "Servers": {
+    "1": {
+      "Name"         : "Game Hangar DB",
+      "Group"        : "Servers",
+      "Host"         : "db-postgres",
+      "Port"         : 5432,
+      "MaintenanceDB": "postgres",
+      "Username"     : "admin",
+      "Password"     : "admin",
+      "SSLMode"      : "prefer",
+      "Favorite"     : true
+    }
+  }
+}
