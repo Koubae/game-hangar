@@ -21,12 +21,13 @@ const (
 var Environments = [4]Environment{EnvTesting, EnvDev, EnvStating, EnvProd}
 
 type Config struct {
-	Host       string
-	Port       int
-	AppName    string
-	AppVersion string
-	Env        Environment
-	LogLevel   common.LogLevel
+	Host        string
+	Port        int
+	AppName     string
+	AppVersion  string
+	Env         Environment
+	LogLevel    common.LogLevel
+	LogFilePath string
 }
 
 func (c Config) GetAppURL() string {
@@ -57,13 +58,15 @@ func NewConfig(logger *zap.Logger) *Config {
 	if !slices.Contains(common.LogLevels[:], logLevel) {
 		logger.Panic(fmt.Sprintf("Invalid LOG_LEVEL: %s, supported levels are: %v", logLevel, common.LogLevels))
 	}
+	logFilePath := common.GetEnvString("APP_LOG_FILE", "logs/app.log")
 
 	config = &Config{
-		Host:     host,
-		Port:     port,
-		AppName:  "game-hangar",
-		Env:      env,
-		LogLevel: logLevel,
+		Host:        host,
+		Port:        port,
+		AppName:     "game-hangar",
+		Env:         env,
+		LogLevel:    logLevel,
+		LogFilePath: logFilePath,
 	}
 	return config
 }

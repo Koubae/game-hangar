@@ -1,8 +1,10 @@
 package common
 
 import (
+	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -22,17 +24,15 @@ const (
 
 var LogLevels = [4]LogLevel{LogLevelDebug, LogLevelInfo, LogLevelWarn, LogLevelError}
 
-func CreateLogger(logLevel LogLevel) *zap.Logger {
+func CreateLogger(logLevel LogLevel, filePath string) *zap.Logger {
 	stdout := zapcore.Lock(zapcore.AddSync(os.Stdout))
 
-	file := zapcore.AddSync(
-		&lumberjack.Logger{
-			Filename:   "/logs/app.log", // TODO: this should be a config too.-
-			MaxSize:    10,              // megabytes
-			MaxBackups: 3,
-			MaxAge:     7, // days
-		},
-	)
+	var fileWriter zapcore.WriteSyncer
+	if filePath == "" {
+		fileWriter = stdout
+	} else {
+		fileWriter = zapcore.AddSync(createFileLoggerWriter(filePath))
+	}
 
 	zapLevel := zapcore.InfoLevel
 	switch strings.ToLower(string(logLevel)) {
@@ -62,7 +62,7 @@ func CreateLogger(logLevel LogLevel) *zap.Logger {
 
 	core := zapcore.NewTee(
 		zapcore.NewCore(consoleEncoder, stdout, level),
-		zapcore.NewCore(fileEncoder, file, level),
+		zapcore.NewCore(fileEncoder, fileWriter, level),
 	)
 
 	return zap.New(core, zap.AddStacktrace(zapcore.ErrorLevel))
@@ -70,4 +70,22 @@ func CreateLogger(logLevel LogLevel) *zap.Logger {
 
 func utcTimeEncoder(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
 	enc.AppendString(t.UTC().Format("2006-01-02T15:04:05.000Z"))
+}
+
+func createFileLoggerWriter(filePath string) *lumberjack.Logger {
+	logger := zap.L()
+	dir := filepath.Dir(filePath)
+
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			logger.Panic(fmt.Sprintf("failed to create log directory %q, error: %v", dir, err))
+		}
+	}
+
+	return &lumberjack.Logger{
+		Filename:   filePath,
+		MaxSize:    10, // megabytes
+		MaxBackups: 3,
+		MaxAge:     7, // days
+	}
 }
