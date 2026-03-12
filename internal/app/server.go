@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -27,7 +28,7 @@ func RunServer() {
 	mux.HandleFunc(
 		"GET /{$}", func(w http.ResponseWriter, req *http.Request) {
 			w.WriteHeader(http.StatusOK)
-			_, err := io.WriteString(w, "Hello World :)\n")
+			_, err := io.WriteString(w, fmt.Sprintf("Welcome to %s", config.GetFullName()))
 			if err != nil {
 				return
 			}
@@ -59,7 +60,7 @@ func RunServer() {
 	}()
 
 	logger.Info(
-		"Server started",
+		fmt.Sprintf("Server started on %s -- App: %s", config.GetAppURL(), config.GetFullName()),
 		zap.String("addr", config.GetAppURL()),
 		zap.String("env", string(config.Env)),
 	)

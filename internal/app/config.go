@@ -21,9 +21,10 @@ const (
 var Environments = [4]Environment{EnvTesting, EnvDev, EnvStating, EnvProd}
 
 type Config struct {
-	AppName    string
-	AppVersion string
-	Env        Environment
+	AppName     string
+	AppVersion  string
+	AppCommitID string
+	Env         Environment
 	// server configs
 	Host                       string
 	Port                       int
@@ -42,6 +43,14 @@ func (c Config) GetAppURL() string {
 	return fmt.Sprintf("%s:%d", c.Host, c.Port)
 }
 
+func (c Config) GetVersion() string {
+	return fmt.Sprintf("%s+%s", c.AppVersion, c.AppCommitID)
+}
+
+func (c Config) GetFullName() string {
+	return fmt.Sprintf("%s v%s", c.AppName, c.GetVersion())
+}
+
 var config *Config
 
 func GetConfig() *Config {
@@ -53,6 +62,10 @@ func GetConfig() *Config {
 
 func NewConfig(logger *zap.Logger) *Config {
 	_ = godotenv.Load(".env")
+
+	appName := common.GetEnvString("APP_NAME", "unknown")
+	appVersion := common.GetEnvString("APP_VERSION", "0.0.1-dev")
+	appCommitID := common.GetEnvString("APP_COMMIT_ID", "")
 
 	env := Environment(common.GetEnvString("APP_ENV", string(EnvDev)))
 	if !slices.Contains(Environments[:], env) {
@@ -78,7 +91,9 @@ func NewConfig(logger *zap.Logger) *Config {
 	corsConfig := common.NewCors(logger)
 
 	config = &Config{
-		AppName:                    "game-hangar",
+		AppName:                    appName,
+		AppVersion:                 appVersion,
+		AppCommitID:                appCommitID,
 		Env:                        env,
 		Host:                       host,
 		Port:                       port,
