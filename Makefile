@@ -13,6 +13,22 @@ run-server-local:
 # 	docker
 # //////////////////////
 
+# ······················
+#		DB -- PostGreSQL
+# ······················
+postgres-up:
+	@docker compose up db-postgres-dashboard
+postgres-down:
+	@docker compose down db-postgres-dashboard
+postgres-down-clean-up:
+	@docker compose down -v db-postgres db-postgres-dashboard
+
+postgres-shell:
+	docker compose exec \
+		-e PGPASSWORD='admin' \
+		db-postgres \
+		psql -U admin -d game_hangar
+
 # ============================
 # 	Init
 # ============================
