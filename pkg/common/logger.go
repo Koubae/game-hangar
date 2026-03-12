@@ -26,6 +26,12 @@ const (
 
 var LogLevels = [4]LogLevel{LogLevelDebug, LogLevelInfo, LogLevelWarn, LogLevelError}
 
+type Logger interface {
+	Info(msg string, fields ...zap.Field)
+	Error(msg string, fields ...zap.Field)
+	Fatal(msg string, fields ...zap.Field)
+}
+
 func CreateLogger(logLevel LogLevel, filePath string) (*zap.Logger, func(loggerTmp *zap.Logger, logger *zap.Logger)) {
 	stdout := zapcore.Lock(zapcore.AddSync(os.Stdout))
 

@@ -7,6 +7,8 @@ import (
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 func TestAppInitialization(t *testing.T) {
@@ -98,6 +100,20 @@ func (m *MockServer) Handler() http.Handler {
 	return nil
 }
 
+type MockLogger struct {
+	FatalCalled bool
+	FatalMsg    string
+	FatalFields []zap.Field
+}
+
+func (m *MockLogger) Info(msg string, fields ...zap.Field)  {}
+func (m *MockLogger) Error(msg string, fields ...zap.Field) {}
+func (m *MockLogger) Fatal(msg string, fields ...zap.Field) {
+	m.FatalCalled = true
+	m.FatalMsg = msg
+	m.FatalFields = fields
+}
+
 func TestAppStopError(t *testing.T) {
 	app := NewApp()
 	expectedErr := errors.New("shutdown error")
@@ -110,5 +126,52 @@ func TestAppStopError(t *testing.T) {
 	err := app.Stop()
 	if !errors.Is(err, expectedErr) {
 		t.Errorf("expected error %v, got %v", expectedErr, err)
+	}
+}
+
+func TestAppStartError(t *testing.T) {
+	app := NewApp()
+	expectedErr := errors.New("listen and serve error")
+
+	mockLogger := &MockLogger{}
+	app.Logger = mockLogger
+
+	app.Server = &MockServer{
+		ListenAndServeFunc: func() error {
+			return expectedErr
+		},
+	}
+
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+
+	go app.Start(ctx)
+
+	// Wait for Fatal to be called
+	start := time.Now()
+	for time.Since(start) < 2*time.Second {
+		if mockLogger.FatalCalled {
+			break
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+
+	if !mockLogger.FatalCalled {
+		t.Fatal("timed out waiting for Fatal call from App.Start")
+	}
+
+	if mockLogger.FatalMsg != "Server failed to start" {
+		t.Errorf("expected fatal msg %q, got %q", "Server failed to start", mockLogger.FatalMsg)
+	}
+
+	found := false
+	for _, f := range mockLogger.FatalFields {
+		if f.Key == "error" && f.Interface.(error) == expectedErr {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("expected error field with %v in fatal fields", expectedErr)
 	}
 }

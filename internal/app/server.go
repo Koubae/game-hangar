@@ -25,7 +25,7 @@ type Server interface {
 
 type App struct {
 	Config    *settings.Config
-	Logger    *zap.Logger
+	Logger    common.Logger
 	LogCloser func(tmpLogger *zap.Logger, logger *zap.Logger)
 	Server    Server
 }
@@ -64,11 +64,15 @@ func NewApp() *App {
 
 func (a *App) Start(ctx context.Context) {
 	loggerTmp, _ := common.CreateLogger(common.LogLevelInfo, "")
-	defer a.LogCloser(loggerTmp, a.Logger)
+	defer func() {
+		if z, ok := a.Logger.(*zap.Logger); ok {
+			a.LogCloser(loggerTmp, z)
+		}
+	}()
 
 	go func() {
 		if err := a.Server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Fatalf("Error while shutting down the server, error: %s", err)
+			a.Logger.Fatal("Server failed to start", zap.Error(err))
 		}
 	}()
 
