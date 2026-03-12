@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/joho/godotenv"
 	"github.com/koubae/game-hangar/pkg/common"
 	"go.uber.org/zap"
 )
@@ -19,6 +20,7 @@ import (
 const SHUTDOWN_GRACEFULLY_TIMEOUT_SECONDS = 10 * time.Second
 
 func RunServer() {
+	_ = godotenv.Load(".env")
 	// TODO: load .env file
 	logLevel := "info"
 	// -----------
@@ -40,7 +42,6 @@ func RunServer() {
 	}(logger)
 
 	mux := http.NewServeMux()
-
 	mux.HandleFunc(
 		"GET /{$}", func(w http.ResponseWriter, req *http.Request) {
 			w.WriteHeader(http.StatusOK)
@@ -69,7 +70,7 @@ func RunServer() {
 	}()
 
 	logger.Info(
-		"server started",
+		"Server started",
 		zap.String("addr", addr),
 		zap.String("env", "dev"),
 	)
