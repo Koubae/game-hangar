@@ -33,10 +33,10 @@ type Config struct {
 	ServerIdleTimeout          int
 	ServerShutdownGraceTimeout int
 	ServerMaxHeaderBytes       int
+	CORSConfig                 *common.CORSConfig
 
 	LogLevel    common.LogLevel
 	LogFilePath string
-	CORSConfig  *common.CORSConfig
 }
 
 func (c Config) GetAppURL() string {
@@ -66,7 +66,6 @@ func NewConfig(logger *zap.Logger) *Config {
 	appName := common.GetEnvString("APP_NAME", "unknown")
 	appVersion := common.GetEnvString("APP_VERSION", "0.0.1-dev")
 	appCommitID := common.GetEnvString("APP_COMMIT_ID", "")
-
 	env := Environment(common.GetEnvString("APP_ENV", string(EnvDev)))
 	if !slices.Contains(Environments[:], env) {
 		logger.Panic(fmt.Sprintf("Invalid APP_ENV: %s, supported envs are: %v", env, Environments))
@@ -75,7 +74,6 @@ func NewConfig(logger *zap.Logger) *Config {
 	// server
 	host := common.GetEnvString("APP_HOST", "")
 	port := common.GetEnvInt("APP_PORT", 8080)
-
 	serverReadTimeout := common.GetEnvInt("APP_SERVER_READ_TIMEOUT_SECONDS", 15)
 	serverWriteTimeout := common.GetEnvInt("APP_SERVER_WRITE_TIMEOUT_SECONDS", 15)
 	serverIdleTimeout := common.GetEnvInt("APP_SERVER_IDLE_TIMEOUT_SECONDS", 60)
