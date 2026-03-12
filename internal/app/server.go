@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"io"
-	"io/fs"
 	"log"
 	"net/http"
 	"os"
@@ -19,24 +18,11 @@ import (
 const SHUTDOWN_GRACEFULLY_TIMEOUT_SECONDS = 10 * time.Second
 
 func RunServer() {
-	loggerTmp := common.CreateLogger(common.LogLevelInfo, "")
+	loggerTmp, _ := common.CreateLogger(common.LogLevelInfo, "")
 	config := NewConfig(loggerTmp)
 
-	logger := common.CreateLogger(config.LogLevel, config.LogFilePath)
-	defer func(logger *zap.Logger) {
-		err := logger.Sync()
-		/*  Ignore some errors related to closing the logger.
-		@bug:
-			- https://github.com/uber-go/zap/issues/772
-			- https://github.com/uber-go/zap/issues/328
-		 Also, this seems to work:
-		!errors.Is(err, syscall.EINVAL)
-		*/
-		if _, ok := errors.AsType[*fs.PathError](err); !ok {
-			log.Fatalf("Error while shutting down logger, type=%T, error: %v", err, err)
-		}
-
-	}(logger)
+	logger, logCloser := common.CreateLogger(config.LogLevel, config.LogFilePath)
+	defer logCloser(loggerTmp, logger)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc(
