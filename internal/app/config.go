@@ -25,6 +25,7 @@ type Config struct {
 	AppName    string
 	AppVersion string
 	Env        Environment
+	LogLevel   common.LogLevel
 }
 
 func (c Config) GetAppURL() string {
@@ -51,11 +52,17 @@ func NewConfig() *Config {
 		panic(fmt.Sprintf("Invalid APP_ENV: %s, supported envs are: %v", env, Environments))
 	}
 
+	logLevel := common.LogLevel(common.GetEnvString("APP_LOG_LEVEL", string(common.LogLevelInfo)))
+	if !slices.Contains(common.LogLevels[:], logLevel) {
+		panic(fmt.Sprintf("Invalid LOG_LEVEL: %s, supported levels are: %v", logLevel, common.LogLevels))
+	}
+
 	config = &Config{
-		Host:    host,
-		Port:    port,
-		AppName: "game-hangar",
-		Env:     env,
+		Host:     host,
+		Port:     port,
+		AppName:  "game-hangar",
+		Env:      env,
+		LogLevel: logLevel,
 	}
 	return config
 }

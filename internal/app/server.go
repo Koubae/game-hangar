@@ -19,13 +19,9 @@ import (
 const SHUTDOWN_GRACEFULLY_TIMEOUT_SECONDS = 10 * time.Second
 
 func RunServer() {
-	// _ = godotenv.Load(".env")
 	config := NewConfig()
-	// TODO: load .env file
-	logLevel := "info"
-	// -----------
 
-	logger := common.CreateLogger(logLevel)
+	logger := common.CreateLogger(config.LogLevel)
 	defer func(logger *zap.Logger) {
 		err := logger.Sync()
 		/*  Ignore some errors related to closing the logger.
@@ -51,8 +47,6 @@ func RunServer() {
 			}
 		},
 	)
-
-	// addr := ":8080"
 
 	srv := http.Server{
 		Addr:         config.GetAppURL(),

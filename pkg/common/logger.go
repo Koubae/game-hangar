@@ -10,20 +10,31 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
-func CreateLogger(logLevel string) *zap.Logger {
+type LogLevel string
+
+const (
+	LogLevelDebug LogLevel = "debug"
+	LogLevelInfo  LogLevel = "info"
+	LogLevelWarn  LogLevel = "warn"
+	LogLevelError LogLevel = "error"
+)
+
+var LogLevels = [4]LogLevel{LogLevelDebug, LogLevelInfo, LogLevelWarn, LogLevelError}
+
+func CreateLogger(logLevel LogLevel) *zap.Logger {
 	stdout := zapcore.AddSync(os.Stdout)
 
 	file := zapcore.AddSync(
 		&lumberjack.Logger{
-			Filename:   "logs/app.log",
-			MaxSize:    10, // megabytes
+			Filename:   "logs/app.log", // TODO: this should be a config too.-
+			MaxSize:    10,             // megabytes
 			MaxBackups: 3,
 			MaxAge:     7, // days
 		},
 	)
 
 	zapLevel := zapcore.InfoLevel
-	switch strings.ToLower(logLevel) {
+	switch strings.ToLower(string(logLevel)) {
 	case "debug":
 		zapLevel = zapcore.DebugLevel
 	case "info":
