@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -22,12 +23,12 @@ const (
 var LogLevels = [4]LogLevel{LogLevelDebug, LogLevelInfo, LogLevelWarn, LogLevelError}
 
 func CreateLogger(logLevel LogLevel) *zap.Logger {
-	stdout := zapcore.AddSync(os.Stdout)
+	stdout := zapcore.Lock(zapcore.AddSync(os.Stdout))
 
 	file := zapcore.AddSync(
 		&lumberjack.Logger{
-			Filename:   "logs/app.log", // TODO: this should be a config too.-
-			MaxSize:    10,             // megabytes
+			Filename:   "/logs/app.log", // TODO: this should be a config too.-
+			MaxSize:    10,              // megabytes
 			MaxBackups: 3,
 			MaxAge:     7, // days
 		},
@@ -50,10 +51,11 @@ func CreateLogger(logLevel LogLevel) *zap.Logger {
 
 	productionCfg := zap.NewProductionEncoderConfig()
 	productionCfg.TimeKey = "timestamp"
-	productionCfg.EncodeTime = zapcore.ISO8601TimeEncoder
+	productionCfg.EncodeTime = utcTimeEncoder
 
 	developmentCfg := zap.NewDevelopmentEncoderConfig()
 	developmentCfg.EncodeLevel = zapcore.CapitalColorLevelEncoder
+	developmentCfg.EncodeTime = utcTimeEncoder
 
 	consoleEncoder := zapcore.NewConsoleEncoder(developmentCfg)
 	fileEncoder := zapcore.NewJSONEncoder(productionCfg)
@@ -64,4 +66,8 @@ func CreateLogger(logLevel LogLevel) *zap.Logger {
 	)
 
 	return zap.New(core, zap.AddStacktrace(zapcore.ErrorLevel))
+}
+
+func utcTimeEncoder(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
+	enc.AppendString(t.UTC().Format("2006-01-02T15:04:05.000Z"))
 }

@@ -6,6 +6,7 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/koubae/game-hangar/pkg/common"
+	"go.uber.org/zap"
 )
 
 type Environment string
@@ -41,7 +42,7 @@ func GetConfig() *Config {
 	return config
 }
 
-func NewConfig() *Config {
+func NewConfig(logger *zap.Logger) *Config {
 	_ = godotenv.Load(".env")
 
 	host := common.GetEnvString("APP_HOST", "")
@@ -49,12 +50,12 @@ func NewConfig() *Config {
 
 	env := Environment(common.GetEnvString("APP_ENV", string(EnvDev)))
 	if !slices.Contains(Environments[:], env) {
-		panic(fmt.Sprintf("Invalid APP_ENV: %s, supported envs are: %v", env, Environments))
+		logger.Panic(fmt.Sprintf("Invalid APP_ENV: %s, supported envs are: %v", env, Environments))
 	}
 
 	logLevel := common.LogLevel(common.GetEnvString("APP_LOG_LEVEL", string(common.LogLevelInfo)))
 	if !slices.Contains(common.LogLevels[:], logLevel) {
-		panic(fmt.Sprintf("Invalid LOG_LEVEL: %s, supported levels are: %v", logLevel, common.LogLevels))
+		logger.Panic(fmt.Sprintf("Invalid LOG_LEVEL: %s, supported levels are: %v", logLevel, common.LogLevels))
 	}
 
 	config = &Config{

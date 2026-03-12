@@ -19,7 +19,8 @@ import (
 const SHUTDOWN_GRACEFULLY_TIMEOUT_SECONDS = 10 * time.Second
 
 func RunServer() {
-	config := NewConfig()
+	loggerTmp := common.CreateLogger(common.LogLevelInfo)
+	config := NewConfig(loggerTmp)
 
 	logger := common.CreateLogger(config.LogLevel)
 	defer func(logger *zap.Logger) {
