@@ -1,8 +1,10 @@
 package app
 
 import (
+	"context"
 	"errors"
 	"io"
+	"io/fs"
 	"log"
 	"net/http"
 	"os"
@@ -13,6 +15,8 @@ import (
 	"github.com/koubae/game-hangar/pkg/common"
 	"go.uber.org/zap"
 )
+
+const SHUTDOWN_GRACEFULLY_TIMEOUT_SECONDS = 10 * time.Second
 
 func RunServer() {
 	// TODO: load .env file
@@ -62,14 +66,29 @@ func RunServer() {
 		zap.String("env", "dev"),
 	)
 
-	ch := make(chan os.Signal, 1)
-	signal.Notify(ch, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+	ctx, stop := signal.NotifyContext(
+		context.Background(),
+		os.Interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGHUP,
+	)
+	defer stop()
 
-	<-ch
+	<-ctx.Done()
+	// Restore default behavior on the interrupt signal and notify the user of shutdown.
+	stop()
 
-	logger.Info("Shutdown signal received, shutting down the server")
+	logger.Info(
+		"Shutdown signal received, Shutting down server gracefully... ",
+		zap.Duration("shutdown_gracefull_timeout", SHUTDOWN_GRACEFULLY_TIMEOUT_SECONDS),
+	)
+	ctx, cancel := context.WithTimeout(context.Background(), SHUTDOWN_GRACEFULLY_TIMEOUT_SECONDS)
+	defer cancel()
+	if err := srv.Shutdown(ctx); err != nil {
+		logger.Fatal("Server Shutdown Failed", zap.Error(err))
+	}
 
-	// clean up
+	logger.Info("Server has shutdown, cleaning up resources ...")
 
-	logger.Info("Server shutdown completed")
+	// TODO: clean up resources here...
+
+	logger.Info("Resource cleanup completed, terminating process...")
 }
