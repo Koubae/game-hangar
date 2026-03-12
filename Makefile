@@ -7,7 +7,11 @@
 # 	local
 # //////////////////////
 run-server-local:
+	@air -c .air.server.toml
+
+run-server-local-no-hot-reload:
 	@go run ./cmd/server/main.go
+
 
 # //////////////////////
 # 	docker
