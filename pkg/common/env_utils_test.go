@@ -171,6 +171,14 @@ func TestGetEnv(t *testing.T) {
 					want:       true,
 					panics:     true,
 				},
+				{
+					name:       "missing env returns default",
+					envKey:     "",
+					envValue:   "",
+					defaultVal: true,
+					want:       true,
+					panics:     false,
+				},
 			}
 
 			for _, tt := range tests {

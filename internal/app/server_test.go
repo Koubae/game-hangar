@@ -75,7 +75,6 @@ type MockServer struct {
 	ListenAndServeFunc func() error
 	ShutdownFunc       func(ctx context.Context) error
 	HandlerFunc        func() http.Handler
-	SetHandlerFunc     func(h http.Handler)
 }
 
 func (m *MockServer) ListenAndServe() error {
@@ -97,12 +96,6 @@ func (m *MockServer) Handler() http.Handler {
 		return m.HandlerFunc()
 	}
 	return nil
-}
-
-func (m *MockServer) SetHandler(h http.Handler) {
-	if m.SetHandlerFunc != nil {
-		m.SetHandlerFunc(h)
-	}
 }
 
 func TestAppStopError(t *testing.T) {

@@ -21,7 +21,6 @@ type Server interface {
 	ListenAndServe() error
 	Shutdown(ctx context.Context) error
 	Handler() http.Handler
-	SetHandler(h http.Handler)
 }
 
 type App struct {
@@ -37,10 +36,6 @@ type httpServerWrapper struct {
 
 func (s *httpServerWrapper) Handler() http.Handler {
 	return s.Server.Handler
-}
-
-func (s *httpServerWrapper) SetHandler(h http.Handler) {
-	s.Server.Handler = h
 }
 
 func NewApp() *App {
