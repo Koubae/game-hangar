@@ -16,8 +16,6 @@ import (
 	"go.uber.org/zap"
 )
 
-const SHUTDOWN_GRACEFULLY_TIMEOUT_SECONDS = 10 * time.Second
-
 func RunServer() {
 	loggerTmp, _ := common.CreateLogger(common.LogLevelInfo, "")
 	config := NewConfig(loggerTmp)
@@ -47,10 +45,10 @@ func RunServer() {
 
 	srv := http.Server{
 		Addr:           config.GetAppURL(),
-		ReadTimeout:    15 * time.Second,
-		WriteTimeout:   15 * time.Second,
-		IdleTimeout:    60 * time.Second,
-		MaxHeaderBytes: 5120,
+		ReadTimeout:    time.Duration(config.ServerReadTimeout) * time.Second,
+		WriteTimeout:   time.Duration(config.ServerWriteTimeout) * time.Second,
+		IdleTimeout:    time.Duration(config.ServerIdleTimeout) * time.Second,
+		MaxHeaderBytes: config.ServerMaxHeaderBytes,
 		Handler:        handler,
 	}
 
@@ -76,11 +74,12 @@ func RunServer() {
 	// Restore default behavior on the interrupt signal and notify the user of shutdown.
 	stop()
 
+	serverShutdownGraceTimeout := time.Duration(config.ServerShutdownGraceTimeout) * time.Second
 	logger.Info(
 		"Shutdown signal received, Shutting down server gracefully... ",
-		zap.Duration("shutdown_gracefull_timeout", SHUTDOWN_GRACEFULLY_TIMEOUT_SECONDS),
+		zap.Duration("shutdown_gracefull_timeout", serverShutdownGraceTimeout),
 	)
-	ctx, cancel := context.WithTimeout(context.Background(), SHUTDOWN_GRACEFULLY_TIMEOUT_SECONDS)
+	ctx, cancel := context.WithTimeout(context.Background(), serverShutdownGraceTimeout)
 	defer cancel()
 	if err := srv.Shutdown(ctx); err != nil {
 		logger.Fatal("Server Shutdown Failed", zap.Error(err))
