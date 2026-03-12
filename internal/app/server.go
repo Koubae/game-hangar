@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/koubae/game-hangar/pkg/common"
+	"github.com/koubae/game-hangar/pkg/middleware"
 	"github.com/rs/cors"
 	"go.uber.org/zap"
 )
@@ -43,6 +44,8 @@ func RunServer() {
 			AllowCredentials: config.CORSConfig.AllowCredentials,
 		},
 	).Handler(mux)
+	handler = middleware.AccessLogger(logger, handler)
+	handler = middleware.RecoveryMiddleware(logger, handler)
 
 	srv := http.Server{
 		Addr:           config.GetAppURL(),
