@@ -16,8 +16,13 @@ var (
 	errPool   error
 )
 
+type poolInterface interface {
+	Ping(ctx context.Context) error
+	Close()
+}
+
 type ConnectorPostgres struct {
-	*pgxpool.Pool
+	Pool   poolInterface
 	config *DatabasePostgresConfig
 }
 
@@ -26,9 +31,6 @@ func (c *ConnectorPostgres) String() string {
 }
 
 func (c *ConnectorPostgres) Ping(ctx context.Context) error {
-	if ctx == nil {
-		ctx = context.Background()
-	}
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
@@ -71,7 +73,7 @@ func NewConnector(baseConfig *DatabasePostgresConfig) (*ConnectorPostgres, error
 
 			errPool = connector.Ping(context.Background())
 			if errPool != nil {
-				connector.Close()
+				connector.Shutdown()
 				connector = nil
 				return
 			}

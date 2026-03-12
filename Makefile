@@ -50,7 +50,7 @@ update-env-file:
 # 	Tests
 # ============================
 COVERAGE_THRESHOLD ?= 80
-COVERAGE_PKGS := $(shell go list ./... | grep -v '/internal/mocks' | grep -v '/pkg/generated' | grep -v '/cmd/demo' | grep -v '/cmd/server' | grep -v '/internal/run')
+COVERAGE_PKGS := $(shell go list ./... | grep -v '/internal/mocks' | grep -v '/pkg/generated' | grep -v '/cmd/demo' | grep -v '/cmd' | grep -v '/internal/run')
 
 test-unit:
 	go test -v $(COVERAGE_PKGS) -cover

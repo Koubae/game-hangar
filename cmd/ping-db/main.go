@@ -24,7 +24,7 @@ func main() {
 	} else if dbPool == nil {
 		logger.Fatal("Database connection pool is nil...")
 	}
-	defer dbPool.Close()
+	defer dbPool.Shutdown()
 
 	logger.Info("database connection established... ", zap.String("dbConfig", dbConfig.String()))
 
