@@ -11,12 +11,36 @@ import (
 )
 
 var (
-	once    sync.Once
-	pool    *pgxpool.Pool
-	errPool error
+	once      sync.Once
+	connector *ConnectorPostgres
+	errPool   error
 )
 
-func NewConnector(baseConfig *DatabasePostgresConfig) (*pgxpool.Pool, error) {
+type ConnectorPostgres struct {
+	*pgxpool.Pool
+	config *DatabasePostgresConfig
+}
+
+func (c *ConnectorPostgres) String() string {
+	return c.config.String()
+}
+
+func (c *ConnectorPostgres) Ping(ctx context.Context) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	return c.Pool.Ping(ctx)
+}
+
+func (c *ConnectorPostgres) Shutdown() error {
+	c.Pool.Close()
+	return nil
+}
+
+func NewConnector(baseConfig *DatabasePostgresConfig) (*ConnectorPostgres, error) {
 	once.Do(
 		func() {
 			config, err := pgxpool.ParseConfig(baseConfig.GetConnectionString())
@@ -34,21 +58,24 @@ func NewConnector(baseConfig *DatabasePostgresConfig) (*pgxpool.Pool, error) {
 
 			// 3. Create the connection pool
 			// Note: NewWithConfig does not immediately connect to the DB
-			pool, err = pgxpool.NewWithConfig(context.Background(), config)
+			pool, err := pgxpool.NewWithConfig(context.Background(), config)
 			if err != nil {
-				pool = nil
+				errPool = err
 				return
 			}
 
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-			defer cancel()
-			errPool = pool.Ping(ctx)
+			connector = &ConnectorPostgres{
+				Pool:   pool,
+				config: baseConfig,
+			}
+
+			errPool = connector.Ping(context.Background())
 			if errPool != nil {
-				pool.Close()
-				pool = nil
+				connector.Close()
+				connector = nil
 				return
 			}
 		},
 	)
-	return pool, errPool
+	return connector, errPool
 }

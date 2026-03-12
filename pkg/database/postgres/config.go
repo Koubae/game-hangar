@@ -7,6 +7,11 @@ import (
 	"github.com/koubae/game-hangar/pkg/common"
 )
 
+var (
+	onceConfig sync.Once
+	config     *DatabasePostgresConfig
+)
+
 type DatabasePostgresConfig struct {
 	Driver                string
 	Database              string
@@ -22,11 +27,10 @@ type DatabasePostgresConfig struct {
 	MaxConnectionIdleTime int32 // MaxConnIdleTime: Closes connections that haven't been used recently
 }
 
-var (
-	onceConfig sync.Once
-	config     *DatabasePostgresConfig
-	errConfig  error
-)
+func (c *DatabasePostgresConfig) String() string {
+	return fmt.Sprintf("DB[%s] database:%s connected @ %s:%d", c.Driver, c.Database, c.host, c.port)
+
+}
 
 // GetConnectionString
 // @example

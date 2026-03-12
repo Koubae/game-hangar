@@ -26,6 +26,6 @@ func main() {
 	}
 	defer dbPool.Close()
 
-	logger.Info("database connection established... ")
+	logger.Info("database connection established... ", zap.String("dbConfig", dbConfig.String()))
 
 }
