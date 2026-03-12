@@ -17,11 +17,30 @@ import (
 	"go.uber.org/zap"
 )
 
+type Server interface {
+	ListenAndServe() error
+	Shutdown(ctx context.Context) error
+	Handler() http.Handler
+	SetHandler(h http.Handler)
+}
+
 type App struct {
 	Config    *settings.Config
 	Logger    *zap.Logger
 	LogCloser func(tmpLogger *zap.Logger, logger *zap.Logger)
-	Server    *http.Server
+	Server    Server
+}
+
+type httpServerWrapper struct {
+	*http.Server
+}
+
+func (s *httpServerWrapper) Handler() http.Handler {
+	return s.Server.Handler
+}
+
+func (s *httpServerWrapper) SetHandler(h http.Handler) {
+	s.Server.Handler = h
 }
 
 func NewApp() *App {
@@ -44,11 +63,11 @@ func NewApp() *App {
 		Config:    config,
 		Logger:    logger,
 		LogCloser: logCloser,
-		Server:    srv,
+		Server:    &httpServerWrapper{srv},
 	}
 }
 
-func (a *App) Start() {
+func (a *App) Start(ctx context.Context) {
 	loggerTmp, _ := common.CreateLogger(common.LogLevelInfo, "")
 	defer a.LogCloser(loggerTmp, a.Logger)
 
@@ -64,19 +83,18 @@ func (a *App) Start() {
 		zap.String("env", string(a.Config.Env)),
 	)
 
-	ctx, stop := signal.NotifyContext(
-		context.Background(),
+	sigCtx, stop := signal.NotifyContext(
+		ctx,
 		os.Interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGHUP,
 	)
 	defer stop()
 
-	<-ctx.Done()
+	<-sigCtx.Done()
 	// Restore default behavior on the interrupt signal and notify the user of shutdown.
 	stop()
-
 }
 
-func (a *App) Stop() {
+func (a *App) Stop() error {
 	serverShutdownGraceTimeout := time.Duration(a.Config.ServerShutdownGraceTimeout) * time.Second
 	a.Logger.Info(
 		"Shutdown signal received, Shutting down server gracefully... ",
@@ -85,7 +103,8 @@ func (a *App) Stop() {
 	ctx, cancel := context.WithTimeout(context.Background(), serverShutdownGraceTimeout)
 	defer cancel()
 	if err := a.Server.Shutdown(ctx); err != nil {
-		a.Logger.Fatal("Server Shutdown Failed", zap.Error(err))
+		a.Logger.Error("Server Shutdown Failed", zap.Error(err))
+		return err
 	}
 
 	a.Logger.Info("Server has shutdown, cleaning up resources ...")
@@ -93,10 +112,13 @@ func (a *App) Stop() {
 	// TODO: clean up resources here...
 
 	a.Logger.Info("Resource cleanup completed, terminating process...")
+	return nil
 }
 
 func RunServer() {
 	app := NewApp()
-	app.Start()
-	app.Stop()
+	app.Start(context.Background())
+	if err := app.Stop(); err != nil {
+		log.Fatalf("Error while shutting down the server, error: %s", err)
+	}
 }
