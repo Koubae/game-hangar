@@ -53,14 +53,14 @@ COVERAGE_THRESHOLD ?= 80
 COVERAGE_PKGS := $(shell go list ./... | grep -v '/internal/mocks' | grep -v '/pkg/generated' | grep -v '/cmd/demo' | grep -v '/cmd' | grep -v '/internal/run')
 
 test-unit:
-	go test -v $(COVERAGE_PKGS) -cover
+	go test -v -short $(COVERAGE_PKGS) -cover
 
 # TODO: Check whether there is a better way to do this. This was AI generated and seems a mess
 # Intention here is:
 #	1) Ignore certain folders (COVERAGE_PKGS should list ONLY the actual go module that are testable)
 #	2) Spit an coverage.out and translate to html
 #	3) Grabs the total and then checks the coverage threshold is greater or equal the threshold)
-test-unit-html:
+test-all-coverage-html:
 	@go test -v $(COVERAGE_PKGS) -coverprofile=coverage.out && \
 	go tool cover -o coverage.html -html=coverage.out && \
 	coverage=$$(go tool cover -func=coverage.out | grep total: | awk '{print $$3}' | sed 's/%//'); \
