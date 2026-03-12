@@ -7,7 +7,7 @@
 # 	local
 # //////////////////////
 run-server-local:
-	@go run ./cmd/main.go
+	@go run ./cmd/server/main.go
 
 # //////////////////////
 # 	docker
