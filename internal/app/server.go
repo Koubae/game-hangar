@@ -38,6 +38,14 @@ func (s *httpServerWrapper) Handler() http.Handler {
 	return s.Server.Handler
 }
 
+func RunServer() {
+	app := NewApp()
+	app.Start(context.Background())
+	if err := app.Stop(); err != nil {
+		log.Fatalf("Error while shutting down the server, error: %s", err)
+	}
+}
+
 func NewApp() *App {
 	loggerTmp, _ := common.CreateLogger(common.LogLevelInfo, "")
 	config := settings.NewConfig(loggerTmp)
@@ -112,12 +120,4 @@ func (a *App) Stop() error {
 
 	a.Logger.Info("Resource cleanup completed, terminating process...")
 	return nil
-}
-
-func RunServer() {
-	app := NewApp()
-	app.Start(context.Background())
-	if err := app.Stop(); err != nil {
-		log.Fatalf("Error while shutting down the server, error: %s", err)
-	}
 }
