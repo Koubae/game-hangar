@@ -26,9 +26,17 @@ func RunServer() {
 	logger := common.CreateLogger(logLevel)
 	defer func(logger *zap.Logger) {
 		err := logger.Sync()
-		if err != nil {
-			log.Fatal(err)
+		/*  Ignore some errors related to closing the logger.
+		@bug:
+			- https://github.com/uber-go/zap/issues/772
+			- https://github.com/uber-go/zap/issues/328
+		 Also, this seems to work:
+		!errors.Is(err, syscall.EINVAL)
+		*/
+		if _, ok := errors.AsType[*fs.PathError](err); !ok {
+			log.Fatalf("Error while shutting down logger, type=%T, error: %v", err, err)
 		}
+
 	}(logger)
 
 	mux := http.NewServeMux()
