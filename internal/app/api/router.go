@@ -11,9 +11,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func Router(logger *zap.Logger) *http.Handler {
-	config := settings.GetConfig()
-
+func Router(logger *zap.Logger, config *settings.Config) *http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc(
 		"GET /{$}", func(w http.ResponseWriter, req *http.Request) {

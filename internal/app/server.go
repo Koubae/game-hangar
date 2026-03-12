@@ -17,15 +17,21 @@ import (
 	"go.uber.org/zap"
 )
 
-func RunServer() {
+type App struct {
+	Config    *settings.Config
+	Logger    *zap.Logger
+	LogCloser func(tmpLogger *zap.Logger, logger *zap.Logger)
+	Server    *http.Server
+}
+
+func NewApp() *App {
 	loggerTmp, _ := common.CreateLogger(common.LogLevelInfo, "")
 	config := settings.NewConfig(loggerTmp)
 
 	logger, logCloser := common.CreateLogger(config.LogLevel, config.LogFilePath)
-	defer logCloser(loggerTmp, logger)
 
-	routerHandler := api.Router(logger)
-	srv := http.Server{
+	routerHandler := api.Router(logger, config)
+	srv := &http.Server{
 		Addr:           config.GetAppURL(),
 		ReadTimeout:    time.Duration(config.ServerReadTimeout) * time.Second,
 		WriteTimeout:   time.Duration(config.ServerWriteTimeout) * time.Second,
@@ -34,16 +40,28 @@ func RunServer() {
 		Handler:        *routerHandler,
 	}
 
+	return &App{
+		Config:    config,
+		Logger:    logger,
+		LogCloser: logCloser,
+		Server:    srv,
+	}
+}
+
+func (a *App) Start() {
+	loggerTmp, _ := common.CreateLogger(common.LogLevelInfo, "")
+	defer a.LogCloser(loggerTmp, a.Logger)
+
 	go func() {
-		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		if err := a.Server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Fatalf("Error while shutting down the server, error: %s", err)
 		}
 	}()
 
-	logger.Info(
-		fmt.Sprintf("Server started on %s -- App: %s", config.GetAppURL(), config.GetFullName()),
-		zap.String("addr", config.GetAppURL()),
-		zap.String("env", string(config.Env)),
+	a.Logger.Info(
+		fmt.Sprintf("Server started on %s -- App: %s", a.Config.GetAppURL(), a.Config.GetFullName()),
+		zap.String("addr", a.Config.GetAppURL()),
+		zap.String("env", string(a.Config.Env)),
 	)
 
 	ctx, stop := signal.NotifyContext(
@@ -56,20 +74,29 @@ func RunServer() {
 	// Restore default behavior on the interrupt signal and notify the user of shutdown.
 	stop()
 
-	serverShutdownGraceTimeout := time.Duration(config.ServerShutdownGraceTimeout) * time.Second
-	logger.Info(
+}
+
+func (a *App) Stop() {
+	serverShutdownGraceTimeout := time.Duration(a.Config.ServerShutdownGraceTimeout) * time.Second
+	a.Logger.Info(
 		"Shutdown signal received, Shutting down server gracefully... ",
 		zap.Duration("shutdown_gracefull_timeout", serverShutdownGraceTimeout),
 	)
 	ctx, cancel := context.WithTimeout(context.Background(), serverShutdownGraceTimeout)
 	defer cancel()
-	if err := srv.Shutdown(ctx); err != nil {
-		logger.Fatal("Server Shutdown Failed", zap.Error(err))
+	if err := a.Server.Shutdown(ctx); err != nil {
+		a.Logger.Fatal("Server Shutdown Failed", zap.Error(err))
 	}
 
-	logger.Info("Server has shutdown, cleaning up resources ...")
+	a.Logger.Info("Server has shutdown, cleaning up resources ...")
 
 	// TODO: clean up resources here...
 
-	logger.Info("Resource cleanup completed, terminating process...")
+	a.Logger.Info("Resource cleanup completed, terminating process...")
+}
+
+func RunServer() {
+	app := NewApp()
+	app.Start()
+	app.Stop()
 }
