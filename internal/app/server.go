@@ -12,7 +12,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/joho/godotenv"
 	"github.com/koubae/game-hangar/pkg/common"
 	"go.uber.org/zap"
 )
@@ -20,7 +19,8 @@ import (
 const SHUTDOWN_GRACEFULLY_TIMEOUT_SECONDS = 10 * time.Second
 
 func RunServer() {
-	_ = godotenv.Load(".env")
+	// _ = godotenv.Load(".env")
+	config := NewConfig()
 	// TODO: load .env file
 	logLevel := "info"
 	// -----------
@@ -52,10 +52,10 @@ func RunServer() {
 		},
 	)
 
-	addr := ":8080"
+	// addr := ":8080"
 
 	srv := http.Server{
-		Addr:         addr,
+		Addr:         config.GetAppURL(),
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
 		// Use CrossOriginProtection.Handler to block all non-safe cross-origin
@@ -71,8 +71,8 @@ func RunServer() {
 
 	logger.Info(
 		"Server started",
-		zap.String("addr", addr),
-		zap.String("env", "dev"),
+		zap.String("addr", config.GetAppURL()),
+		zap.String("env", string(config.Env)),
 	)
 
 	ctx, stop := signal.NotifyContext(
