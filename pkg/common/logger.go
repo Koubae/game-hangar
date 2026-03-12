@@ -27,12 +27,78 @@ const (
 var LogLevels = [4]LogLevel{LogLevelDebug, LogLevelInfo, LogLevelWarn, LogLevelError}
 
 type Logger interface {
+	Debug(msg string, fields ...zap.Field)
 	Info(msg string, fields ...zap.Field)
+	Warn(msg string, fields ...zap.Field)
 	Error(msg string, fields ...zap.Field)
 	Fatal(msg string, fields ...zap.Field)
+	Panic(msg string, fields ...zap.Field)
 }
 
-func CreateLogger(logLevel LogLevel, filePath string) (*zap.Logger, func(loggerTmp *zap.Logger, logger *zap.Logger)) {
+type AppLogger struct {
+	*zap.Logger
+}
+
+func (l *AppLogger) Debug(msg string, fields ...zap.Field) {
+	l.Logger.Debug(msg, fields...)
+}
+
+func (l *AppLogger) Info(msg string, fields ...zap.Field) {
+	l.Logger.Info(msg, fields...)
+}
+
+func (l *AppLogger) Warn(msg string, fields ...zap.Field) {
+	l.Logger.Warn(msg, fields...)
+}
+
+func (l *AppLogger) Error(msg string, fields ...zap.Field) {
+	l.Logger.Error(msg, fields...)
+}
+
+func (l *AppLogger) Fatal(msg string, fields ...zap.Field) {
+	l.Logger.Fatal(msg, fields...)
+}
+
+func (l *AppLogger) Panic(msg string, fields ...zap.Field) {
+	l.Logger.Panic(msg, fields...)
+}
+
+func (l *AppLogger) logCloser(loggerTmp *AppLogger) {
+	err := l.Logger.Sync()
+	if err == nil {
+		return
+	}
+	/*  Ignore some errors related to closing the logger.
+	@bug:
+		- https://github.com/uber-go/zap/issues/772
+		- https://github.com/uber-go/zap/issues/328
+	 Also, this seems to work:
+	!errors.Is(err, syscall.EINVAL)
+	*/
+	if _, ok := errors.AsType[*fs.PathError](err); !ok {
+		loggerTmp.Error(
+			"Error while shutting down logger",
+			zap.String("type", fmt.Sprintf("%T", err)),
+			zap.Error(err),
+		)
+	}
+}
+
+func (l *AppLogger) LogCloser(loggerTmp Logger, z *zap.Logger) {
+	err := z.Sync()
+	if err == nil {
+		return
+	}
+	if _, ok := errors.AsType[*fs.PathError](err); !ok {
+		loggerTmp.Error(
+			"Error while shutting down logger",
+			zap.String("type", fmt.Sprintf("%T", err)),
+			zap.Error(err),
+		)
+	}
+}
+
+func CreateLogger(logLevel LogLevel, filePath string) *AppLogger {
 	stdout := zapcore.Lock(zapcore.AddSync(os.Stdout))
 
 	var fileWriter zapcore.WriteSyncer
@@ -73,7 +139,12 @@ func CreateLogger(logLevel LogLevel, filePath string) (*zap.Logger, func(loggerT
 		zapcore.NewCore(fileEncoder, fileWriter, level),
 	)
 
-	return zap.New(core, zap.AddStacktrace(zapcore.ErrorLevel)), logCloser
+	logger := zap.New(core, zap.AddStacktrace(zapcore.ErrorLevel))
+
+	appLogger := &AppLogger{
+		Logger: logger,
+	}
+	return appLogger
 }
 
 func utcTimeEncoder(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
@@ -86,7 +157,11 @@ func createFileLoggerWriter(filePath string) *lumberjack.Logger {
 
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		if err := os.MkdirAll(dir, 0o755); err != nil {
-			logger.Panic(fmt.Sprintf("failed to create log directory %q, error: %v", dir, err))
+			logger.Panic(
+				"failed to create log directory",
+				zap.String("dir", dir),
+				zap.Error(err),
+			)
 		}
 	}
 
@@ -95,27 +170,5 @@ func createFileLoggerWriter(filePath string) *lumberjack.Logger {
 		MaxSize:    10, // megabytes
 		MaxBackups: 3,
 		MaxAge:     7, // days
-	}
-}
-
-func logCloser(loggerTmp *zap.Logger, logger *zap.Logger) {
-	err := logger.Sync()
-	if err == nil {
-		return
-	}
-
-	/*  Ignore some errors related to closing the logger.
-	@bug:
-		- https://github.com/uber-go/zap/issues/772
-		- https://github.com/uber-go/zap/issues/328
-	 Also, this seems to work:
-	!errors.Is(err, syscall.EINVAL)
-	*/
-	if _, ok := errors.AsType[*fs.PathError](err); !ok {
-		loggerTmp.Error(
-			"Error while shutting down logger",
-			zap.String("type", fmt.Sprintf("%T", err)),
-			zap.Error(err),
-		)
 	}
 }

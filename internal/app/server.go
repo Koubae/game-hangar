@@ -3,7 +3,6 @@ package app
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -23,10 +22,9 @@ type Server interface {
 }
 
 type App struct {
-	Config    *settings.Config
-	Logger    common.Logger
-	LogCloser func(tmpLogger *zap.Logger, logger *zap.Logger)
-	Server    Server
+	Config *settings.Config
+	Logger common.Logger
+	Server Server
 }
 
 type httpServerWrapper struct {
@@ -38,10 +36,10 @@ func (s *httpServerWrapper) Handler() http.Handler {
 }
 
 func NewApp() *App {
-	loggerTmp, _ := common.CreateLogger(common.LogLevelInfo, "")
+	loggerTmp := common.CreateLogger(common.LogLevelInfo, "")
 	config := settings.NewConfig(loggerTmp)
 
-	logger, logCloser := common.CreateLogger(config.LogLevel, config.LogFilePath)
+	logger := common.CreateLogger(config.LogLevel, config.LogFilePath)
 
 	routerHandler := api.Router(logger, config)
 	srv := &http.Server{
@@ -54,18 +52,17 @@ func NewApp() *App {
 	}
 
 	return &App{
-		Config:    config,
-		Logger:    logger,
-		LogCloser: logCloser,
-		Server:    &httpServerWrapper{srv},
+		Config: config,
+		Logger: logger,
+		Server: &httpServerWrapper{srv},
 	}
 }
 
 func (a *App) Start(ctx context.Context) {
-	loggerTmp, _ := common.CreateLogger(common.LogLevelInfo, "")
+	loggerTmp := common.CreateLogger(common.LogLevelInfo, "")
 	defer func() {
-		if z, ok := a.Logger.(*zap.Logger); ok {
-			a.LogCloser(loggerTmp, z)
+		if z, ok := a.Logger.(*common.AppLogger); ok {
+			z.LogCloser(loggerTmp, z.Logger)
 		}
 	}()
 
@@ -76,8 +73,9 @@ func (a *App) Start(ctx context.Context) {
 	}()
 
 	a.Logger.Info(
-		fmt.Sprintf("Server started on %s -- App: %s", a.Config.GetAppURL(), a.Config.GetFullName()),
+		"Server started",
 		zap.String("addr", a.Config.GetAppURL()),
+		zap.String("app", a.Config.GetFullName()),
 		zap.String("env", string(a.Config.Env)),
 	)
 

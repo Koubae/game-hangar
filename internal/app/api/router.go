@@ -6,12 +6,12 @@ import (
 	"net/http"
 
 	"github.com/koubae/game-hangar/internal/app/settings"
+	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/middleware"
 	"github.com/rs/cors"
-	"go.uber.org/zap"
 )
 
-func Router(logger *zap.Logger, config *settings.Config) *http.Handler {
+func Router(logger common.Logger, config *settings.Config) *http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc(
 		"GET /{$}", func(w http.ResponseWriter, req *http.Request) {

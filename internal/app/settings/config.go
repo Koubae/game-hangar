@@ -60,7 +60,7 @@ func GetConfig() *Config {
 	return config
 }
 
-func NewConfig(logger *zap.Logger) *Config {
+func NewConfig(logger common.Logger) *Config {
 	_ = godotenv.Load(".env")
 
 	appName := common.GetEnvString("APP_NAME", "unknown")
@@ -68,7 +68,11 @@ func NewConfig(logger *zap.Logger) *Config {
 	appCommitID := common.GetEnvString("APP_COMMIT_ID", "")
 	env := Environment(common.GetEnvString("APP_ENV", string(EnvDev)))
 	if !slices.Contains(Environments[:], env) {
-		logger.Panic(fmt.Sprintf("Invalid APP_ENV: %s, supported envs are: %v", env, Environments))
+		logger.Panic(
+			"Invalid APP_ENV",
+			zap.String("env", string(env)),
+			zap.Any("supported_envs", Environments),
+		)
 	}
 
 	// server
@@ -82,7 +86,11 @@ func NewConfig(logger *zap.Logger) *Config {
 
 	logLevel := common.LogLevel(common.GetEnvString("APP_LOG_LEVEL", string(common.LogLevelInfo)))
 	if !slices.Contains(common.LogLevels[:], logLevel) {
-		logger.Panic(fmt.Sprintf("Invalid LOG_LEVEL: %s, supported levels are: %v", logLevel, common.LogLevels))
+		logger.Panic(
+			"Invalid LOG_LEVEL",
+			zap.String("log_level", string(logLevel)),
+			zap.Any("supported_levels", common.LogLevels),
+		)
 	}
 	logFilePath := common.GetEnvString("APP_LOG_FILE", "logs/app.log")
 

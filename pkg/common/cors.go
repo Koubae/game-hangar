@@ -26,7 +26,7 @@ var httpMethods = [9]string{
 	http.MethodTrace,
 }
 
-func NewCors(logger *zap.Logger) *CORSConfig {
+func NewCors(logger Logger) *CORSConfig {
 	allowedOrigins := GetEnvStringSlice("APP_CORS_ALLOWED_ORIGINS", []string{"*"})
 	allowedMethods := GetEnvStringSlice("APP_CORS_ALLOWED_METHODS", []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"})
 	allowedHeaders := GetEnvStringSlice("APP_CORS_ALLOWED_HEADERS", []string{"Origin", "Content-Type", "Authorization"})

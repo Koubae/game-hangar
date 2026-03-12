@@ -106,8 +106,11 @@ type MockLogger struct {
 	FatalFields []zap.Field
 }
 
+func (m *MockLogger) Debug(msg string, fields ...zap.Field) {}
 func (m *MockLogger) Info(msg string, fields ...zap.Field)  {}
+func (m *MockLogger) Warn(msg string, fields ...zap.Field)  {}
 func (m *MockLogger) Error(msg string, fields ...zap.Field) {}
+func (m *MockLogger) Panic(msg string, fields ...zap.Field) {}
 func (m *MockLogger) Fatal(msg string, fields ...zap.Field) {
 	m.FatalCalled = true
 	m.FatalMsg = msg
