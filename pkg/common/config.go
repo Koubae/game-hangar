@@ -1,11 +1,10 @@
-package settings
+package common
 
 import (
 	"fmt"
 	"slices"
 
 	"github.com/joho/godotenv"
-	"github.com/koubae/game-hangar/pkg/common"
 	"go.uber.org/zap"
 )
 
@@ -33,9 +32,9 @@ type Config struct {
 	ServerIdleTimeout          int
 	ServerShutdownGraceTimeout int
 	ServerMaxHeaderBytes       int
-	CORSConfig                 *common.CORSConfig
+	CORSConfig                 *CORSConfig
 
-	LogLevel    common.LogLevel
+	LogLevel    LogLevel
 	LogFilePath string
 }
 
@@ -60,13 +59,13 @@ func GetConfig() *Config {
 	return config
 }
 
-func NewConfig(logger common.Logger) *Config {
+func NewConfig(logger Logger, envPrefix string) *Config {
 	_ = godotenv.Load(".env")
 
-	appName := common.GetEnvString("APP_NAME", "unknown")
-	appVersion := common.GetEnvString("APP_VERSION", "0.0.1-dev")
-	appCommitID := common.GetEnvString("APP_COMMIT_ID", "")
-	env := Environment(common.GetEnvString("APP_ENV", string(EnvDev)))
+	appName := GetEnvString(envPrefix+"APP_NAME", "unknown")
+	appVersion := GetEnvString(envPrefix+"APP_VERSION", "0.0.1-dev")
+	appCommitID := GetEnvString(envPrefix+"APP_COMMIT_ID", "")
+	env := Environment(GetEnvString(envPrefix+"APP_ENV", string(EnvDev)))
 	if !slices.Contains(Environments[:], env) {
 		logger.Panic(
 			"Invalid APP_ENV",
@@ -76,25 +75,25 @@ func NewConfig(logger common.Logger) *Config {
 	}
 
 	// server
-	host := common.GetEnvString("APP_HOST", "")
-	port := common.GetEnvInt("APP_PORT", 8080)
-	serverReadTimeout := common.GetEnvInt("APP_SERVER_READ_TIMEOUT_SECONDS", 15)
-	serverWriteTimeout := common.GetEnvInt("APP_SERVER_WRITE_TIMEOUT_SECONDS", 15)
-	serverIdleTimeout := common.GetEnvInt("APP_SERVER_IDLE_TIMEOUT_SECONDS", 60)
-	serverShutdownGraceTimeout := common.GetEnvInt("APP_SERVER_SHUTDOWN_GRACE_TIMEOUT_SECONDS", 10)
-	serverMaxHeaderBytes := common.GetEnvInt("APP_SERVER_MAX_HEADER_BYTES", 8192)
+	host := GetEnvString(envPrefix+"APP_SERVER_HOST", "")
+	port := GetEnvInt(envPrefix+"APP_SERVER_PORT", 8080)
+	serverReadTimeout := GetEnvInt(envPrefix+"APP_SERVER_READ_TIMEOUT_SECONDS", 15)
+	serverWriteTimeout := GetEnvInt(envPrefix+"APP_SERVER_WRITE_TIMEOUT_SECONDS", 15)
+	serverIdleTimeout := GetEnvInt(envPrefix+"APP_SERVER_IDLE_TIMEOUT_SECONDS", 60)
+	serverShutdownGraceTimeout := GetEnvInt(envPrefix+"APP_SERVER_SHUTDOWN_GRACE_TIMEOUT_SECONDS", 10)
+	serverMaxHeaderBytes := GetEnvInt(envPrefix+"APP_SERVER_MAX_HEADER_BYTES", 8192)
 
-	logLevel := common.LogLevel(common.GetEnvString("APP_LOG_LEVEL", string(common.LogLevelInfo)))
-	if !slices.Contains(common.LogLevels[:], logLevel) {
+	logLevel := LogLevel(GetEnvString(envPrefix+"APP_LOG_LEVEL", string(LogLevelInfo)))
+	if !slices.Contains(LogLevels[:], logLevel) {
 		logger.Panic(
 			"Invalid LOG_LEVEL",
 			zap.String("log_level", string(logLevel)),
-			zap.Any("supported_levels", common.LogLevels),
+			zap.Any("supported_levels", LogLevels),
 		)
 	}
-	logFilePath := common.GetEnvString("APP_LOG_FILE", "logs/app.log")
+	logFilePath := GetEnvString(envPrefix+"APP_LOG_FILE", "logs/app.log")
 
-	corsConfig := common.NewCors(logger)
+	corsConfig := NewCors(logger)
 
 	config = &Config{
 		AppName:                    appName,

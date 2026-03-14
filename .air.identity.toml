@@ -4,17 +4,17 @@ tmp_dir = "tmp"
 
 [build]
 args_bin = []
-bin = "./tmp/server/main"
-cmd = "go build -o ./tmp/server/main ./cmd/server"
+bin = "./tmp/identity/main"
+cmd = "go build -o ./tmp/identity/main ./cmd/identity"
 delay = 1000
+include_dir = ["pkg", "cmd/identity", "internal/identity"]
+include_ext = ["go", "tpl", "tmpl", "html"]
 exclude_dir = ["assets", "tmp", "vendor", "testdata", "docker", "logs", "tests", "docs"]
 exclude_file = []
 exclude_regex = ["_test.go"]
 exclude_unchanged = false
 follow_symlink = false
 full_bin = ""
-include_dir = []
-include_ext = ["go", "tpl", "tmpl", "html"]
 include_file = []
 kill_delay = "0s"
 log = "build-errors.log"

@@ -6,11 +6,11 @@
 # //////////////////////
 # 	local
 # //////////////////////
-run-server-local:
-	@air -c .air.server.toml
+run-identity-local:
+	@air -c .air.identity.toml
 
-run-server-local-no-hot-reload:
-	@go run ./cmd/server/main.go
+run-identity-local-no-hot-reload:
+	@go run ./cmd/identity/main.go
 
 
 # //////////////////////
@@ -51,6 +51,10 @@ update-env-file:
 # ============================
 COVERAGE_THRESHOLD ?= 80
 COVERAGE_PKGS := $(shell go list ./... | grep -v '/internal/mocks' | grep -v '/pkg/generated' | grep -v '/cmd/demo' | grep -v '/cmd' | grep -v '/internal/run')
+
+test-all:
+	go test -v $(COVERAGE_PKGS) -cover
+
 
 test-unit:
 	go test -v -short $(COVERAGE_PKGS) -cover

@@ -69,7 +69,7 @@ func TestLoadConfig(t *testing.T) {
 	os.Setenv("POSTGRES_USER", "env_user")
 	os.Setenv("POSTGRES_PASS", "env_pass")
 
-	cfg, err := LoadConfig()
+	cfg, err := LoadConfig("")
 	if err != nil {
 		t.Fatalf("LoadConfig() error = %v", err)
 	}

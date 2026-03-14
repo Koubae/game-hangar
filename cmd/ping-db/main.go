@@ -1,20 +1,21 @@
 package main
 
 import (
-	"github.com/koubae/game-hangar/internal/app/settings"
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/database/postgres"
 	"go.uber.org/zap"
 )
 
+const AppPrefix = "IDENTITY_"
+
 // Tests Database connection
 func main() {
-	config := settings.NewConfig(common.CreateLogger(common.LogLevelInfo, ""))
+	config := common.NewConfig(common.CreateLogger(common.LogLevelInfo, ""), AppPrefix)
 	logger := common.CreateLogger(config.LogLevel, config.LogFilePath)
 
 	logger.Info("ping-db script initialized... ")
 
-	dbConfig, err := postgres.LoadConfig()
+	dbConfig, err := postgres.LoadConfig(AppPrefix)
 	if err != nil {
 		logger.Fatal("failed to load database configuration", zap.Error(err))
 	}

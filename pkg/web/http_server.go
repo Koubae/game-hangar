@@ -1,4 +1,4 @@
-package app
+package web
 
 import (
 	"context"
@@ -9,8 +9,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/koubae/game-hangar/internal/app/api"
-	"github.com/koubae/game-hangar/internal/app/settings"
 	"github.com/koubae/game-hangar/pkg/common"
 	"go.uber.org/zap"
 )
@@ -21,8 +19,8 @@ type Server interface {
 	Handler() http.Handler
 }
 
-type App struct {
-	Config *settings.Config
+type HTTPApp struct {
+	Config *common.Config
 	Logger common.Logger
 	Server Server
 }
@@ -35,13 +33,13 @@ func (s *httpServerWrapper) Handler() http.Handler {
 	return s.Server.Handler
 }
 
-func NewApp() *App {
+func NewHTTPApp(appPrefix string, router RouterFunc, routerRegister RouterRegisterFunc) *HTTPApp {
 	loggerTmp := common.CreateLogger(common.LogLevelInfo, "")
-	config := settings.NewConfig(loggerTmp)
+	config := common.NewConfig(loggerTmp, appPrefix)
 
 	logger := common.CreateLogger(config.LogLevel, config.LogFilePath)
 
-	routerHandler := api.Router(logger, config)
+	routerHandler := router(logger, config, routerRegister)
 	srv := &http.Server{
 		Addr:           config.GetAppURL(),
 		ReadTimeout:    time.Duration(config.ServerReadTimeout) * time.Second,
@@ -51,14 +49,14 @@ func NewApp() *App {
 		Handler:        *routerHandler,
 	}
 
-	return &App{
+	return &HTTPApp{
 		Config: config,
 		Logger: logger,
 		Server: &httpServerWrapper{srv},
 	}
 }
 
-func (a *App) Start(ctx context.Context) {
+func (a *HTTPApp) Start(ctx context.Context) {
 	loggerTmp := common.CreateLogger(common.LogLevelInfo, "")
 	defer func() {
 		if z, ok := a.Logger.(*common.AppLogger); ok {
@@ -90,7 +88,7 @@ func (a *App) Start(ctx context.Context) {
 	stop()
 }
 
-func (a *App) Stop() error {
+func (a *HTTPApp) Stop() error {
 	serverShutdownGraceTimeout := time.Duration(a.Config.ServerShutdownGraceTimeout) * time.Second
 	a.Logger.Info(
 		"Shutdown signal received, Shutting down server gracefully... ",

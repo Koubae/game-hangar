@@ -31,3 +31,8 @@ make init
 # Run chat-identity
 make run-server-local
 ```
+
+### Services
+
+* **Identity:** http://localhost:10000
+* **GameHangar:** http://localhost:10010
