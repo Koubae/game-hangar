@@ -24,6 +24,24 @@ func Router(logger common.Logger, config *common.Config, routerRegister RouterRe
 			}
 		},
 	)
+	mux.HandleFunc(
+		"GET /healthz", func(w http.ResponseWriter, req *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			_, _ = io.WriteString(w, "OK")
+		},
+	)
+	mux.HandleFunc(
+		"GET /readyz", func(w http.ResponseWriter, req *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			_, _ = io.WriteString(w, "OK")
+		},
+	)
+	mux.HandleFunc(
+		"GET /ping", func(w http.ResponseWriter, req *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			_, _ = io.WriteString(w, "pong")
+		},
+	)
 
 	routerRegister(mux)
 
