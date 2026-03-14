@@ -10,7 +10,10 @@ import (
 	"github.com/rs/cors"
 )
 
-func Router(logger common.Logger, config *common.Config) *http.Handler {
+type RouterRegisterFunc func(mux *http.ServeMux)
+type RouterFunc func(logger common.Logger, config *common.Config, routerRegister RouterRegisterFunc) *http.Handler
+
+func Router(logger common.Logger, config *common.Config, routerRegister RouterRegisterFunc) *http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc(
 		"GET /{$}", func(w http.ResponseWriter, req *http.Request) {
@@ -21,6 +24,8 @@ func Router(logger common.Logger, config *common.Config) *http.Handler {
 			}
 		},
 	)
+
+	routerRegister(mux)
 
 	handler := cors.New(
 		cors.Options{
@@ -34,4 +39,16 @@ func Router(logger common.Logger, config *common.Config) *http.Handler {
 	handler = middleware.RecoveryMiddleware(logger, handler)
 	return &handler
 
+}
+
+func Group(mux *http.ServeMux, prefix string) *http.ServeMux {
+	sub := http.NewServeMux()
+	mux.Handle(prefix+"/", http.StripPrefix(prefix, sub))
+	return sub
+}
+
+func GroupWithMiddleware(mux *http.ServeMux, prefix string, mw func(http.Handler) http.Handler) *http.ServeMux {
+	sub := http.NewServeMux()
+	mux.Handle(prefix+"/", mw(http.StripPrefix(prefix, sub)))
+	return sub
 }

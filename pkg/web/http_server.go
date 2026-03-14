@@ -18,7 +18,6 @@ type Server interface {
 	Shutdown(ctx context.Context) error
 	Handler() http.Handler
 }
-type RouterFunc func(logger common.Logger, config *common.Config) *http.Handler
 
 type HTTPApp struct {
 	Config *common.Config
@@ -34,13 +33,13 @@ func (s *httpServerWrapper) Handler() http.Handler {
 	return s.Server.Handler
 }
 
-func NewApp(appPrefix string, router RouterFunc) *HTTPApp {
+func NewHTTPApp(appPrefix string, router RouterFunc, routerRegister RouterRegisterFunc) *HTTPApp {
 	loggerTmp := common.CreateLogger(common.LogLevelInfo, "")
 	config := common.NewConfig(loggerTmp, appPrefix)
 
 	logger := common.CreateLogger(config.LogLevel, config.LogFilePath)
 
-	routerHandler := router(logger, config)
+	routerHandler := router(logger, config, routerRegister)
 	srv := &http.Server{
 		Addr:           config.GetAppURL(),
 		ReadTimeout:    time.Duration(config.ServerReadTimeout) * time.Second,

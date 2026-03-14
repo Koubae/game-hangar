@@ -3,6 +3,8 @@ package web
 import (
 	"context"
 	"errors"
+	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -13,7 +15,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func testRouter(common.Logger, *common.Config) *http.Handler {
+func testRouter(_ common.Logger, _ *common.Config, routerRegister RouterRegisterFunc) *http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc(
 		"/", func(w http.ResponseWriter, r *http.Request) {
@@ -21,11 +23,28 @@ func testRouter(common.Logger, *common.Config) *http.Handler {
 		},
 	)
 
+	routerRegister(mux)
+
 	return new(cors.New(cors.Options{}).Handler(mux))
 }
 
+func testRouterRegister(mux *http.ServeMux) {
+	v1 := Group(mux, "/api/v1")
+
+	account := Group(v1, "/testings")
+	account.HandleFunc(
+		"GET /", func(w http.ResponseWriter, req *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			_, err := io.WriteString(w, fmt.Sprintf("test route"))
+			if err != nil {
+				return
+			}
+		},
+	)
+}
+
 func TestAppInitialization(t *testing.T) {
-	app := NewApp("IDENTITY_", testRouter)
+	app := NewHTTPApp("IDENTITY_", testRouter, testRouterRegister)
 
 	if app.Config == nil {
 		t.Fatal("Config should not be nil")
@@ -48,7 +67,7 @@ func TestAppInitialization(t *testing.T) {
 }
 
 func TestAppStartStop(t *testing.T) {
-	app := NewApp("", testRouter)
+	app := NewHTTPApp("", testRouter, testRouterRegister)
 
 	// Use a random port to avoid conflicts
 	app.Config.Port = 0
@@ -131,7 +150,7 @@ func (m *MockLogger) Fatal(msg string, fields ...zap.Field) {
 }
 
 func TestAppStopError(t *testing.T) {
-	app := NewApp("", testRouter)
+	app := NewHTTPApp("", testRouter, testRouterRegister)
 	expectedErr := errors.New("shutdown error")
 	app.Server = &MockServer{
 		ShutdownFunc: func(ctx context.Context) error {
@@ -146,7 +165,7 @@ func TestAppStopError(t *testing.T) {
 }
 
 func TestAppStartError(t *testing.T) {
-	app := NewApp("", testRouter)
+	app := NewHTTPApp("", testRouter, testRouterRegister)
 	expectedErr := errors.New("listen and serve error")
 
 	mockLogger := &MockLogger{}
