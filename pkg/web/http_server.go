@@ -20,7 +20,7 @@ type Server interface {
 }
 type RouterFunc func(logger common.Logger, config *common.Config) *http.Handler
 
-type App struct {
+type HTTPApp struct {
 	Config *common.Config
 	Logger common.Logger
 	Server Server
@@ -34,7 +34,7 @@ func (s *httpServerWrapper) Handler() http.Handler {
 	return s.Server.Handler
 }
 
-func NewApp(appPrefix string, router RouterFunc) *App {
+func NewApp(appPrefix string, router RouterFunc) *HTTPApp {
 	loggerTmp := common.CreateLogger(common.LogLevelInfo, "")
 	config := common.NewConfig(loggerTmp, appPrefix)
 
@@ -50,14 +50,14 @@ func NewApp(appPrefix string, router RouterFunc) *App {
 		Handler:        *routerHandler,
 	}
 
-	return &App{
+	return &HTTPApp{
 		Config: config,
 		Logger: logger,
 		Server: &httpServerWrapper{srv},
 	}
 }
 
-func (a *App) Start(ctx context.Context) {
+func (a *HTTPApp) Start(ctx context.Context) {
 	loggerTmp := common.CreateLogger(common.LogLevelInfo, "")
 	defer func() {
 		if z, ok := a.Logger.(*common.AppLogger); ok {
@@ -89,7 +89,7 @@ func (a *App) Start(ctx context.Context) {
 	stop()
 }
 
-func (a *App) Stop() error {
+func (a *HTTPApp) Stop() error {
 	serverShutdownGraceTimeout := time.Duration(a.Config.ServerShutdownGraceTimeout) * time.Second
 	a.Logger.Info(
 		"Shutdown signal received, Shutting down server gracefully... ",
