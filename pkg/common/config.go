@@ -75,8 +75,8 @@ func NewConfig(logger Logger, envPrefix string) *Config {
 	}
 
 	// server
-	host := GetEnvString(envPrefix+"APP_HOST", "")
-	port := GetEnvInt(envPrefix+"APP_PORT", 8080)
+	host := GetEnvString(envPrefix+"APP_SERVER_HOST", "")
+	port := GetEnvInt(envPrefix+"APP_SERVER_PORT", 8080)
 	serverReadTimeout := GetEnvInt(envPrefix+"APP_SERVER_READ_TIMEOUT_SECONDS", 15)
 	serverWriteTimeout := GetEnvInt(envPrefix+"APP_SERVER_WRITE_TIMEOUT_SECONDS", 15)
 	serverIdleTimeout := GetEnvInt(envPrefix+"APP_SERVER_IDLE_TIMEOUT_SECONDS", 60)
