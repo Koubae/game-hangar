@@ -5,7 +5,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/koubae/game-hangar/internal/app/settings"
+	"github.com/koubae/game-hangar/internal/identity/app/settings"
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/middleware"
 	"github.com/rs/cors"

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/koubae/game-hangar/internal/app/settings"
+	"github.com/koubae/game-hangar/internal/identity/app/settings"
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/database/postgres"
 	"go.uber.org/zap"

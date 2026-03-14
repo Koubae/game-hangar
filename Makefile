@@ -6,11 +6,11 @@
 # //////////////////////
 # 	local
 # //////////////////////
-run-server-local:
-	@air -c .air.server.toml
+run-identity-local:
+	@air -c .air.identity.toml
 
-run-server-local-no-hot-reload:
-	@go run ./cmd/server/main.go
+run-identity-local-no-hot-reload:
+	@go run ./cmd/identity/main.go
 
 
 # //////////////////////

@@ -9,8 +9,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/koubae/game-hangar/internal/app/api"
-	"github.com/koubae/game-hangar/internal/app/settings"
+	"github.com/koubae/game-hangar/internal/identity/app/api"
+	"github.com/koubae/game-hangar/internal/identity/app/settings"
 	"github.com/koubae/game-hangar/pkg/common"
 	"go.uber.org/zap"
 )
