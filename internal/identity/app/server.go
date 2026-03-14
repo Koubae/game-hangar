@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/koubae/game-hangar/internal/identity/app/api"
-	"github.com/koubae/game-hangar/internal/identity/app/settings"
 	"github.com/koubae/game-hangar/pkg/common"
 	"go.uber.org/zap"
 )
@@ -22,7 +21,7 @@ type Server interface {
 }
 
 type App struct {
-	Config *settings.Config
+	Config *common.Config
 	Logger common.Logger
 	Server Server
 }
@@ -37,7 +36,7 @@ func (s *httpServerWrapper) Handler() http.Handler {
 
 func NewApp() *App {
 	loggerTmp := common.CreateLogger(common.LogLevelInfo, "")
-	config := settings.NewConfig(loggerTmp)
+	config := common.NewConfig(loggerTmp)
 
 	logger := common.CreateLogger(config.LogLevel, config.LogFilePath)
 

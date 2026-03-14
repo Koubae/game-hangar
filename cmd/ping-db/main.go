@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/koubae/game-hangar/internal/identity/app/settings"
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/database/postgres"
 	"go.uber.org/zap"
@@ -9,7 +8,7 @@ import (
 
 // Tests Database connection
 func main() {
-	config := settings.NewConfig(common.CreateLogger(common.LogLevelInfo, ""))
+	config := common.NewConfig(common.CreateLogger(common.LogLevelInfo, ""))
 	logger := common.CreateLogger(config.LogLevel, config.LogFilePath)
 
 	logger.Info("ping-db script initialized... ")
