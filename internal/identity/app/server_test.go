@@ -12,7 +12,7 @@ import (
 )
 
 func TestAppInitialization(t *testing.T) {
-	app := NewApp()
+	app := NewApp("IDENTITY_")
 
 	if app.Config == nil {
 		t.Fatal("Config should not be nil")
@@ -35,7 +35,7 @@ func TestAppInitialization(t *testing.T) {
 }
 
 func TestAppStartStop(t *testing.T) {
-	app := NewApp()
+	app := NewApp("")
 
 	// Use a random port to avoid conflicts
 	app.Config.Port = 0
@@ -118,7 +118,7 @@ func (m *MockLogger) Fatal(msg string, fields ...zap.Field) {
 }
 
 func TestAppStopError(t *testing.T) {
-	app := NewApp()
+	app := NewApp("")
 	expectedErr := errors.New("shutdown error")
 	app.Server = &MockServer{
 		ShutdownFunc: func(ctx context.Context) error {
@@ -133,7 +133,7 @@ func TestAppStopError(t *testing.T) {
 }
 
 func TestAppStartError(t *testing.T) {
-	app := NewApp()
+	app := NewApp("")
 	expectedErr := errors.New("listen and serve error")
 
 	mockLogger := &MockLogger{}

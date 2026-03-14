@@ -15,9 +15,9 @@ func setupTest(t *testing.T) *postgres.ConnectorPostgres {
 		t.Skip("skipping integration test in short mode")
 	}
 
-	_ = godotenv.Load("../.env")
+	_ = godotenv.Load("../.env.testing")
 
-	config, err := postgres.LoadConfig()
+	config, err := postgres.LoadConfig(AppPrefix)
 	if err != nil {
 		t.Fatalf("Failed to load config: %v", err)
 	}

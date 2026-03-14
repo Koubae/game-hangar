@@ -6,14 +6,16 @@ import (
 	"go.uber.org/zap"
 )
 
+const AppPrefix = "IDENTITY_"
+
 // Tests Database connection
 func main() {
-	config := common.NewConfig(common.CreateLogger(common.LogLevelInfo, ""), "IDENTITY_")
+	config := common.NewConfig(common.CreateLogger(common.LogLevelInfo, ""), AppPrefix)
 	logger := common.CreateLogger(config.LogLevel, config.LogFilePath)
 
 	logger.Info("ping-db script initialized... ")
 
-	dbConfig, err := postgres.LoadConfig()
+	dbConfig, err := postgres.LoadConfig(AppPrefix)
 	if err != nil {
 		logger.Fatal("failed to load database configuration", zap.Error(err))
 	}
