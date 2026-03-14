@@ -8,7 +8,7 @@ import (
 
 // Tests Database connection
 func main() {
-	config := common.NewConfig(common.CreateLogger(common.LogLevelInfo, ""))
+	config := common.NewConfig(common.CreateLogger(common.LogLevelInfo, ""), "IDENTITY_")
 	logger := common.CreateLogger(config.LogLevel, config.LogFilePath)
 
 	logger.Info("ping-db script initialized... ")

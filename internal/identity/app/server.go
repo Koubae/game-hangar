@@ -34,9 +34,9 @@ func (s *httpServerWrapper) Handler() http.Handler {
 	return s.Server.Handler
 }
 
-func NewApp() *App {
+func NewApp(appPrefix string) *App {
 	loggerTmp := common.CreateLogger(common.LogLevelInfo, "")
-	config := common.NewConfig(loggerTmp)
+	config := common.NewConfig(loggerTmp, appPrefix)
 
 	logger := common.CreateLogger(config.LogLevel, config.LogFilePath)
 
