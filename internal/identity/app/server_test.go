@@ -8,11 +8,24 @@ import (
 	"testing"
 	"time"
 
+	"github.com/koubae/game-hangar/pkg/common"
+	"github.com/rs/cors"
 	"go.uber.org/zap"
 )
 
+func testRouter(common.Logger, *common.Config) *http.Handler {
+	mux := http.NewServeMux()
+	mux.HandleFunc(
+		"/", func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		},
+	)
+
+	return new(cors.New(cors.Options{}).Handler(mux))
+}
+
 func TestAppInitialization(t *testing.T) {
-	app := NewApp("IDENTITY_")
+	app := NewApp("IDENTITY_", testRouter)
 
 	if app.Config == nil {
 		t.Fatal("Config should not be nil")
@@ -35,7 +48,7 @@ func TestAppInitialization(t *testing.T) {
 }
 
 func TestAppStartStop(t *testing.T) {
-	app := NewApp("")
+	app := NewApp("", testRouter)
 
 	// Use a random port to avoid conflicts
 	app.Config.Port = 0
@@ -118,7 +131,7 @@ func (m *MockLogger) Fatal(msg string, fields ...zap.Field) {
 }
 
 func TestAppStopError(t *testing.T) {
-	app := NewApp("")
+	app := NewApp("", testRouter)
 	expectedErr := errors.New("shutdown error")
 	app.Server = &MockServer{
 		ShutdownFunc: func(ctx context.Context) error {
@@ -133,7 +146,7 @@ func TestAppStopError(t *testing.T) {
 }
 
 func TestAppStartError(t *testing.T) {
-	app := NewApp("")
+	app := NewApp("", testRouter)
 	expectedErr := errors.New("listen and serve error")
 
 	mockLogger := &MockLogger{}

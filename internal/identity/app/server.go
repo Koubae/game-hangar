@@ -9,7 +9,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/koubae/game-hangar/internal/identity/app/api"
 	"github.com/koubae/game-hangar/pkg/common"
 	"go.uber.org/zap"
 )
@@ -19,6 +18,7 @@ type Server interface {
 	Shutdown(ctx context.Context) error
 	Handler() http.Handler
 }
+type RouterFunc func(logger common.Logger, config *common.Config) *http.Handler
 
 type App struct {
 	Config *common.Config
@@ -34,13 +34,13 @@ func (s *httpServerWrapper) Handler() http.Handler {
 	return s.Server.Handler
 }
 
-func NewApp(appPrefix string) *App {
+func NewApp(appPrefix string, router RouterFunc) *App {
 	loggerTmp := common.CreateLogger(common.LogLevelInfo, "")
 	config := common.NewConfig(loggerTmp, appPrefix)
 
 	logger := common.CreateLogger(config.LogLevel, config.LogFilePath)
 
-	routerHandler := api.Router(logger, config)
+	routerHandler := router(logger, config)
 	srv := &http.Server{
 		Addr:           config.GetAppURL(),
 		ReadTimeout:    time.Duration(config.ServerReadTimeout) * time.Second,

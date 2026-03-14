@@ -5,12 +5,13 @@ import (
 	"log"
 
 	"github.com/koubae/game-hangar/internal/identity/app"
+	"github.com/koubae/game-hangar/internal/identity/app/api"
 )
 
 const AppPrefix = "IDENTITY_"
 
 func RunServer() {
-	application := app.NewApp(AppPrefix)
+	application := app.NewApp(AppPrefix, api.Router)
 	application.Start(context.Background())
 	if err := application.Stop(); err != nil {
 		log.Fatalf("Error while shutting down the server, error: %s", err)
