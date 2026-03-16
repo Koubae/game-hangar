@@ -43,7 +43,7 @@ func TestDTOSchemaValidation(t *testing.T) {
 				Password:      "",
 				ApplicationID: "app-1",
 			},
-			wantErr: `field "password" is required`,
+			wantErr: `field 'password' is required`,
 		},
 		{
 			name: "pointer to valid struct",
@@ -75,7 +75,7 @@ func TestDTOSchemaValidation(t *testing.T) {
 		{
 			name:    "missing required field without json tag uses field name",
 			input:   NoJSONTagRequest{},
-			wantErr: `field "Name" is required`,
+			wantErr: `field 'Name' is required`,
 		},
 		{
 			name: "non-required field is ignored",
@@ -90,12 +90,12 @@ func TestDTOSchemaValidation(t *testing.T) {
 		{
 			name:    "required int zero value fails",
 			input:   NumericRequest{},
-			wantErr: `field "age" is required`,
+			wantErr: `field 'age' is required`,
 		},
 		{
 			name:    "required bool zero value fails",
 			input:   BoolRequest{},
-			wantErr: `field "enabled" is required`,
+			wantErr: `field 'enabled' is required`,
 		},
 		{
 			name: "required int non-zero passes",
