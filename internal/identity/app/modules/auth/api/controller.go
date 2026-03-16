@@ -7,32 +7,31 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/koubae/game-hangar/internal/identity/app/modules/account/dto"
+	accountService "github.com/koubae/game-hangar/internal/identity/app/modules/account/service"
 	"github.com/koubae/game-hangar/pkg/common"
 )
 
 type AuthController struct{}
 
-type RegisterByUsernamePayload struct {
-	Username string `json:"username" binding:"required"`
-	Password string `json:"password" binding:"required"`
-}
-
-func (p *RegisterByUsernamePayload) Validate() error {
-	if err := common.DTOSchemaValidation(p); err != nil {
-		return errors.New(fmt.Sprintf("invalid payload: %v", err))
-	}
-	return nil
-}
-
 func (controller *AuthController) RegisterByUsername(w http.ResponseWriter, r *http.Request) {
-	var payload RegisterByUsernamePayload
+	var payload dto.CreateAccountDTO
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		http.Error(w, fmt.Sprintf("invalid json: %v", err), http.StatusBadRequest)
 		return
 	}
-	err := payload.Validate()
+
+	service := accountService.AccountService{}
+	err := service.CreateAccount(payload)
+
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		if businessError, ok := errors.AsType[*common.BusinessError](err); ok {
+			// TODO: implement API errors
+			http.Error(w, businessError.Message, businessError.HTTPCode)
+			return
+		}
+		// TODO: implement API errors
+		http.Error(w, "unexpected error", http.StatusInternalServerError)
 		return
 	}
 
