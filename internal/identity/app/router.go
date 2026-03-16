@@ -5,11 +5,14 @@ import (
 	"io"
 	"net/http"
 
+	authRouter "github.com/koubae/game-hangar/internal/identity/app/modules/auth/api"
 	"github.com/koubae/game-hangar/pkg/web"
 )
 
 func RouterRegister(mux *http.ServeMux) {
 	v1 := web.Group(mux, "/api/v1")
+
+	authRouter.RouterRegister(v1)
 
 	account := web.Group(v1, "/account")
 	account.HandleFunc(
