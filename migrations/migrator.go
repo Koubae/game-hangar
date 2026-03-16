@@ -45,8 +45,8 @@ func (m *Migrator) Run(operation string, limit int) (string, error) {
 	switch operation {
 	case "up":
 		return m.Up(limit)
-	// case "down":
-	// 	return Down(m.db)
+	case "down":
+		return m.Down(limit)
 	case "status":
 		return m.Status()
 	}
@@ -138,11 +138,18 @@ func (m *Migrator) Up(limit int) (string, error) {
 	return fmt.Sprintf("MIGRATION_UP_OK: %v migrations applied", appliedMigrations), nil
 }
 
-// // Down rolls back the last migration.
-// func Down(db *sql.DB) (int, error) {
-// 	migrations := &migrate.EmbedFileSystemMigrationSource{
-// 		FileSystem: sqlMigrations,
-// 		Root:       "sql",
-// 	}
-// 	return migrate.Exec(db, "postgres", migrations, migrate.Down)
-// }
+func (m *Migrator) Down(limit int) (string, error) {
+	migrations := &migrate.EmbedFileSystemMigrationSource{
+		FileSystem: m.sqlMigrations,
+		Root:       "sql",
+	}
+
+	appliedRollbacks, err := migrate.ExecMax(m.db, "postgres", migrations, migrate.Down, limit)
+	if err != nil {
+		m.Logger.Error("failed to apply migrations: ", zap.Error(err))
+		return "MIGRATION_DOWN_ERROR", err
+	}
+	m.Logger.Info("rolled back migrations: ", zap.Int("appliedRollbacks", appliedRollbacks))
+
+	return fmt.Sprintf("MIGRATION_DOWN_OK: %v migrations rolled back", appliedRollbacks), nil
+}
