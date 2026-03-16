@@ -10,6 +10,50 @@ import (
 	"github.com/koubae/game-hangar/pkg/common"
 )
 
+func TestWriteJSONResponse(t *testing.T) {
+	tests := []struct {
+		name     string
+		code     int
+		data     interface{}
+		expected string
+	}{
+		{
+			name: "JSON data",
+			code: http.StatusOK,
+			data: struct {
+				Username string `json:"username"`
+			}{
+				Username: "unit-test-user-1",
+			},
+			expected: "{\"username\":\"unit-test-user-1\"}\n",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(
+			tt.name, func(t *testing.T) {
+				w := httptest.NewRecorder()
+				WriteJSONResponse(w, tt.code, tt.data)
+
+				res := w.Result()
+				defer res.Body.Close()
+
+				if res.StatusCode != tt.code {
+					t.Errorf("expected status code %d, got %d", tt.code, res.StatusCode)
+				}
+				if contentType := res.Header.Get("Content-Type"); contentType != "application/json" {
+					t.Errorf("expected Content-Type application/json, got %s", contentType)
+				}
+
+				actual := w.Body.String()
+				if actual != tt.expected {
+					t.Errorf("expected %s, got %s", tt.expected, actual)
+				}
+
+			},
+		)
+	}
+}
+
 func TestWriteJSONErrorResponse(t *testing.T) {
 	tests := []struct {
 		name     string
