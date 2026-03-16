@@ -41,7 +41,7 @@ func DTOSchemaValidation(v any) error {
 			if jsonName == "" {
 				jsonName = fieldType.Name
 			}
-			return fmt.Errorf("field %q is required", jsonName)
+			return fmt.Errorf("field '%v' is required", jsonName)
 		}
 	}
 

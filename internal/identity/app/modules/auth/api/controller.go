@@ -2,14 +2,13 @@ package api
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
 
 	"github.com/koubae/game-hangar/internal/identity/app/modules/account/dto"
 	accountService "github.com/koubae/game-hangar/internal/identity/app/modules/account/service"
-	"github.com/koubae/game-hangar/pkg/common"
+	"github.com/koubae/game-hangar/pkg/web"
 )
 
 type AuthController struct{}
@@ -23,15 +22,8 @@ func (controller *AuthController) RegisterByUsername(w http.ResponseWriter, r *h
 
 	service := accountService.AccountService{}
 	err := service.CreateAccount(payload)
-
 	if err != nil {
-		if businessError, ok := errors.AsType[*common.BusinessError](err); ok {
-			// TODO: implement API errors
-			http.Error(w, businessError.Message, businessError.HTTPCode)
-			return
-		}
-		// TODO: implement API errors
-		http.Error(w, "unexpected error", http.StatusInternalServerError)
+		web.WriteBusinessErrorResponse(w, err)
 		return
 	}
 
