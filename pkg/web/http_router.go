@@ -16,25 +16,25 @@ type RouterFunc func(logger common.Logger, config *common.Config, routerRegister
 func Router(logger common.Logger, config *common.Config, routerRegister RouterRegisterFunc) *http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc(
-		"GET /{$}", func(w http.ResponseWriter, req *http.Request) {
+		"GET /{$}", func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 			_, _ = io.WriteString(w, fmt.Sprintf("Welcome to %s", config.GetFullName()))
 		},
 	)
 	mux.HandleFunc(
-		"GET /healthz", func(w http.ResponseWriter, req *http.Request) {
+		"GET /healthz", func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 			_, _ = io.WriteString(w, "OK")
 		},
 	)
 	mux.HandleFunc(
-		"GET /readyz", func(w http.ResponseWriter, req *http.Request) {
+		"GET /readyz", func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 			_, _ = io.WriteString(w, "OK")
 		},
 	)
 	mux.HandleFunc(
-		"GET /ping", func(w http.ResponseWriter, req *http.Request) {
+		"GET /ping", func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 			_, _ = io.WriteString(w, "pong")
 		},
