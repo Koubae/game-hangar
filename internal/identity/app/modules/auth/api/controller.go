@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -11,19 +12,27 @@ import (
 
 type AuthController struct{}
 
-type RegisterByUsernameRequest struct {
+type RegisterByUsernamePayload struct {
 	Username string `json:"username" binding:"required"`
 	Password string `json:"password" binding:"required"`
 }
 
+func (p *RegisterByUsernamePayload) Validate() error {
+	if err := common.DTOSchemaValidation(p); err != nil {
+		return errors.New(fmt.Sprintf("invalid payload: %v", err))
+	}
+	return nil
+}
+
 func (controller *AuthController) RegisterByUsername(w http.ResponseWriter, r *http.Request) {
-	var payload RegisterByUsernameRequest
+	var payload RegisterByUsernamePayload
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		http.Error(w, fmt.Sprintf("invalid json: %v", err), http.StatusBadRequest)
 		return
 	}
-	if err := common.DTOSchemaValidation(payload); err != nil {
-		http.Error(w, fmt.Sprintf("invalid payload: %v", err), http.StatusBadRequest)
+	err := payload.Validate()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
