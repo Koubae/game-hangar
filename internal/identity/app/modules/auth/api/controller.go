@@ -8,6 +8,7 @@ import (
 
 	"github.com/koubae/game-hangar/internal/identity/app/modules/account/dto"
 	accountService "github.com/koubae/game-hangar/internal/identity/app/modules/account/service"
+	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/web"
 )
 
@@ -16,19 +17,24 @@ type AuthController struct{}
 func (controller *AuthController) RegisterByUsername(w http.ResponseWriter, r *http.Request) {
 	var payload dto.CreateAccountDTO
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		http.Error(w, fmt.Sprintf("invalid json: %v", err), http.StatusBadRequest)
+		web.WriteBusinessErrorResponse(
+			w, &common.BusinessError{
+				HTTPCode: http.StatusBadRequest,
+				Message:  fmt.Sprintf("invalid json: %v", err),
+			},
+		)
 		return
 	}
 
 	service := accountService.AccountService{}
-	err := service.CreateAccount(payload)
+	account, err := service.CreateAccount(payload)
 	if err != nil {
 		web.WriteBusinessErrorResponse(w, err)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	_, _ = io.WriteString(w, "ok RegisterByUsername\n")
+	web.WriteJSONResponse(w, http.StatusCreated, account)
+
 }
 
 func (controller *AuthController) LoginByUsername(w http.ResponseWriter, r *http.Request) {
