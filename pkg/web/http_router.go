@@ -18,10 +18,7 @@ func Router(logger common.Logger, config *common.Config, routerRegister RouterRe
 	mux.HandleFunc(
 		"GET /{$}", func(w http.ResponseWriter, req *http.Request) {
 			w.WriteHeader(http.StatusOK)
-			_, err := io.WriteString(w, fmt.Sprintf("Welcome to %s", config.GetFullName()))
-			if err != nil {
-				return
-			}
+			_, _ = io.WriteString(w, fmt.Sprintf("Welcome to %s", config.GetFullName()))
 		},
 	)
 	mux.HandleFunc(
