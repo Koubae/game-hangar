@@ -55,36 +55,41 @@ func (c *DatabasePostgresConfig) GetConnectionString() string {
 func LoadConfig(envPrefix string) (*DatabasePostgresConfig, error) {
 	onceConfig.Do(
 		func() {
-			database := common.GetEnvString(envPrefix+"POSTGRES_DB", "")
-			connectionString := common.GetEnvString(envPrefix+"POSTGRES_CONNECTION_STRING", "")
-			host := common.GetEnvString(envPrefix+"POSTGRES_HOST", "")
-			port := common.GetEnvInt(envPrefix+"POSTGRES_PORT", 0)
-			user := common.GetEnvString(envPrefix+"POSTGRES_USER", "")
-			password := common.GetEnvString(envPrefix+"POSTGRES_PASS", "")
-			sslMode := common.GetEnvString(envPrefix+"POSTGRES_SSL_MODE", "disable")
-
-			// TODO: Test in production these settings are correct. Assumed during development
-			maxOpenConnections := common.GetEnvInt(envPrefix+"POSTGRES_MAX_OPEN_CONNECTIONS", 10)
-			maxIdleConnections := common.GetEnvInt(envPrefix+"POSTGRES_MAX_IDLE_CONNECTIONS", 2)
-			maxConnectionLifetime := common.GetEnvInt(envPrefix+"POSTGRES_MAX_CONNECTION_LIFETIME_MINUTES", 60)
-			maxConnectionIdleTime := common.GetEnvInt(envPrefix+"POSTGRES_MAX_CONNECTION_IDLE_TIME_MINUTES", 30)
-
-			config = &DatabasePostgresConfig{
-				Driver:                "postgres",
-				Database:              database,
-				connectionString:      connectionString,
-				host:                  host,
-				port:                  port,
-				user:                  user,
-				password:              password,
-				sslMode:               sslMode,
-				MaxOpenConnections:    int32(maxOpenConnections),
-				MaxIdleConnections:    int32(maxIdleConnections),
-				MaxConnectionLifetime: int32(maxConnectionLifetime),
-				MaxConnectionIdleTime: int32(maxConnectionIdleTime),
-			}
+			config = LoadNewConfig(envPrefix)
 		},
 	)
 
 	return config, nil
+}
+
+func LoadNewConfig(envPrefix string) *DatabasePostgresConfig {
+	database := common.GetEnvString(envPrefix+"POSTGRES_DB", "")
+	connectionString := common.GetEnvString(envPrefix+"POSTGRES_CONNECTION_STRING", "")
+	host := common.GetEnvString(envPrefix+"POSTGRES_HOST", "")
+	port := common.GetEnvInt(envPrefix+"POSTGRES_PORT", 0)
+	user := common.GetEnvString(envPrefix+"POSTGRES_USER", "")
+	password := common.GetEnvString(envPrefix+"POSTGRES_PASS", "")
+	sslMode := common.GetEnvString(envPrefix+"POSTGRES_SSL_MODE", "disable")
+
+	// TODO: Test in production these settings are correct. Assumed during development
+	maxOpenConnections := common.GetEnvInt(envPrefix+"POSTGRES_MAX_OPEN_CONNECTIONS", 10)
+	maxIdleConnections := common.GetEnvInt(envPrefix+"POSTGRES_MAX_IDLE_CONNECTIONS", 2)
+	maxConnectionLifetime := common.GetEnvInt(envPrefix+"POSTGRES_MAX_CONNECTION_LIFETIME_MINUTES", 60)
+	maxConnectionIdleTime := common.GetEnvInt(envPrefix+"POSTGRES_MAX_CONNECTION_IDLE_TIME_MINUTES", 30)
+
+	return &DatabasePostgresConfig{
+		Driver:                "postgres",
+		Database:              database,
+		connectionString:      connectionString,
+		host:                  host,
+		port:                  port,
+		user:                  user,
+		password:              password,
+		sslMode:               sslMode,
+		MaxOpenConnections:    int32(maxOpenConnections),
+		MaxIdleConnections:    int32(maxIdleConnections),
+		MaxConnectionLifetime: int32(maxConnectionLifetime),
+		MaxConnectionIdleTime: int32(maxConnectionIdleTime),
+	}
+
 }

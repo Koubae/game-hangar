@@ -13,6 +13,7 @@ import (
 	"errors"
 
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/koubae/game-hangar/pkg/database/postgres"
 )
@@ -40,10 +41,10 @@ func (m *Migrator) Close() {
 	m.db.Close()
 }
 
-func (m *Migrator) Run(operation string) (string, error) {
+func (m *Migrator) Run(operation string, limit int) (string, error) {
 	switch operation {
-	// case "up":
-	// 	return Up(m.db)
+	case "up":
+		return m.Up(limit)
 	// case "down":
 	// 	return Down(m.db)
 	case "status":
@@ -53,23 +54,58 @@ func (m *Migrator) Run(operation string) (string, error) {
 	return "MIGRATION_OPERATION_ERROR", fmt.Errorf("invalid operation: %s", operation)
 }
 
-// // Up runs all pending migrations.
-// func Up(db *sql.DB) (int, error) {
-// 	migrations := &migrate.EmbedFileSystemMigrationSource{
-// 		FileSystem: sqlMigrations,
-// 		Root:       "sql",
-// 	}
-// 	return migrate.Exec(db, "postgres", migrations, migrate.Up)
-// }
+func InitializeMigrations(appPrefix string, sqlMigrations embed.FS) *Migrator {
+	config := common.NewConfig(common.CreateLogger(common.LogLevelInfo, ""), appPrefix)
+	logger := common.CreateLogger(config.LogLevel, config.LogFilePath)
 
-// // Down rolls back the last migration.
-// func Down(db *sql.DB) (int, error) {
-// 	migrations := &migrate.EmbedFileSystemMigrationSource{
-// 		FileSystem: sqlMigrations,
-// 		Root:       "sql",
-// 	}
-// 	return migrate.Exec(db, "postgres", migrations, migrate.Down)
-// }
+	logger.Info("initializing migrations ... for app prefix: ", zap.String("appPrefix", appPrefix))
+
+	dbConfig, err := postgres.LoadConfig(appPrefix)
+	if err != nil {
+		logger.Fatal("failed to load database configuration", zap.Error(err))
+	}
+	createDatabase(appPrefix, dbConfig.Database, logger)
+
+	dbPool, err := postgres.NewConnector(dbConfig)
+	if err != nil {
+		logger.Fatal("failed to connect to database", zap.Error(err))
+	} else if dbPool == nil {
+		logger.Fatal("Database connection pool is nil...")
+	}
+
+	logger.Info("database connection established... ", zap.String("dbConfig", dbConfig.String()))
+	return NewMigrator(stdlib.OpenDBFromPool(dbPool.Pool), dbPool, sqlMigrations, logger)
+}
+
+func createDatabase(appPrefix string, database string, logger *common.AppLogger) {
+	dbConfigAdmin := postgres.LoadNewConfig(appPrefix)
+	dbConfigAdmin.Database = "postgres"
+
+	config, err := pgxpool.ParseConfig(dbConfigAdmin.GetConnectionString())
+	if err != nil {
+		logger.Fatal("failed to parse admin database configuration", zap.Error(err))
+	}
+	pool, err := pgxpool.NewWithConfig(context.Background(), config)
+	if err != nil {
+		logger.Fatal("failed to create admin database connection pool", zap.Error(err))
+	}
+	defer pool.Close()
+
+	logger.Info("admin database connection established... ", zap.String("dbConfig", dbConfigAdmin.String()))
+	_, err = pool.Exec(context.Background(), "CREATE DATABASE "+database)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			if pgErr.Code == "42P04" {
+				fmt.Printf("Database %q already exists\n", database)
+			}
+		} else {
+			logger.Fatal("failed to create database %q: %v", zap.String("database", database), zap.Error(err))
+		}
+	}
+	logger.Info("Database ready", zap.String("database", database))
+
+}
 
 func (m *Migrator) Status() (string, error) {
 	var migrationsRecords []*migrate.MigrationRecord
@@ -86,37 +122,27 @@ func (m *Migrator) Status() (string, error) {
 	return fmt.Sprintf("MIGRATION_STATUS_OK: %v migrations applied", len(migrationsRecords)), nil
 }
 
-func InitializeMigrations(appPrefix string, sqlMigrations embed.FS) *Migrator {
-	config := common.NewConfig(common.CreateLogger(common.LogLevelInfo, ""), appPrefix)
-	logger := common.CreateLogger(config.LogLevel, config.LogFilePath)
-
-	logger.Info("migrations initialized... for app prefix: ", zap.String("appPrefix", appPrefix))
-
-	dbConfig, err := postgres.LoadConfig(appPrefix)
-	if err != nil {
-		logger.Fatal("failed to load database configuration", zap.Error(err))
-	}
-	dbPool, err := postgres.NewConnector(dbConfig)
-	if err != nil {
-		logger.Fatal("failed to connect to database", zap.Error(err))
-	} else if dbPool == nil {
-		logger.Fatal("Database connection pool is nil...")
+func (m *Migrator) Up(limit int) (string, error) {
+	migrations := &migrate.EmbedFileSystemMigrationSource{
+		FileSystem: m.sqlMigrations,
+		Root:       "sql",
 	}
 
-	logger.Info("database connection established... ", zap.String("dbConfig", dbConfig.String()))
-
-	_, err = dbPool.Pool.Exec(context.Background(), "CREATE DATABASE "+dbConfig.Database)
+	appliedMigrations, err := migrate.ExecMax(m.db, "postgres", migrations, migrate.Up, limit)
 	if err != nil {
-		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) {
-			if pgErr.Code == "42P04" {
-				fmt.Printf("Database %q already exists\n", dbConfig.Database)
-			}
-		} else {
-			logger.Fatal("failed to create database %q: %v", zap.String("database", dbConfig.Database), zap.Error(err))
-		}
+		m.Logger.Error("failed to apply migrations: ", zap.Error(err))
+		return "MIGRATION_UP_ERROR", err
 	}
-	logger.Info("Database ready", zap.String("database", dbConfig.Database))
+	m.Logger.Info("applied migrations: ", zap.Int("appliedMigrations", appliedMigrations))
 
-	return NewMigrator(stdlib.OpenDBFromPool(dbPool.Pool), dbPool, sqlMigrations, logger)
+	return fmt.Sprintf("MIGRATION_UP_OK: %v migrations applied", appliedMigrations), nil
 }
+
+// // Down rolls back the last migration.
+// func Down(db *sql.DB) (int, error) {
+// 	migrations := &migrate.EmbedFileSystemMigrationSource{
+// 		FileSystem: sqlMigrations,
+// 		Root:       "sql",
+// 	}
+// 	return migrate.Exec(db, "postgres", migrations, migrate.Down)
+// }
