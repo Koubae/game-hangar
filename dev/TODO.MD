@@ -74,3 +74,18 @@ DELETE /v1/accounts/me/identities/email
 DELETE /v1/accounts/me/identities/username
 DELETE /v1/accounts/me/identities/device
 ```
+
+
+
+### Create account curl
+
+
+```bash
+curl --location 'http://localhost:10000/api/v1/auth/register/username' \
+--header 'Content-Type: application/json' \
+--data '{
+  "username": "user-1",
+  "password": "test"
+}'
+```
+
