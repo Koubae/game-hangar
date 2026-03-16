@@ -98,6 +98,15 @@ func (l *AppLogger) LogCloser(loggerTmp Logger, z *zap.Logger) {
 	}
 }
 
+var logger *AppLogger
+
+func GetLogger() *AppLogger {
+	if logger == nil {
+		panic("Logger not initialized")
+	}
+	return logger
+}
+
 func CreateLogger(logLevel LogLevel, filePath string) *AppLogger {
 	stdout := zapcore.Lock(zapcore.AddSync(os.Stdout))
 
@@ -139,12 +148,11 @@ func CreateLogger(logLevel LogLevel, filePath string) *AppLogger {
 		zapcore.NewCore(fileEncoder, fileWriter, level),
 	)
 
-	logger := zap.New(core, zap.AddStacktrace(zapcore.ErrorLevel))
-
-	appLogger := &AppLogger{
-		Logger: logger,
+	_zapLogger := zap.New(core, zap.AddStacktrace(zapcore.ErrorLevel))
+	logger = &AppLogger{
+		Logger: _zapLogger,
 	}
-	return appLogger
+	return logger
 }
 
 func utcTimeEncoder(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
