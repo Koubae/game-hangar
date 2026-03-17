@@ -11,6 +11,7 @@ import (
 )
 
 type IProviderRepository interface {
+	GetProvider(ctx context.Context, name string) (*model.Provider, error)
 }
 
 type ProviderRepository struct {
