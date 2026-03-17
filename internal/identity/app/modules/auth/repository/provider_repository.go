@@ -3,12 +3,14 @@ package repository
 import (
 	"context"
 	"database/sql"
-	"errors"
+	"sync"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/model"
+	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/database/postgres"
+	"go.uber.org/zap"
 )
 
 type IProviderRepository interface {
@@ -17,10 +19,47 @@ type IProviderRepository interface {
 
 type ProviderRepository struct {
 	DBConnector *postgres.ConnectorPostgres
+
+	mu             sync.RWMutex
+	providersCache map[string]*model.Provider
 }
 
 func NewProviderRepository(connector *postgres.ConnectorPostgres) *ProviderRepository {
-	return &ProviderRepository{DBConnector: connector}
+	r := &ProviderRepository{
+		DBConnector:    connector,
+		providersCache: make(map[string]*model.Provider),
+	}
+	r.loadProviders(context.Background())
+	return r
+}
+
+func (r *ProviderRepository) loadProviders(ctx context.Context) {
+	db := r.getDB()
+	defer db.Close()
+
+	logger := common.GetLogger()
+	logger.Info("loading providers...")
+
+	query := "SELECT id, name, display_name, category, disabled, created, updated FROM provider"
+	rows, err := db.QueryContext(ctx, query)
+	if err != nil {
+		logger.Error("failed to load providers", zap.Error(err))
+		return
+	}
+	defer rows.Close()
+
+	r.mu.Lock()
+	for rows.Next() {
+		var p model.Provider
+		if err := rows.Scan(&p.ID, &p.Name, &p.DisplayName, &p.Category, &p.Disabled, &p.Created, &p.Updated); err != nil {
+			logger.Error("failed to scan provider", zap.Error(err))
+			continue // or log and continue
+		}
+		r.providersCache[p.Name] = &p
+	}
+	r.mu.Unlock()
+
+	logger.Info("providers loaded", zap.Int("count", len(r.providersCache)))
 }
 
 func (r *ProviderRepository) getDB() *sql.DB {
@@ -28,20 +67,11 @@ func (r *ProviderRepository) getDB() *sql.DB {
 }
 
 func (r *ProviderRepository) GetProvider(ctx context.Context, name string) (*model.Provider, error) {
-	db := r.getDB()
-	defer db.Close()
-
-	query := "SELECT id, name, display_name, category, disabled, created, updated FROM provider WHERE name = $1"
-	row := db.QueryRowContext(ctx, query, name)
-
-	var provider model.Provider
-	err := row.Scan(&provider.ID, &provider.Name, &provider.DisplayName, &provider.Category, &provider.Disabled, &provider.Created, &provider.Updated)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil
-		}
-		return nil, err
+	r.mu.RLock()
+	p, ok := r.providersCache[name]
+	r.mu.RUnlock()
+	if ok {
+		return p, nil
 	}
-
-	return &provider, nil
+	return nil, nil
 }
