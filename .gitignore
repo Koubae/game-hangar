@@ -209,3 +209,5 @@ yarn.lock
 
 
 !/.gitignore
+### vscode or cursor crap 
+__debug_bin*
