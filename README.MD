@@ -22,17 +22,35 @@ export PATH=$PATH:$GOROOT/bin
 * 2) Initialize (this will perform some installations)
 
 ```bash
-make init
+make quickstart
 ```
 
-* 3) Start
-
-```bash
-# Run chat-identity
-make run-server-local
-```
 
 ### Services
 
 * **Identity:** http://localhost:10000
 * **GameHangar:** http://localhost:10010
+
+
+#### Step by Step 
+
+
+* Prepare Go env
+
+```bash
+make init
+```
+
+* Run Migrations
+
+```bash
+make migrate-identity-up
+``` 
+
+
+* Start
+
+```bash
+# Run chat-identity
+make run-server-local
+```

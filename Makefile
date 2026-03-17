@@ -1,5 +1,10 @@
 .PHONY: run build stop tests
 
+
+quickstart: init postgres-up migrate-identity-up
+	@echo "Quickstart completed successfully"
+
+
 # ============================
 # 	Run
 # ============================
@@ -89,3 +94,14 @@ endif
 # ============================
 # 	Scripts
 # ============================
+
+
+# //////////////////////
+# 	Migrations
+# //////////////////////
+migrate-identity-up:
+	@go run ./migrations/identity/migrate_identity.go -action up 0
+migrate-identity-down:
+	@go run ./migrations/identity/migrate_identity.go -action down 0
+migrate-identity-status:
+	@go run ./migrations/identity/migrate_identity.go -action status
