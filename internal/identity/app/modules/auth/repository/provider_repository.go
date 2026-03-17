@@ -1,10 +1,12 @@
 package repository
 
 import (
+	"context"
 	"database/sql"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
+	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/model"
 	"github.com/koubae/game-hangar/pkg/database/postgres"
 )
 
@@ -23,18 +25,18 @@ func (r *ProviderRepository) getDB() *sql.DB {
 	return stdlib.OpenDBFromPool(r.DBConnector.Pool.(*pgxpool.Pool))
 }
 
-// func (r *ProviderRepository) GetProvider(ctx context.Context, id string) (*model.Provider, error) {
-// 	db := r.getDB()
-// 	defer db.Close()
+func (r *ProviderRepository) GetProvider(ctx context.Context, name string) (*model.Provider, error) {
+	db := r.getDB()
+	defer db.Close()
 
-// 	query := "SELECT id, name, display_name, category, disabled, created, updated FROM provider WHERE id = $1"
-// 	row := db.QueryRowContext(ctx, query, id)
+	query := "SELECT id, name, display_name, category, disabled, created, updated FROM provider WHERE name = $1"
+	row := db.QueryRowContext(ctx, query, name)
 
-// 	var provider model.Provider
-// 	err := row.Scan(&provider.ID, &provider.Name, &provider.DisplayName, &provider.Category, &provider.Disabled, &provider.Created, &provider.Updated)
-// 	if err != nil {
-// 		return nil, err
-// 	}
+	var provider model.Provider
+	err := row.Scan(&provider.ID, &provider.Name, &provider.DisplayName, &provider.Category, &provider.Disabled, &provider.Created, &provider.Updated)
+	if err != nil {
+		return nil, err
+	}
 
-// 	return &provider, nil
-// }
+	return &provider, nil
+}

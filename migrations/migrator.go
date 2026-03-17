@@ -50,8 +50,8 @@ func (m *Migrator) Run(operation string, limit int) (string, error) {
 	return "MIGRATION_OPERATION_ERROR", fmt.Errorf("invalid operation: %s", operation)
 }
 
-func InitializeMigrations(appPrefix string, migrationTable string, sqlMigrations embed.FS, createDatabaseFlag bool) *Migrator {
-	config := common.NewConfig(common.CreateLogger(common.LogLevelInfo, ""), ".env", appPrefix)
+func InitializeMigrations(envFile string, appPrefix string, migrationTable string, sqlMigrations embed.FS, createDatabaseFlag bool) *Migrator {
+	config := common.NewConfig(common.CreateLogger(common.LogLevelInfo, ""), envFile, appPrefix)
 	logger := common.CreateLogger(config.LogLevel, config.LogFilePath)
 
 	logger.Info("initializing migrations ... for app prefix: ", zap.String("appPrefix", appPrefix))
