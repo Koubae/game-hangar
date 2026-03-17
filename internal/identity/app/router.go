@@ -15,7 +15,7 @@ func RouterRegister(container *di.Container) web.RouterRegisterFunc {
 
 		v1 := web.Group(mux, "/api/v1")
 
-		authRouter.RouterRegister(v1)
+		authRouter.RouterRegister(v1, container)
 
 		account := web.Group(v1, "/account")
 		account.HandleFunc(

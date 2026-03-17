@@ -9,12 +9,21 @@ import (
 	"github.com/koubae/game-hangar/internal/identity/app/modules/account/dto"
 	accountService "github.com/koubae/game-hangar/internal/identity/app/modules/account/service"
 	"github.com/koubae/game-hangar/pkg/common"
+	"github.com/koubae/game-hangar/pkg/di"
 	"github.com/koubae/game-hangar/pkg/web"
 )
 
-type AuthController struct{}
+type AuthController struct {
+	container *di.Container
+}
 
-func (controller *AuthController) RegisterByUsername(w http.ResponseWriter, r *http.Request) {
+func NewAuthController(container *di.Container) *AuthController {
+	return &AuthController{
+		container: container,
+	}
+}
+
+func (c *AuthController) RegisterByUsername(w http.ResponseWriter, r *http.Request) {
 	var payload dto.CreateAccountDTO
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		web.WriteBusinessErrorResponse(
@@ -37,7 +46,7 @@ func (controller *AuthController) RegisterByUsername(w http.ResponseWriter, r *h
 
 }
 
-func (controller *AuthController) LoginByUsername(w http.ResponseWriter, r *http.Request) {
+func (c *AuthController) LoginByUsername(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	_, _ = io.WriteString(w, "ok LoginByUsername\n")
 }
