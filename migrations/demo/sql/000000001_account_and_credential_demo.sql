@@ -2,7 +2,7 @@
 INSERT INTO account (username, email, id)
 VALUES ('account_test_1', 'account_test_1@test.com', '06e1b677-a4fe-42cf-8afd-ceec867d1fa5'),
        ('account_test_2', 'account_test_2@test.com', '93a6437f-af81-47c1-9aa4-5caedc0a6869'),
-       ('account_test_3', 'account_test_3@test.com', '9e0f95a2-6535-4679-9db6-c93a823702b1')
+       ('account_test_3', NULL, '9e0f95a2-6535-4679-9db6-c93a823702b1')
 ;
 
 SELECT * FROM account;
@@ -42,9 +42,9 @@ DO
 $$
 DECLARE
     -- Account IDs (selected by email)
-    account_1_id UUID := (SELECT id FROM account WHERE email = 'account_test_1@test.com');
-    account_2_id UUID := (SELECT id FROM account WHERE email = 'account_test_2@test.com');
-    account_3_id UUID := (SELECT id FROM account WHERE email = 'account_test_3@test.com');
+    account_1_id UUID := (SELECT id FROM account WHERE username = 'account_test_1');
+    account_2_id UUID := (SELECT id FROM account WHERE username = 'account_test_2');
+    account_3_id UUID := (SELECT id FROM account WHERE username = 'account_test_3');
     -- Provider IDs (selected by name)
     provider_username BIGINT := (SELECT id FROM provider WHERE name = 'username');
     provider_email    BIGINT := (SELECT id FROM provider WHERE name = 'email');
@@ -70,10 +70,8 @@ BEGIN
         -- user_test_3
         ('account_test_3', account_3_id, provider_username,
          encode(digest('pass', 'sha256'), 'hex'),
-         true, CURRENT_TIMESTAMP),
-        ('account_test_3@test.com', account_3_id, provider_email,
-         encode(digest('pass', 'sha256'), 'hex'),
-         false, NULL);
+         true, CURRENT_TIMESTAMP)
+;
 END
 $$;
 -- +migrate StatementEnd
