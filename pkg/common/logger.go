@@ -64,8 +64,8 @@ func (l *AppLogger) Panic(msg string, fields ...zap.Field) {
 	l.Logger.Panic(msg, fields...)
 }
 
-func (l *AppLogger) logCloser(loggerTmp *AppLogger) {
-	err := l.Logger.Sync()
+func (l *AppLogger) LogCloser(loggerTmp Logger, z *zap.Logger) {
+	err := z.Sync()
 	if err == nil {
 		return
 	}
@@ -76,20 +76,6 @@ func (l *AppLogger) logCloser(loggerTmp *AppLogger) {
 	 Also, this seems to work:
 	!errors.Is(err, syscall.EINVAL)
 	*/
-	if _, ok := errors.AsType[*fs.PathError](err); !ok {
-		loggerTmp.Error(
-			"Error while shutting down logger",
-			zap.String("type", fmt.Sprintf("%T", err)),
-			zap.Error(err),
-		)
-	}
-}
-
-func (l *AppLogger) LogCloser(loggerTmp Logger, z *zap.Logger) {
-	err := z.Sync()
-	if err == nil {
-		return
-	}
 	if _, ok := errors.AsType[*fs.PathError](err); !ok {
 		loggerTmp.Error(
 			"Error while shutting down logger",

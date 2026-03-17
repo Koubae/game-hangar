@@ -30,7 +30,7 @@ func NewAppContainer(appPrefix string, logger common.Logger) (*AppContainer, err
 	if err != nil {
 		return nil, err
 	}
-	connector, err := postgres.NewConnector(dbConfig)
+	connector, err := postgres.InitConnector(dbConfig)
 	if err != nil {
 		return nil, err
 	}

@@ -65,7 +65,7 @@ func InitializeMigrations(envFile string, appPrefix string, migrationTable strin
 		createDatabase(appPrefix, dbConfig.Database, logger)
 	}
 
-	dbPool, err := postgres.NewConnector(dbConfig)
+	dbPool, err := postgres.InitConnector(dbConfig)
 	if err != nil {
 		logger.Fatal("failed to connect to database", zap.Error(err))
 	} else if dbPool == nil {

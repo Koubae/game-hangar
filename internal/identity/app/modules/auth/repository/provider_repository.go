@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"errors"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
@@ -36,6 +37,9 @@ func (r *ProviderRepository) GetProvider(ctx context.Context, name string) (*mod
 	var provider model.Provider
 	err := row.Scan(&provider.ID, &provider.Name, &provider.DisplayName, &provider.Category, &provider.Disabled, &provider.Created, &provider.Updated)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
 		return nil, err
 	}
 

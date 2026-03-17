@@ -19,7 +19,7 @@ func main() {
 	if err != nil {
 		logger.Fatal("failed to load database configuration", zap.Error(err))
 	}
-	dbPool, err := postgres.NewConnector(dbConfig)
+	dbPool, err := postgres.InitConnector(dbConfig)
 	if err != nil {
 		logger.Fatal("failed to connect to database", zap.Error(err))
 	} else if dbPool == nil {
