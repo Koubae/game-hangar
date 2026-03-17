@@ -10,7 +10,7 @@ const AppPrefix = "IDENTITY_"
 
 // Tests Database connection
 func main() {
-	config := common.NewConfig(common.CreateLogger(common.LogLevelInfo, ""), AppPrefix)
+	config := common.NewConfig(common.CreateLogger(common.LogLevelInfo, ""), ".env", AppPrefix)
 	logger := common.CreateLogger(config.LogLevel, config.LogFilePath)
 
 	logger.Info("ping-db script initialized... ")
