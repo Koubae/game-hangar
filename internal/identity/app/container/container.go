@@ -3,12 +3,21 @@ package container
 import (
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/database/postgres"
+	"github.com/koubae/game-hangar/pkg/di"
 	"go.uber.org/zap"
 )
 
+type IdentityContainer interface {
+	di.Container
+
+	DB() *postgres.ConnectorPostgres
+}
+
 type AppContainer struct {
 	logger common.Logger
-	DB     *postgres.ConnectorPostgres
+	db     *postgres.ConnectorPostgres
+
+	// Repositories
 }
 
 func NewAppContainer(appPrefix string, logger common.Logger) (*AppContainer, error) {
@@ -25,10 +34,15 @@ func NewAppContainer(appPrefix string, logger common.Logger) (*AppContainer, err
 
 	return &AppContainer{
 		logger: logger,
-		DB:     db,
+		db:     db,
 	}, nil
 }
 
+// ------------------------------------------
+//
+//	Implements di.Container interface
+//
+// ------------------------------------------
 func (c *AppContainer) Logger() common.Logger {
 	return c.logger
 }
@@ -41,9 +55,15 @@ func (c *AppContainer) Shutdown() error {
 		}
 	}()
 
-	if c.DB != nil {
-		c.DB.Shutdown()
-		c.Logger().Info("database connection closed")
-	}
+	c.DB().Shutdown()
+	c.Logger().Info("database connection closed")
 	return nil
+}
+
+// ------------------------------------------
+// 	Implements IdentityContainer interface
+// ------------------------------------------
+
+func (c *AppContainer) DB() *postgres.ConnectorPostgres {
+	return c.db
 }
