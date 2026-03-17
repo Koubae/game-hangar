@@ -105,3 +105,10 @@ migrate-identity-down:
 	@go run ./migrations/identity/migrate_identity.go -action down 0
 migrate-identity-status:
 	@go run ./migrations/identity/migrate_identity.go -action status
+
+migrate-demo-data-up:
+	@go run ./migrations/demo/migrate_demo_data.go -action up 0
+migrate-demo-data-down:
+	@go run ./migrations/demo/migrate_demo_data.go -action down 0
+migrate-demo-data-status:
+	@go run ./migrations/demo/migrate_demo_data.go -action status

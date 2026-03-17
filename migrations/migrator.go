@@ -18,10 +18,6 @@ import (
 	"github.com/koubae/game-hangar/pkg/database/postgres"
 )
 
-const (
-	MigrationTable = "schema_migrations"
-)
-
 type Migrator struct {
 	db            *sql.DB
 	dbPool        *postgres.ConnectorPostgres
@@ -29,8 +25,8 @@ type Migrator struct {
 	Logger        *common.AppLogger
 }
 
-func NewMigrator(db *sql.DB, dbPool *postgres.ConnectorPostgres, sqlMigrations embed.FS, logger *common.AppLogger) *Migrator {
-	migrate.SetTable(MigrationTable)
+func NewMigrator(db *sql.DB, dbPool *postgres.ConnectorPostgres, migrationTable string, sqlMigrations embed.FS, logger *common.AppLogger) *Migrator {
+	migrate.SetTable(migrationTable)
 	migrate.SetIgnoreUnknown(true)
 
 	return &Migrator{db, dbPool, sqlMigrations, logger}
@@ -54,7 +50,7 @@ func (m *Migrator) Run(operation string, limit int) (string, error) {
 	return "MIGRATION_OPERATION_ERROR", fmt.Errorf("invalid operation: %s", operation)
 }
 
-func InitializeMigrations(appPrefix string, sqlMigrations embed.FS) *Migrator {
+func InitializeMigrations(appPrefix string, migrationTable string, sqlMigrations embed.FS, createDatabaseFlag bool) *Migrator {
 	config := common.NewConfig(common.CreateLogger(common.LogLevelInfo, ""), appPrefix)
 	logger := common.CreateLogger(config.LogLevel, config.LogFilePath)
 
@@ -64,7 +60,10 @@ func InitializeMigrations(appPrefix string, sqlMigrations embed.FS) *Migrator {
 	if err != nil {
 		logger.Fatal("failed to load database configuration", zap.Error(err))
 	}
-	createDatabase(appPrefix, dbConfig.Database, logger)
+
+	if createDatabaseFlag {
+		createDatabase(appPrefix, dbConfig.Database, logger)
+	}
 
 	dbPool, err := postgres.NewConnector(dbConfig)
 	if err != nil {
@@ -74,7 +73,7 @@ func InitializeMigrations(appPrefix string, sqlMigrations embed.FS) *Migrator {
 	}
 
 	logger.Info("database connection established... ", zap.String("dbConfig", dbConfig.String()))
-	return NewMigrator(stdlib.OpenDBFromPool(dbPool.Pool), dbPool, sqlMigrations, logger)
+	return NewMigrator(stdlib.OpenDBFromPool(dbPool.Pool), dbPool, migrationTable, sqlMigrations, logger)
 }
 
 func createDatabase(appPrefix string, database string, logger *common.AppLogger) {
