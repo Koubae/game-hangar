@@ -1,14 +1,12 @@
 package common
 
 import (
-	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
-	"runtime"
 	"slices"
 
 	"github.com/joho/godotenv"
+	vars "github.com/koubae/game-hangar"
 	"go.uber.org/zap"
 )
 
@@ -121,44 +119,8 @@ func NewConfig(logger Logger, envFileName string, envPrefix string) *Config {
 }
 
 func loadEnvFile(envFileName string) error {
-	root, err := findProjectRoot()
-	if err != nil {
-		return errors.New("failed to find project root")
-	}
-	envPath := filepath.Join(root, envFileName)
+	envPath := filepath.Join(vars.RootDir, envFileName)
 	_ = godotenv.Load(envPath)
 
 	return nil
-}
-
-// TODO: This func was AI created (cursor - Composer 1.5) in a rush
-// TODO: Need to check whether there is a better way to handle this.. not sure
-// I really don't like this approach.
-func findProjectRoot() (string, error) {
-	// 1. Explicit env var (production) – most reliable
-	if root := os.Getenv("APP_ROOT"); root != "" {
-		if abs, err := filepath.Abs(root); err == nil {
-			return abs, nil
-		}
-	}
-	// 2. Development: find go.mod from caller's location
-	if _, file, _, ok := runtime.Caller(0); ok {
-		dir := filepath.Dir(file)
-		for {
-			if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
-				return dir, nil
-			}
-			parent := filepath.Dir(dir)
-			if parent == dir {
-				break
-			}
-			dir = parent
-		}
-	}
-	// 3. Fallback: directory of the executable (binary + .env in same dir)
-	if execPath, err := os.Executable(); err == nil {
-		return filepath.Dir(execPath), nil
-	}
-	// 4. Last resort: current working directory
-	return os.Getwd()
 }

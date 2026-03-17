@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	vars "github.com/koubae/game-hangar"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -159,22 +160,27 @@ func utcTimeEncoder(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
 	enc.AppendString(t.UTC().Format("2006-01-02T15:04:05.000Z"))
 }
 
+// filepath: logs/app.log
+// filePathAbs: <root-dir>/logs/app.log i.e. => /home/user/project/logs/app.log
+// filePathDir: /home/user/project/logs
 func createFileLoggerWriter(filePath string) *lumberjack.Logger {
 	logger := zap.L()
-	dir := filepath.Dir(filePath)
 
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		if err := os.MkdirAll(dir, 0o755); err != nil {
+	filePathAbs := filepath.Join(vars.RootDir, filePath)
+	filePathDir := filepath.Dir(filePathAbs)
+
+	if _, err := os.Stat(filePathDir); os.IsNotExist(err) {
+		if err := os.MkdirAll(filePathDir, 0o755); err != nil {
 			logger.Panic(
 				"failed to create log directory",
-				zap.String("dir", dir),
+				zap.String("dir", filePathDir),
 				zap.Error(err),
 			)
 		}
 	}
 
 	return &lumberjack.Logger{
-		Filename:   filePath,
+		Filename:   filePathAbs,
 		MaxSize:    10, // megabytes
 		MaxBackups: 3,
 		MaxAge:     7, // days
