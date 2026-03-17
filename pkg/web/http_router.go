@@ -6,14 +6,15 @@ import (
 	"net/http"
 
 	"github.com/koubae/game-hangar/pkg/common"
+	"github.com/koubae/game-hangar/pkg/di"
 	"github.com/koubae/game-hangar/pkg/middleware"
 	"github.com/rs/cors"
 )
 
 type RouterRegisterFunc func(mux *http.ServeMux)
-type RouterFunc func(logger common.Logger, config *common.Config, routerRegister RouterRegisterFunc) *http.Handler
+type RouterFunc func(container *di.Container, config *common.Config, routerRegister RouterRegisterFunc) *http.Handler
 
-func Router(logger common.Logger, config *common.Config, routerRegister RouterRegisterFunc) *http.Handler {
+func Router(container *di.Container, config *common.Config, routerRegister RouterRegisterFunc) *http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc(
 		"GET /{$}", func(w http.ResponseWriter, r *http.Request) {
@@ -50,8 +51,8 @@ func Router(logger common.Logger, config *common.Config, routerRegister RouterRe
 			AllowCredentials: config.CORSConfig.AllowCredentials,
 		},
 	).Handler(mux)
-	handler = middleware.AccessLogger(logger, handler)
-	handler = middleware.RecoveryMiddleware(logger, handler)
+	handler = middleware.AccessLogger(container.Logger, handler)
+	handler = middleware.RecoveryMiddleware(container.Logger, handler)
 	return &handler
 
 }

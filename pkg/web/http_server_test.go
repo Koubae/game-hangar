@@ -11,11 +11,14 @@ import (
 	"time"
 
 	"github.com/koubae/game-hangar/pkg/common"
+	"github.com/koubae/game-hangar/pkg/di"
 	"github.com/rs/cors"
 	"go.uber.org/zap"
 )
 
-func testRouter(_ common.Logger, _ *common.Config, routerRegister RouterRegisterFunc) *http.Handler {
+const AppPrefix = "TESTING_"
+
+func testRouter(_ *di.Container, _ *common.Config, routerRegister RouterRegisterFunc) *http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc(
 		"/", func(w http.ResponseWriter, r *http.Request) {
@@ -44,12 +47,21 @@ func testRouterRegister(mux *http.ServeMux) {
 }
 
 func TestAppInitialization(t *testing.T) {
-	app := NewHTTPApp("IDENTITY_", testRouter, testRouterRegister)
+	loggerTmp := common.CreateLogger(common.LogLevelInfo, "")
+	config := common.NewConfig(loggerTmp, ".env.testing", AppPrefix)
+	logger := common.CreateLogger(config.LogLevel, config.LogFilePath)
+
+	container, err := di.NewContainer(AppPrefix, logger)
+	if err != nil {
+		t.Fatalf("Error while creating container, error: %s", err)
+	}
+
+	app := NewHTTPApp(AppPrefix, container, config, testRouter, testRouterRegister)
 
 	if app.Config == nil {
 		t.Fatal("Config should not be nil")
 	}
-	if app.Logger == nil {
+	if app.Container.Logger == nil {
 		t.Fatal("Logger should not be nil")
 	}
 	if app.Server == nil {
@@ -67,7 +79,15 @@ func TestAppInitialization(t *testing.T) {
 }
 
 func TestAppStartStop(t *testing.T) {
-	app := NewHTTPApp("", testRouter, testRouterRegister)
+	loggerTmp := common.CreateLogger(common.LogLevelInfo, "")
+	config := common.NewConfig(loggerTmp, ".env.testing", AppPrefix)
+	logger := common.CreateLogger(config.LogLevel, config.LogFilePath)
+
+	container, err := di.NewContainer(AppPrefix, logger)
+	if err != nil {
+		t.Fatalf("Error while creating container, error: %s", err)
+	}
+	app := NewHTTPApp(AppPrefix, container, config, testRouter, testRouterRegister)
 
 	// Use a random port to avoid conflicts
 	app.Config.Port = 0
@@ -150,7 +170,16 @@ func (m *MockLogger) Fatal(msg string, fields ...zap.Field) {
 }
 
 func TestAppStopError(t *testing.T) {
-	app := NewHTTPApp("", testRouter, testRouterRegister)
+	loggerTmp := common.CreateLogger(common.LogLevelInfo, "")
+	config := common.NewConfig(loggerTmp, ".env.testing", AppPrefix)
+	logger := common.CreateLogger(config.LogLevel, config.LogFilePath)
+
+	container, err := di.NewContainer(AppPrefix, logger)
+	if err != nil {
+		t.Fatalf("Error while creating container, error: %s", err)
+	}
+	app := NewHTTPApp(AppPrefix, container, config, testRouter, testRouterRegister)
+
 	expectedErr := errors.New("shutdown error")
 	app.Server = &MockServer{
 		ShutdownFunc: func(ctx context.Context) error {
@@ -158,18 +187,28 @@ func TestAppStopError(t *testing.T) {
 		},
 	}
 
-	err := app.Stop()
+	err = app.Stop()
 	if !errors.Is(err, expectedErr) {
 		t.Errorf("expected error %v, got %v", expectedErr, err)
 	}
 }
 
 func TestAppStartError(t *testing.T) {
-	app := NewHTTPApp("", testRouter, testRouterRegister)
+	loggerTmp := common.CreateLogger(common.LogLevelInfo, "")
+
+	config := common.NewConfig(loggerTmp, ".env.testing", AppPrefix)
+	logger := common.CreateLogger(config.LogLevel, config.LogFilePath)
+
+	container, err := di.NewContainer(AppPrefix, logger)
+	if err != nil {
+		t.Fatalf("Error while creating container, error: %s", err)
+	}
+	app := NewHTTPApp(AppPrefix, container, config, testRouter, testRouterRegister)
+
 	expectedErr := errors.New("listen and serve error")
 
 	mockLogger := &MockLogger{}
-	app.Logger = mockLogger
+	app.Container.Logger = mockLogger
 
 	app.Server = &MockServer{
 		ListenAndServeFunc: func() error {

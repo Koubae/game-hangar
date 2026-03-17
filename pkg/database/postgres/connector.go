@@ -22,7 +22,7 @@ type poolInterface interface {
 }
 
 type ConnectorPostgres struct {
-	Pool   *pgxpool.Pool
+	Pool   poolInterface
 	config *DatabasePostgresConfig
 }
 

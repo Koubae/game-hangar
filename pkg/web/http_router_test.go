@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/koubae/game-hangar/pkg/common"
+	"github.com/koubae/game-hangar/pkg/di"
 	"go.uber.org/zap"
 )
 
@@ -18,7 +19,7 @@ func TestRouterEndpoints(t *testing.T) {
 	}
 	routerRegister := func(mux *http.ServeMux) {}
 
-	handlerPtr := Router(logger, config, routerRegister)
+	handlerPtr := Router(&di.Container{Logger: logger}, config, routerRegister)
 	handler := *handlerPtr
 
 	tests := []struct {

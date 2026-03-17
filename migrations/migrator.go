@@ -51,7 +51,7 @@ func (m *Migrator) Run(operation string, limit int) (string, error) {
 }
 
 func InitializeMigrations(appPrefix string, migrationTable string, sqlMigrations embed.FS, createDatabaseFlag bool) *Migrator {
-	config := common.NewConfig(common.CreateLogger(common.LogLevelInfo, ""), appPrefix)
+	config := common.NewConfig(common.CreateLogger(common.LogLevelInfo, ""), ".env", appPrefix)
 	logger := common.CreateLogger(config.LogLevel, config.LogFilePath)
 
 	logger.Info("initializing migrations ... for app prefix: ", zap.String("appPrefix", appPrefix))
@@ -73,7 +73,7 @@ func InitializeMigrations(appPrefix string, migrationTable string, sqlMigrations
 	}
 
 	logger.Info("database connection established... ", zap.String("dbConfig", dbConfig.String()))
-	return NewMigrator(stdlib.OpenDBFromPool(dbPool.Pool), dbPool, migrationTable, sqlMigrations, logger)
+	return NewMigrator(stdlib.OpenDBFromPool(dbPool.Pool.(*pgxpool.Pool)), dbPool, migrationTable, sqlMigrations, logger)
 }
 
 func createDatabase(appPrefix string, database string, logger *common.AppLogger) {
