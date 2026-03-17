@@ -1,3 +1,3 @@
-package tests
+package integration
 
 const AppPrefix = "TESTING_"

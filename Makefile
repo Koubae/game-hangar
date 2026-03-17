@@ -64,6 +64,9 @@ test-all:
 test-unit:
 	go test -v -short $(COVERAGE_PKGS) -cover
 
+test-integration:
+	go test -v ./tests/integration/... -cover
+
 # TODO: Check whether there is a better way to do this. This was AI generated and seems a mess
 # Intention here is:
 #	1) Ignore certain folders (COVERAGE_PKGS should list ONLY the actual go module that are testable)
