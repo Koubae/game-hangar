@@ -5,8 +5,8 @@ import (
 	"log"
 
 	"github.com/koubae/game-hangar/internal/identity/app"
+	"github.com/koubae/game-hangar/internal/identity/app/container"
 	"github.com/koubae/game-hangar/pkg/common"
-	"github.com/koubae/game-hangar/pkg/di"
 	"github.com/koubae/game-hangar/pkg/web"
 )
 
@@ -17,7 +17,7 @@ func RunServer() {
 	config := common.NewConfig(loggerTmp, ".env", AppPrefix)
 	logger := common.CreateLogger(config.LogLevel, config.LogFilePath)
 
-	container, err := di.NewContainer(AppPrefix, logger)
+	container, err := container.NewAppContainer(AppPrefix, logger)
 	if err != nil {
 		log.Fatalf("Error while creating container, error: %s", err)
 	}

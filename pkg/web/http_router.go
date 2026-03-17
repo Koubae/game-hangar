@@ -12,9 +12,9 @@ import (
 )
 
 type RouterRegisterFunc func(mux *http.ServeMux)
-type RouterFunc func(container *di.Container, config *common.Config, routerRegister RouterRegisterFunc) *http.Handler
+type RouterFunc func(container di.Container, config *common.Config, routerRegister RouterRegisterFunc) *http.Handler
 
-func Router(container *di.Container, config *common.Config, routerRegister RouterRegisterFunc) *http.Handler {
+func Router(container di.Container, config *common.Config, routerRegister RouterRegisterFunc) *http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc(
 		"GET /{$}", func(w http.ResponseWriter, r *http.Request) {
@@ -51,8 +51,8 @@ func Router(container *di.Container, config *common.Config, routerRegister Route
 			AllowCredentials: config.CORSConfig.AllowCredentials,
 		},
 	).Handler(mux)
-	handler = middleware.AccessLogger(container.Logger, handler)
-	handler = middleware.RecoveryMiddleware(container.Logger, handler)
+	handler = middleware.AccessLogger(container.Logger(), handler)
+	handler = middleware.RecoveryMiddleware(container.Logger(), handler)
 	return &handler
 
 }

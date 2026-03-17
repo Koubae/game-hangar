@@ -10,7 +10,7 @@ import (
 	"github.com/koubae/game-hangar/pkg/web"
 )
 
-func RouterRegister(container *di.Container) web.RouterRegisterFunc {
+func RouterRegister(container di.Container) web.RouterRegisterFunc {
 	return func(mux *http.ServeMux) {
 
 		v1 := web.Group(mux, "/api/v1")

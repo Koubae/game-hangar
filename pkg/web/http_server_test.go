@@ -18,7 +18,7 @@ import (
 
 const AppPrefix = "TESTING_"
 
-func testRouter(_ *di.Container, _ *common.Config, routerRegister RouterRegisterFunc) *http.Handler {
+func testRouter(_ di.Container, _ *common.Config, routerRegister RouterRegisterFunc) *http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc(
 		"/", func(w http.ResponseWriter, r *http.Request) {
@@ -51,17 +51,13 @@ func TestAppInitialization(t *testing.T) {
 	config := common.NewConfig(loggerTmp, ".env.testing", AppPrefix)
 	logger := common.CreateLogger(config.LogLevel, config.LogFilePath)
 
-	container, err := di.NewContainer(AppPrefix, logger)
-	if err != nil {
-		t.Fatalf("Error while creating container, error: %s", err)
-	}
-
+	container := &MockContainer{logger: logger}
 	app := NewHTTPApp(AppPrefix, container, config, testRouter, testRouterRegister)
 
 	if app.Config == nil {
 		t.Fatal("Config should not be nil")
 	}
-	if app.Container.Logger == nil {
+	if app.Container.Logger() == nil {
 		t.Fatal("Logger should not be nil")
 	}
 	if app.Server == nil {
@@ -83,10 +79,7 @@ func TestAppStartStop(t *testing.T) {
 	config := common.NewConfig(loggerTmp, ".env.testing", AppPrefix)
 	logger := common.CreateLogger(config.LogLevel, config.LogFilePath)
 
-	container, err := di.NewContainer(AppPrefix, logger)
-	if err != nil {
-		t.Fatalf("Error while creating container, error: %s", err)
-	}
+	container := &MockContainer{logger: logger}
 	app := NewHTTPApp(AppPrefix, container, config, testRouter, testRouterRegister)
 
 	// Use a random port to avoid conflicts
@@ -174,10 +167,7 @@ func TestAppStopError(t *testing.T) {
 	config := common.NewConfig(loggerTmp, ".env.testing", AppPrefix)
 	logger := common.CreateLogger(config.LogLevel, config.LogFilePath)
 
-	container, err := di.NewContainer(AppPrefix, logger)
-	if err != nil {
-		t.Fatalf("Error while creating container, error: %s", err)
-	}
+	container := &MockContainer{logger: logger}
 	app := NewHTTPApp(AppPrefix, container, config, testRouter, testRouterRegister)
 
 	expectedErr := errors.New("shutdown error")
@@ -187,7 +177,7 @@ func TestAppStopError(t *testing.T) {
 		},
 	}
 
-	err = app.Stop()
+	err := app.Stop()
 	if !errors.Is(err, expectedErr) {
 		t.Errorf("expected error %v, got %v", expectedErr, err)
 	}
@@ -197,18 +187,12 @@ func TestAppStartError(t *testing.T) {
 	loggerTmp := common.CreateLogger(common.LogLevelInfo, "")
 
 	config := common.NewConfig(loggerTmp, ".env.testing", AppPrefix)
-	logger := common.CreateLogger(config.LogLevel, config.LogFilePath)
+	mockLogger := &MockLogger{}
 
-	container, err := di.NewContainer(AppPrefix, logger)
-	if err != nil {
-		t.Fatalf("Error while creating container, error: %s", err)
-	}
+	container := &MockContainer{logger: mockLogger}
 	app := NewHTTPApp(AppPrefix, container, config, testRouter, testRouterRegister)
 
 	expectedErr := errors.New("listen and serve error")
-
-	mockLogger := &MockLogger{}
-	app.Container.Logger = mockLogger
 
 	app.Server = &MockServer{
 		ListenAndServeFunc: func() error {

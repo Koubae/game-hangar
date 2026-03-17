@@ -14,10 +14,10 @@ import (
 )
 
 type AuthController struct {
-	container *di.Container
+	container di.Container
 }
 
-func NewAuthController(container *di.Container) *AuthController {
+func NewAuthController(container di.Container) *AuthController {
 	return &AuthController{
 		container: container,
 	}

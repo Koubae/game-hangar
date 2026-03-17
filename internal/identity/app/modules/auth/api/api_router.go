@@ -7,7 +7,7 @@ import (
 	"github.com/koubae/game-hangar/pkg/web"
 )
 
-func RouterRegister(v1 *http.ServeMux, container *di.Container) {
+func RouterRegister(v1 *http.ServeMux, container di.Container) {
 	auth := web.Group(v1, "/auth")
 
 	authController := NewAuthController(container)

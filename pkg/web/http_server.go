@@ -23,7 +23,7 @@ type Server interface {
 type HTTPApp struct {
 	Config    *common.Config
 	Server    Server
-	Container *di.Container
+	Container di.Container
 }
 
 type httpServerWrapper struct {
@@ -34,7 +34,7 @@ func (s *httpServerWrapper) Handler() http.Handler {
 	return s.Server.Handler
 }
 
-func NewHTTPApp(appPrefix string, container *di.Container, config *common.Config, router RouterFunc, routerRegister RouterRegisterFunc) *HTTPApp {
+func NewHTTPApp(appPrefix string, container di.Container, config *common.Config, router RouterFunc, routerRegister RouterRegisterFunc) *HTTPApp {
 	routerHandler := router(container, config, routerRegister)
 	srv := &http.Server{
 		Addr:           config.GetAppURL(),
@@ -55,11 +55,11 @@ func NewHTTPApp(appPrefix string, container *di.Container, config *common.Config
 func (a *HTTPApp) Start(ctx context.Context) {
 	go func() {
 		if err := a.Server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			a.Container.Logger.Fatal("Server failed to start", zap.Error(err))
+			a.Container.Logger().Fatal("Server failed to start", zap.Error(err))
 		}
 	}()
 
-	a.Container.Logger.Info(
+	a.Container.Logger().Info(
 		"Server started",
 		zap.String("addr", a.Config.GetAppURL()),
 		zap.String("app", a.Config.GetFullName()),
@@ -79,26 +79,26 @@ func (a *HTTPApp) Start(ctx context.Context) {
 
 func (a *HTTPApp) Stop() error {
 	defer func() {
-		a.Container.Logger.Info("Server has shutdown, cleaning up resources ...")
+		a.Container.Logger().Info("Server has shutdown, cleaning up resources ...")
 
 		if a.Container != nil {
 			if err := a.Container.Shutdown(); err != nil {
-				a.Container.Logger.Error("Container Shutdown Failed", zap.Error(err))
+				a.Container.Logger().Error("Container Shutdown Failed", zap.Error(err))
 			}
 		}
 
-		a.Container.Logger.Info("Resource cleanup completed, terminating process...")
+		a.Container.Logger().Info("Resource cleanup completed, terminating process...")
 	}()
 
 	serverShutdownGraceTimeout := time.Duration(a.Config.ServerShutdownGraceTimeout) * time.Second
-	a.Container.Logger.Info(
+	a.Container.Logger().Info(
 		"Shutdown signal received, Shutting down server gracefully... ",
 		zap.Duration("shutdown_gracefull_timeout", serverShutdownGraceTimeout),
 	)
 	ctx, cancel := context.WithTimeout(context.Background(), serverShutdownGraceTimeout)
 	defer cancel()
 	if err := a.Server.Shutdown(ctx); err != nil {
-		a.Container.Logger.Error("Server Shutdown Failed", zap.Error(err))
+		a.Container.Logger().Error("Server Shutdown Failed", zap.Error(err))
 		return err
 	}
 
