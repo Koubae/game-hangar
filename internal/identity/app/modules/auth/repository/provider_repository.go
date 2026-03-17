@@ -8,6 +8,9 @@ import (
 	"github.com/koubae/game-hangar/pkg/database/postgres"
 )
 
+type IProviderRepository interface {
+}
+
 type ProviderRepository struct {
 	DBConnector *postgres.ConnectorPostgres
 }

@@ -1,6 +1,7 @@
 package container
 
 import (
+	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/repository"
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/database/postgres"
 	"github.com/koubae/game-hangar/pkg/di"
@@ -10,14 +11,18 @@ import (
 type IdentityContainer interface {
 	di.Container
 
-	DB() *postgres.ConnectorPostgres
+	DBConnector() *postgres.ConnectorPostgres
+
+	// Repositories
+	ProviderRepository() repository.IProviderRepository
 }
 
 type AppContainer struct {
-	logger common.Logger
-	db     *postgres.ConnectorPostgres
+	logger    common.Logger
+	connector *postgres.ConnectorPostgres
 
 	// Repositories
+	providerRepository repository.IProviderRepository
 }
 
 func NewAppContainer(appPrefix string, logger common.Logger) (*AppContainer, error) {
@@ -25,16 +30,19 @@ func NewAppContainer(appPrefix string, logger common.Logger) (*AppContainer, err
 	if err != nil {
 		return nil, err
 	}
-	db, err := postgres.NewConnector(dbConfig)
+	connector, err := postgres.NewConnector(dbConfig)
 	if err != nil {
 		return nil, err
 	}
 
-	logger.Info("database connection established", zap.String("db", db.String()))
+	logger.Info("database connection established", zap.String("db", connector.String()))
+
+	providerRepository := repository.NewProviderRepository(connector)
 
 	return &AppContainer{
-		logger: logger,
-		db:     db,
+		logger:             logger,
+		connector:          connector,
+		providerRepository: providerRepository,
 	}, nil
 }
 
@@ -55,7 +63,7 @@ func (c *AppContainer) Shutdown() error {
 		}
 	}()
 
-	c.DB().Shutdown()
+	c.DBConnector().Shutdown()
 	c.Logger().Info("database connection closed")
 	return nil
 }
@@ -64,6 +72,11 @@ func (c *AppContainer) Shutdown() error {
 // 	Implements IdentityContainer interface
 // ------------------------------------------
 
-func (c *AppContainer) DB() *postgres.ConnectorPostgres {
-	return c.db
+func (c *AppContainer) DBConnector() *postgres.ConnectorPostgres {
+	return c.connector
+}
+
+func (c *AppContainer) ProviderRepository() *repository.IProviderRepository {
+	return &c.providerRepository
+
 }
