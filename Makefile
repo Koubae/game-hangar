@@ -103,15 +103,34 @@ endif
 # 	Migrations
 # //////////////////////
 migrate-identity-up:
-	@go run ./migrations/identity/migrate_identity.go -action up 0
+	@go run ./migrations/identity/migrate_identity.go -action up -limit 0
 migrate-identity-down:
-	@go run ./migrations/identity/migrate_identity.go -action down 0
+	@go run ./migrations/identity/migrate_identity.go -action down -limit 0
 migrate-identity-status:
 	@go run ./migrations/identity/migrate_identity.go -action status
 
 migrate-demo-data-up:
-	@go run ./migrations/demo/migrate_demo_data.go -action up 0
+	@go run ./migrations/demo/migrate_demo_data.go -action up -limit 0
 migrate-demo-data-down:
-	@go run ./migrations/demo/migrate_demo_data.go -action down 0
+	@go run ./migrations/demo/migrate_demo_data.go -action down -limit 0
 migrate-demo-data-status:
 	@go run ./migrations/demo/migrate_demo_data.go -action status
+
+# --------------------------------
+# Test DB
+# --------------------------------
+migrate-test-identity-up:
+	@go run ./migrations/identity/migrate_identity.go -action up -limit 1 -env .env.testing -appPrefix TESTING_
+migrate-test-identity-down:
+	@go run ./migrations/identity/migrate_identity.go -action down -limit 1 -env .env.testing -appPrefix TESTING_
+migrate-test-identity-status:
+	@go run ./migrations/identity/migrate_identity.go -action status -env .env.testing -appPrefix TESTING_
+
+migrate-test-demo-data-up:
+	@go run ./migrations/demo/migrate_demo_data.go -action up -limit 1 -env .env.testing -appPrefix TESTING_
+migrate-test-demo-data-down:
+	@go run ./migrations/demo/migrate_demo_data.go -action down -limit 1 -env .env.testing -appPrefix TESTING_
+migrate-test-demo-data-status:
+	@go run ./migrations/demo/migrate_demo_data.go -action status -env .env.testing -appPrefix TESTING_
+
+

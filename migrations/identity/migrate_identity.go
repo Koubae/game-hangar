@@ -9,7 +9,6 @@ import (
 )
 
 const (
-	AppPrefix      = "IDENTITY_"
 	MigrationTable = "schema_migrations"
 )
 
@@ -17,8 +16,10 @@ const (
 var sqlMigrations embed.FS
 
 var (
-	action string = "status"
-	limit  int
+	limit     int
+	action    string = "status"
+	envFile   string = ".env"
+	appPrefix string = "IDENTITY_"
 )
 
 /*
@@ -26,18 +27,26 @@ Usage:
 
 	go run ./migrations/identity/migrate_identity.go -action status
 	migrate-identity -action status
-	migrate-identity -action up <limit>
-	migrate-identity -action down <limit>
+	migrate-identity -action up -limit <limit>
+	migrate-identity -action down  -limit <limit>
+
+	-- Tests -- integration tests
+	go run ./migrations/identity/migrate_identity.go -action status -env .env.testing -appPrefix TESTING_
+	go run ./migrations/identity/migrate_identity.go -action up  -limit 0 -env .env.testing -appPrefix TESTING_
+	go run ./migrations/identity/migrate_identity.go -action down  -limit 0 -env .env.testing -appPrefix TESTING_
 */
 func main() {
 	flag.StringVar(&action, "action", "status", "status|up|down")
 	flag.IntVar(&limit, "limit", 0, "max number of migrations to apply (up/down only)")
+	flag.StringVar(&envFile, "env", ".env", "environment file to use")
+	flag.StringVar(&appPrefix, "appPrefix", "IDENTITY_", "application prefix")
 
 	flag.Parse()
 
-	migrator := migrations.InitializeMigrations(AppPrefix, MigrationTable, sqlMigrations, true)
+	migrator := migrations.InitializeMigrations(envFile, appPrefix, MigrationTable, sqlMigrations, true)
 	defer migrator.Close()
-	migrator.Logger.Info("Running migration: ", zap.String("action", action))
+
+	migrator.Logger.Info("Running migration: ", zap.String("action", action), zap.String("envFile", envFile), zap.String("appPrefix", appPrefix))
 
 	result, err := migrator.Run(action, limit)
 	if err != nil {
