@@ -53,7 +53,7 @@ func (r *ProviderRepository) loadProviders(ctx context.Context) {
 		var p model.Provider
 		if err := rows.Scan(&p.ID, &p.Name, &p.DisplayName, &p.Category, &p.Disabled, &p.Created, &p.Updated); err != nil {
 			logger.Error("failed to scan provider", zap.Error(err))
-			continue // or log and continue
+			continue
 		}
 		r.providersCache[p.Name] = &p
 	}
