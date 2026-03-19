@@ -11,6 +11,8 @@ quickstart: init postgres-up migrate-identity-up
 # //////////////////////
 # 	local
 # //////////////////////
+
+# -- identity
 run-identity-local:
 	@air -c .air.identity.toml
 
@@ -97,6 +99,11 @@ endif
 # ============================
 # 	Scripts
 # ============================
+# //////////////////////
+# 	Ping-DB 
+# //////////////////////
+ping-db:
+	@go run ./cmd/ping-db/main.go
 
 
 # //////////////////////
