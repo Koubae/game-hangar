@@ -66,6 +66,11 @@ func (r *ProviderRepository) getDB() *sql.DB {
 	return stdlib.OpenDBFromPool(r.DBConnector.Pool.(*pgxpool.Pool))
 }
 
+// TODO: 	on commit 5ea82e1 I removed SELECT query here. but i think in case we
+//
+//					don't hit Cache then:
+//	       1. We attempt query
+//	       2. If found we add to cache else return nil
 func (r *ProviderRepository) GetProvider(ctx context.Context, name string) (*model.Provider, error) {
 	r.mu.RLock()
 	p, ok := r.providersCache[name]

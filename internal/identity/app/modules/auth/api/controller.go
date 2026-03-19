@@ -35,6 +35,8 @@ func (c *AuthController) RegisterByUsername(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	// ctx := r.Context()
+
 	service := accountService.AccountService{}
 	account, err := service.CreateAccount(payload)
 	if err != nil {
@@ -43,7 +45,6 @@ func (c *AuthController) RegisterByUsername(w http.ResponseWriter, r *http.Reque
 	}
 
 	web.WriteJSONResponse(w, http.StatusCreated, account)
-
 }
 
 func (c *AuthController) LoginByUsername(w http.ResponseWriter, r *http.Request) {

@@ -19,6 +19,18 @@ func (s *AccountService) CreateAccount(dto dto.CreateAccountDTO) (*model.Account
 		}
 	}
 
+	// Create Provider Service
+	// 		IsProviderEnabled?
+	// Create Credential Service
+	// 		CredentialExists? 
+	
+  // 1. Check provider exists 
+  // 2. Check whether Acount exists 
+  // 3. Check credential exists  
+  // 4. .. start tx (transaction)
+  // 5. .. create account 
+	// 6. create credentials 
+
 	account := model.Account{
 		ID:       "uuid-temp",
 		Username: dto.Username,
