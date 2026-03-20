@@ -5,9 +5,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	_ "github.com/jackc/pgx/v5/stdlib"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	ports "github.com/koubae/game-hangar/pkg/database"
 )
 
 var (
@@ -15,11 +18,6 @@ var (
 	connector *ConnectorPostgres
 	errPool   error
 )
-
-type poolInterface interface {
-	Ping(ctx context.Context) error
-	Close()
-}
 
 type ConnectorPostgres struct {
 	Pool   poolInterface
@@ -87,4 +85,40 @@ func (c *ConnectorPostgres) Ping(ctx context.Context) error {
 func (c *ConnectorPostgres) Shutdown() error {
 	c.Pool.Close()
 	return nil
+}
+
+func (c *ConnectorPostgres) SelectMany(
+	ctx context.Context,
+	query string,
+	args ...any,
+) (pgx.Rows, error) {
+	return c.Pool.Query(ctx, query, args...)
+}
+
+func (c *ConnectorPostgres) SelectOne(
+	ctx context.Context,
+	query string,
+	args ...any,
+) pgx.Row {
+	return c.Pool.QueryRow(ctx, query, args...)
+}
+
+func (c *ConnectorPostgres) SQL(
+	ctx context.Context,
+	query string,
+	args ...any,
+) (pgconn.CommandTag, error) {
+	return c.Pool.Exec(ctx, query, args...)
+}
+
+func (c *ConnectorPostgres) Transaction(
+	ctx context.Context,
+	txOptions pgx.TxOptions,
+) (ports.Transaction, error) {
+	tx, err := c.Pool.BeginTx(ctx, txOptions)
+	if err != nil {
+		return nil, err
+	}
+
+	return &PostgresTransaction{tx: tx}, nil
 }
