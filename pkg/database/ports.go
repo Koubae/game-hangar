@@ -2,10 +2,13 @@ package database
 
 import (
 	"context"
+	"errors"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 )
+
+var ErrNotFound = errors.New("resource not found")
 
 // DBTX pool-backed connector and a transaction wrapper implement this.
 type DBTX interface {
