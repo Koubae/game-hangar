@@ -95,7 +95,7 @@ CREATE TABLE IF NOT EXISTS account_credentials
     created     TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated     TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    UNIQUE (credential),
+    UNIQUE (provider_id, credential),
     UNIQUE (account_id, provider_id),
     CONSTRAINT check__verified_requires_timestamp
         CHECK ((verified = FALSE AND verified_at IS NULL) OR (verified = TRUE AND verified_at IS NOT NULL)),

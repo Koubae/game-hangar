@@ -59,6 +59,14 @@ BEGIN
          encode(digest('pass', 'sha256'), 'hex'),
          true, CURRENT_TIMESTAMP),
 
+        -- NOTE: For, I prefer to keep 1 UNIQUE account => provider type because is easier to start
+        -- be more "restrictive" and the drop the key rather than allows duplicate and enforce later
+        -- why this could be important: we could allow multiple email into an account and set the "default"
+        -- being the one attached to the account.email 
+        -- ('account_test_1_secondary@test.com', account_1_id, provider_email,
+        --  encode(digest('pass', 'sha256'), 'hex'),
+        --  true, CURRENT_TIMESTAMP),
+
         -- user_test_2
         ('account_test_2', account_2_id, provider_username,
          encode(digest('pass', 'sha256'), 'hex'),
@@ -92,6 +100,46 @@ WHERE account.id = '06e1b677-a4fe-42cf-8afd-ceec867d1fa5'
   AND provider.disabled IS FALSE
   AND credentials.disabled IS FALSE
 ;
+
+
+SELECT account.*,  provider.name, credentials.*
+FROM account account
+         JOIN account_credentials credentials ON account.id = credentials.account_id
+         JOIN provider provider ON credentials.provider_id = provider.id
+WHERE account.username = 'account_test_1'
+  AND provider.disabled IS FALSE
+  AND credentials.disabled IS FALSE
+;
+
+SELECT account.*, credentials.*
+FROM account account
+         JOIN account_credentials credentials ON account.id = credentials.account_id
+WHERE account.username = 'account_test_1'
+  AND credentials.disabled IS FALSE
+;
+
+-- NOTE: The below information is completly wrong but I leave it here to have a laugh
+-- and anways still I want to keep these 2 queries 🤣
+-- NOTE: 2 Actually I was right. Because UNIQUE (account_id, provider_id) then 
+-- If you get anything from an account with specific provider than means implicity 
+-- that credential is the ONLY one really possibly linked and there is no need to grab by credential too
+-- My theory is that below 2 query are equivalent as long as key 
+--  UNIQUE (provider_id, credential) exists 
+
+SELECT * FROM account_credentials 
+WHERE 1=1
+    AND account_id = '06e1b677-a4fe-42cf-8afd-ceec867d1fa5'
+    AND provider_id = 2 
+    AND credential = 'account_test_1@test.com'
+;
+
+SELECT * FROM account_credentials 
+WHERE 1=1
+    AND account_id = '06e1b677-a4fe-42cf-8afd-ceec867d1fa5'
+    AND provider_id = 2 
+;
+ 
+
 
 -- ///////////////////
 -- // ROLLBACK
