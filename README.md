@@ -54,3 +54,10 @@ make migrate-identity-up
 # Run chat-identity
 make run-server-local
 ```
+
+### Documentation
+
+* [Working with PostgreSQL in Go using pgx](https://donchev.is/post/working-with-postgresql-in-go-using-pgx/)
+  * [Reddit post](https://www.reddit.com/r/golang/comments/1c8br5c/does_anyone_have_a_clear_example_of_how_to_use/)
+
+
