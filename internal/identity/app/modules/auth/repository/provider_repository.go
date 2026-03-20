@@ -14,7 +14,8 @@ import (
 )
 
 type IProviderRepository interface {
-	GetProvider(ctx context.Context, name string) (*model.Provider, error)
+	LoadProviders(ctx context.Context, db database.DBTX)
+	GetProvider(ctx context.Context, db database.DBTX, name string) (*model.Provider, error)
 }
 
 type ProviderRepository struct {
@@ -64,11 +65,6 @@ func (r *ProviderRepository) LoadProviders(ctx context.Context, db database.DBTX
 	logger.Info("providers loaded", zap.Int("count", len(r.providersCache)))
 }
 
-// TODO: 	on commit 5ea82e1 I removed SELECT query here. but i think in case we
-//
-//					don't hit Cache then:
-//	       1. We attempt query
-//	       2. If found we add to cache else return nil
 func (r *ProviderRepository) GetProvider(ctx context.Context, db database.DBTX, name string) (*model.Provider, error) {
 	r.mu.RLock()
 	m, ok := r.providersCache[name]

@@ -1,6 +1,8 @@
 package container
 
 import (
+	"context"
+
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/repository"
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/database/postgres"
@@ -37,7 +39,8 @@ func NewAppContainer(appPrefix string, logger common.Logger) (*AppContainer, err
 
 	logger.Info("database connection established", zap.String("db", connector.String()))
 
-	providerRepository := repository.NewProviderRepository(connector)
+	providerRepository := repository.NewProviderRepository()
+	providerRepository.LoadProviders(context.TODO(), connector)
 
 	return &AppContainer{
 		logger:             logger,
