@@ -49,7 +49,15 @@ func TestProviderRepository_GetProvider_CacheMiss(t *testing.T) {
 	common.CreateLogger(common.LogLevelInfo, "")
 
 	mockRow := new(testutil.MockRow)
-	mockRow.On("Scan", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	mockRow.On("Scan",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(nil)
 
 	mockPool := new(testutil.MockDBPool)
 	mockPool.On("QueryRow", mock.Anything, mock.Anything, "steam").Return(mockRow)
