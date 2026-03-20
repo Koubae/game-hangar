@@ -66,3 +66,12 @@ func (m *MockDBPool) BeginTx(ctx context.Context, txOptions pgx.TxOptions) (pgx.
 
 	return tx, callArgs.Error(1)
 }
+
+type MockRow struct {
+	mock.Mock
+}
+
+func (m *MockRow) Scan(dest ...any) error {
+	args := m.Called(dest...)
+	return args.Error(0)
+}

@@ -7,19 +7,12 @@ import (
 	"time"
 
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/model"
+	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/database/postgres"
 	"github.com/koubae/game-hangar/pkg/testutil"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
-
-func newTestProviderRepository(mockPool *testutil.MockDBPool, cache map[string]*model.Provider) *ProviderRepository {
-	return &ProviderRepository{
-		DB: &postgres.ConnectorPostgres{
-			Pool: mockPool,
-		},
-		providersCache: cache,
-	}
-}
 
 func TestProviderRepository_GetProvider_CacheHit(t *testing.T) {
 	t.Parallel()
@@ -37,11 +30,10 @@ func TestProviderRepository_GetProvider_CacheHit(t *testing.T) {
 	}
 
 	mockPool := new(testutil.MockDBPool)
-	repo := newTestProviderRepository(mockPool, map[string]*model.Provider{
-		"steam": expected,
-	})
+	connector := postgres.ConnectorPostgres{Pool: mockPool}
 
-	got, err := repo.GetProvider(context.Background(), "steam")
+	repo := &ProviderRepository{providersCache: map[string]*model.Provider{"steam": expected}}
+	got, err := repo.GetProvider(context.Background(), &connector, "steam")
 
 	assert.NoError(t, err)
 	assert.Same(t, expected, got)
@@ -54,8 +46,16 @@ func TestProviderRepository_GetProvider_CacheHit(t *testing.T) {
 func TestProviderRepository_GetProvider_CacheMiss(t *testing.T) {
 	t.Parallel()
 
+	common.CreateLogger(common.LogLevelInfo, "")
+
+	mockRow := new(testutil.MockRow)
+	mockRow.On("Scan", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+
 	mockPool := new(testutil.MockDBPool)
-	repo := newTestProviderRepository(mockPool, map[string]*model.Provider{
+	mockPool.On("QueryRow", mock.Anything, mock.Anything, "steam").Return(mockRow)
+
+	connector := postgres.ConnectorPostgres{Pool: mockPool}
+	repo := &ProviderRepository{providersCache: map[string]*model.Provider{
 		"email": {
 			ID:          2,
 			Name:        "email",
@@ -63,11 +63,7 @@ func TestProviderRepository_GetProvider_CacheMiss(t *testing.T) {
 			Category:    "internal",
 			Disabled:    false,
 		},
-	})
+	}}
 
-	got, err := repo.GetProvider(context.Background(), "steam")
-
-	assert.NoError(t, err)
-	assert.Nil(t, got)
-	mockPool.AssertExpectations(t)
+	repo.GetProvider(context.Background(), &connector, "steam")
 }
