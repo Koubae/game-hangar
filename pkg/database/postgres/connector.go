@@ -26,22 +26,6 @@ type ConnectorPostgres struct {
 	config *DatabasePostgresConfig
 }
 
-func (c *ConnectorPostgres) String() string {
-	return c.config.String()
-}
-
-func (c *ConnectorPostgres) Ping(ctx context.Context) error {
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
-
-	return c.Pool.Ping(ctx)
-}
-
-func (c *ConnectorPostgres) Shutdown() error {
-	c.Pool.Close()
-	return nil
-}
-
 func InitConnector(baseConfig *DatabasePostgresConfig) (*ConnectorPostgres, error) {
 	once.Do(
 		func() {
@@ -87,4 +71,20 @@ func NewConnector(baseConfig *DatabasePostgresConfig) (*ConnectorPostgres, error
 		return nil, errPool
 	}
 	return _connector, nil
+}
+
+func (c *ConnectorPostgres) String() string {
+	return c.config.String()
+}
+
+func (c *ConnectorPostgres) Ping(ctx context.Context) error {
+	ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
+	defer cancel()
+
+	return c.Pool.Ping(ctx)
+}
+
+func (c *ConnectorPostgres) Shutdown() error {
+	c.Pool.Close()
+	return nil
 }
