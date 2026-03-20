@@ -1,15 +1,15 @@
 root = "."
 testdata_dir = "testdata"
-tmp_dir = "tmp"
+tmp_dir = "tmp-air-identity"
 
 [build]
 args_bin = []
-bin = "./tmp/identity/main"
-cmd = "go build -o ./tmp/identity/main ./cmd/identity"
+bin = "./tmp-air-identity/identity/main"
+cmd = "go build -o ./tmp-air-identity/identity/main ./cmd/identity"
 delay = 1000
 include_dir = ["pkg", "cmd/identity", "internal/identity"]
-include_ext = ["go", "tpl", "tmpl", "html"]
-exclude_dir = ["assets", "tmp", "vendor", "testdata", "docker", "logs", "tests", "docs"]
+include_ext = ["go", "tpl", "tmp-air-identityl", "html"]
+exclude_dir = ["assets", "tmp-air-identity", "vendor", "testdata", "docker", "logs", "tests", "docs"]
 exclude_file = []
 exclude_regex = ["_test.go"]
 exclude_unchanged = false
