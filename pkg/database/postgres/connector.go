@@ -20,7 +20,7 @@ var (
 )
 
 type ConnectorPostgres struct {
-	Pool   poolInterface
+	Pool   PoolInterface
 	config *DatabasePostgresConfig
 }
 

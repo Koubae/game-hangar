@@ -9,11 +9,11 @@ import (
 )
 
 var (
-	_ poolInterface = (*pgxpool.Pool)(nil)
+	_ PoolInterface = (*pgxpool.Pool)(nil)
 	_ txInterface   = (pgx.Tx)(nil)
 )
 
-type poolInterface interface {
+type PoolInterface interface {
 	Ping(ctx context.Context) error
 	Close()
 

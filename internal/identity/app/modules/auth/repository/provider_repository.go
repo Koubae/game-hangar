@@ -2,11 +2,8 @@ package repository
 
 import (
 	"context"
-	"database/sql"
 	"sync"
 
-	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/model"
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/database/postgres"
@@ -18,7 +15,7 @@ type IProviderRepository interface {
 }
 
 type ProviderRepository struct {
-	DBConnector *postgres.ConnectorPostgres
+	DB *postgres.ConnectorPostgres
 
 	mu             sync.RWMutex
 	providersCache map[string]*model.Provider
@@ -26,7 +23,7 @@ type ProviderRepository struct {
 
 func NewProviderRepository(connector *postgres.ConnectorPostgres) *ProviderRepository {
 	r := &ProviderRepository{
-		DBConnector:    connector,
+		DB:             connector,
 		providersCache: make(map[string]*model.Provider),
 	}
 	r.loadProviders(context.Background())
@@ -34,14 +31,11 @@ func NewProviderRepository(connector *postgres.ConnectorPostgres) *ProviderRepos
 }
 
 func (r *ProviderRepository) loadProviders(ctx context.Context) {
-	db := r.getDB()
-	defer db.Close()
-
 	logger := common.GetLogger()
 	logger.Info("loading providers...")
 
 	query := "SELECT id, name, display_name, category, disabled, created, updated FROM provider"
-	rows, err := db.QueryContext(ctx, query)
+	rows, err := r.DB.SelectMany(ctx, query)
 	if err != nil {
 		logger.Error("failed to load providers", zap.Error(err))
 		return
@@ -62,10 +56,10 @@ func (r *ProviderRepository) loadProviders(ctx context.Context) {
 	logger.Info("providers loaded", zap.Int("count", len(r.providersCache)))
 }
 
-func (r *ProviderRepository) getDB() *sql.DB {
-	return stdlib.OpenDBFromPool(r.DBConnector.Pool.(*pgxpool.Pool))
-}
-
+//	func (r *ProviderRepository) getDB() *sql.DB {
+//		return stdlib.OpenDBFromPool(r.DB.Pool.(*pgxpool.Pool))
+//	}
+//
 // TODO: 	on commit 5ea82e1 I removed SELECT query here. but i think in case we
 //
 //					don't hit Cache then:

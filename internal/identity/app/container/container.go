@@ -11,7 +11,7 @@ import (
 type IdentityContainer interface {
 	di.Container
 
-	DBConnector() *postgres.ConnectorPostgres
+	DB() *postgres.ConnectorPostgres
 
 	// Repositories
 	ProviderRepository() repository.IProviderRepository
@@ -63,7 +63,7 @@ func (c *AppContainer) Shutdown() error {
 		}
 	}()
 
-	c.DBConnector().Shutdown()
+	c.DB().Shutdown()
 	c.Logger().Info("database connection closed")
 	return nil
 }
@@ -72,11 +72,10 @@ func (c *AppContainer) Shutdown() error {
 // 	Implements IdentityContainer interface
 // ------------------------------------------
 
-func (c *AppContainer) DBConnector() *postgres.ConnectorPostgres {
+func (c *AppContainer) DB() *postgres.ConnectorPostgres {
 	return c.connector
 }
 
 func (c *AppContainer) ProviderRepository() *repository.IProviderRepository {
 	return &c.providerRepository
-
 }

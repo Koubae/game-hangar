@@ -8,26 +8,13 @@ import (
 
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/model"
 	"github.com/koubae/game-hangar/pkg/database/postgres"
+	"github.com/koubae/game-hangar/pkg/testutil"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
 
-type MockPool struct {
-	mock.Mock
-}
-
-func (m *MockPool) Ping(ctx context.Context) error {
-	args := m.Called(ctx)
-	return args.Error(0)
-}
-
-func (m *MockPool) Close() {
-	m.Called()
-}
-
-func newTestProviderRepository(mockPool *MockPool, cache map[string]*model.Provider) *ProviderRepository {
+func newTestProviderRepository(mockPool *testutil.MockDBPool, cache map[string]*model.Provider) *ProviderRepository {
 	return &ProviderRepository{
-		DBConnector: &postgres.ConnectorPostgres{
+		DB: &postgres.ConnectorPostgres{
 			Pool: mockPool,
 		},
 		providersCache: cache,
@@ -49,7 +36,7 @@ func TestProviderRepository_GetProvider_CacheHit(t *testing.T) {
 		Updated:     now,
 	}
 
-	mockPool := new(MockPool)
+	mockPool := new(testutil.MockDBPool)
 	repo := newTestProviderRepository(mockPool, map[string]*model.Provider{
 		"steam": expected,
 	})
@@ -67,7 +54,7 @@ func TestProviderRepository_GetProvider_CacheHit(t *testing.T) {
 func TestProviderRepository_GetProvider_CacheMiss(t *testing.T) {
 	t.Parallel()
 
-	mockPool := new(MockPool)
+	mockPool := new(testutil.MockDBPool)
 	repo := newTestProviderRepository(mockPool, map[string]*model.Provider{
 		"email": {
 			ID:          2,
