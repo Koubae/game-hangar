@@ -1,6 +1,8 @@
 package container
 
 import (
+	"context"
+
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/repository"
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/database/postgres"
@@ -11,7 +13,7 @@ import (
 type IdentityContainer interface {
 	di.Container
 
-	DBConnector() *postgres.ConnectorPostgres
+	DB() *postgres.ConnectorPostgres
 
 	// Repositories
 	ProviderRepository() repository.IProviderRepository
@@ -37,7 +39,8 @@ func NewAppContainer(appPrefix string, logger common.Logger) (*AppContainer, err
 
 	logger.Info("database connection established", zap.String("db", connector.String()))
 
-	providerRepository := repository.NewProviderRepository(connector)
+	providerRepository := repository.NewProviderRepository()
+	providerRepository.LoadProviders(context.TODO(), connector)
 
 	return &AppContainer{
 		logger:             logger,
@@ -63,7 +66,7 @@ func (c *AppContainer) Shutdown() error {
 		}
 	}()
 
-	c.DBConnector().Shutdown()
+	c.DB().Shutdown()
 	c.Logger().Info("database connection closed")
 	return nil
 }
@@ -72,11 +75,10 @@ func (c *AppContainer) Shutdown() error {
 // 	Implements IdentityContainer interface
 // ------------------------------------------
 
-func (c *AppContainer) DBConnector() *postgres.ConnectorPostgres {
+func (c *AppContainer) DB() *postgres.ConnectorPostgres {
 	return c.connector
 }
 
 func (c *AppContainer) ProviderRepository() *repository.IProviderRepository {
 	return &c.providerRepository
-
 }

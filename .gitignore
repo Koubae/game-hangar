@@ -187,6 +187,7 @@ out
 
 results
 tmp
+tmp*
 
 # Build
 public/css/main.css

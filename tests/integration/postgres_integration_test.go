@@ -52,7 +52,7 @@ func TestIntegration_SelectQuery(t *testing.T) {
 	connector := setupTest(t)
 
 	// In integration tests, we can cast to *pgxpool.Pool to access its methods
-	// The Pool field in ConnectorPostgres is a poolInterface
+	// The Pool field in ConnectorPostgres is a PoolInterface
 
 	type queryable interface {
 		QueryRow(ctx context.Context, sql string, args ...any) pgx.Row

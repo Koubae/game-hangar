@@ -2,11 +2,13 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/model"
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/repository"
 	"github.com/koubae/game-hangar/pkg/common"
+	"github.com/koubae/game-hangar/pkg/database"
 	"github.com/koubae/game-hangar/pkg/database/postgres"
 	"github.com/koubae/game-hangar/tests/integration"
 )
@@ -124,10 +126,11 @@ func TestProviderRepository_GetProvider(t *testing.T) {
 		},
 	}
 
+	providerRepository := repository.NewProviderRepository()
+	providerRepository.LoadProviders(context.Background(), connector)
 	for _, tt := range tests {
 		t.Run(tt.id, func(t *testing.T) {
-			providerRepository := repository.NewProviderRepository(connector)
-			provider, err := providerRepository.GetProvider(context.Background(), tt.name)
+			provider, err := providerRepository.GetProvider(context.Background(), connector, tt.name)
 			if err != nil {
 				t.Fatalf("Failed to get provider: %v", err)
 			}
@@ -144,10 +147,33 @@ func TestProviderRepository_GetProvider(t *testing.T) {
 			if provider.Category != tt.expected.Category {
 				t.Fatalf("Provider category is not '%s' \n got: %s", tt.expected.Category, provider.Category)
 			}
-
 		})
 	}
+}
 
+func TestProviderRepository_GetProviderFoundWhenCacheMiss(t *testing.T) {
+	connector := setupTest(t)
+	defer connector.Shutdown()
+
+	providerName := "username"
+	providerRepository := repository.NewProviderRepository()
+	provider, err := providerRepository.GetProvider(context.Background(), connector, providerName)
+	if err != nil {
+		t.Fatalf("Failed to get provider: %v", err)
+	}
+	if provider == nil {
+		t.Fatalf("Provider is nil")
+	}
+
+	if provider.Name != providerName {
+		t.Fatalf("Provider name is not '%s' got: %s\n ", providerName, provider.Name)
+	}
+	if provider.DisplayName != "Username" {
+		t.Fatalf("Provider display name is not '%s' \n got: %s", "Username", provider.DisplayName)
+	}
+	if provider.Category != "managed" {
+		t.Fatalf("Provider category is not '%s' \n got: %s", "managed", provider.Category)
+	}
 }
 
 func TestProviderRepository_GetProviderNotFound(t *testing.T) {
@@ -155,13 +181,16 @@ func TestProviderRepository_GetProviderNotFound(t *testing.T) {
 	defer connector.Shutdown()
 
 	providerNotExists := "not-exists"
-	providerRepository := repository.NewProviderRepository(connector)
-	provider, err := providerRepository.GetProvider(context.Background(), providerNotExists)
+	providerRepository := repository.NewProviderRepository()
+	providerRepository.LoadProviders(context.Background(), connector)
+
+	provider, err := providerRepository.GetProvider(context.Background(), connector, providerNotExists)
 	if err != nil {
-		t.Fatalf("Failed to get provider: %v", err)
+		if !errors.Is(err, database.ErrNotFound) {
+			t.Fatalf("Failed to get provider: %v", err)
+		}
 	}
 	if provider != nil {
 		t.Fatalf("Provider is not nil")
 	}
-
 }

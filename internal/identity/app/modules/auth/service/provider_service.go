@@ -6,15 +6,18 @@ import (
 
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/repository"
 	"github.com/koubae/game-hangar/pkg/common"
+	"github.com/koubae/game-hangar/pkg/database"
 	"go.uber.org/zap"
 )
 
 type ProviderService struct {
+	connector  database.Connector
 	repository repository.IProviderRepository
 }
 
-func NewProviderService(r repository.IProviderRepository) *ProviderService {
+func NewProviderService(c database.Connector, r repository.IProviderRepository) *ProviderService {
 	return &ProviderService{
+		connector:  c,
 		repository: r,
 	}
 }
@@ -25,7 +28,7 @@ func (s *ProviderService) IsProviderEnabled(ctx context.Context, name string) bo
 
 	logger := common.GetLogger()
 
-	provider, err := s.repository.GetProvider(ctx, name)
+	provider, err := s.repository.GetProvider(ctx, s.connector, name)
 	if err != nil {
 		logger.Error("error while checking if provider is enabled", zap.String("name", name), zap.Error(err))
 		return false

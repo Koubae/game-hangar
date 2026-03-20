@@ -7,6 +7,9 @@ import (
 
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/model"
 	"github.com/koubae/game-hangar/pkg/common"
+	"github.com/koubae/game-hangar/pkg/database"
+	"github.com/koubae/game-hangar/pkg/database/postgres"
+	"github.com/koubae/game-hangar/pkg/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -15,8 +18,12 @@ type MockProviderRepository struct {
 	mock.Mock
 }
 
-func (m *MockProviderRepository) GetProvider(ctx context.Context, name string) (*model.Provider, error) {
-	args := m.Called(ctx, name)
+func (m *MockProviderRepository) LoadProviders(ctx context.Context, db database.DBTX) {
+	_ = m.Called(ctx, db)
+}
+
+func (m *MockProviderRepository) GetProvider(ctx context.Context, db database.DBTX, name string) (*model.Provider, error) {
+	args := m.Called(ctx, db, name)
 
 	provider, _ := args.Get(0).(*model.Provider)
 	return provider, args.Error(1)
@@ -38,7 +45,7 @@ func TestProviderService_IsProviderEnabled(t *testing.T) {
 			providerName: "steam",
 			setupMock: func(repo *MockProviderRepository) {
 				repo.
-					On("GetProvider", mock.Anything, "steam").
+					On("GetProvider", mock.Anything, mock.Anything, "steam").
 					Run(func(args mock.Arguments) {
 						ctx := args.Get(0).(context.Context)
 						_, hasDeadline := ctx.Deadline()
@@ -57,7 +64,7 @@ func TestProviderService_IsProviderEnabled(t *testing.T) {
 			providerName: "steam",
 			setupMock: func(repo *MockProviderRepository) {
 				repo.
-					On("GetProvider", mock.Anything, "steam").
+					On("GetProvider", mock.Anything, mock.Anything, "steam").
 					Run(func(args mock.Arguments) {
 						ctx := args.Get(0).(context.Context)
 						_, hasDeadline := ctx.Deadline()
@@ -76,7 +83,7 @@ func TestProviderService_IsProviderEnabled(t *testing.T) {
 			providerName: "steam",
 			setupMock: func(repo *MockProviderRepository) {
 				repo.
-					On("GetProvider", mock.Anything, "steam").
+					On("GetProvider", mock.Anything, mock.Anything, "steam").
 					Run(func(args mock.Arguments) {
 						ctx := args.Get(0).(context.Context)
 						_, hasDeadline := ctx.Deadline()
@@ -89,6 +96,9 @@ func TestProviderService_IsProviderEnabled(t *testing.T) {
 		},
 	}
 
+	mockPool := new(testutil.MockDBPool)
+	connector := postgres.ConnectorPostgres{Pool: mockPool}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
@@ -96,7 +106,7 @@ func TestProviderService_IsProviderEnabled(t *testing.T) {
 			repo := new(MockProviderRepository)
 			tt.setupMock(repo)
 
-			svc := NewProviderService(repo)
+			svc := NewProviderService(&connector, repo)
 
 			got := svc.IsProviderEnabled(context.Background(), tt.providerName)
 
