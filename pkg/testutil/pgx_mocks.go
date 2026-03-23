@@ -71,6 +71,14 @@ type MockRow struct {
 	mock.Mock
 }
 
+func (m *MockRow) Args(n int) []any {
+	args := make([]any, n)
+	for i := range n {
+		args[i] = mock.Anything
+	}
+	return args
+}
+
 func (m *MockRow) Scan(dest ...any) error {
 	args := m.Called(dest...)
 	return args.Error(0)

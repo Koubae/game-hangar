@@ -47,31 +47,41 @@ func TestProviderRepository_GetProvider_CacheMiss(t *testing.T) {
 	t.Parallel()
 
 	common.CreateLogger(common.LogLevelInfo, "")
+	expected := &model.Provider{
+		ID:          2,
+		Name:        "email",
+		DisplayName: "Email",
+		Category:    "internal",
+		Disabled:    false,
+	}
 
 	mockRow := new(testutil.MockRow)
-	mockRow.On("Scan",
-		mock.Anything,
-		mock.Anything,
-		mock.Anything,
-		mock.Anything,
-		mock.Anything,
-		mock.Anything,
-		mock.Anything,
-	).Return(nil)
+	mockRow.On("Scan", mockRow.Args(7)...).Run(func(args mock.Arguments) {
+		id := args.Get(0).(*int)
+		*id = 2
+
+		name := args.Get(1).(*string)
+		*name = "email"
+
+		displayName := args.Get(2).(*string)
+		*displayName = "Email"
+
+		category := args.Get(3).(*string)
+		*category = "internal"
+
+		disabled := args.Get(4).(*bool)
+
+		*disabled = false
+	}).Return(nil)
 
 	mockPool := new(testutil.MockDBPool)
 	mockPool.On("QueryRow", mock.Anything, mock.Anything, "steam").Return(mockRow)
 
 	connector := postgres.ConnectorPostgres{Pool: mockPool}
-	repo := &ProviderRepository{providersCache: map[string]*model.Provider{
-		"email": {
-			ID:          2,
-			Name:        "email",
-			DisplayName: "Email",
-			Category:    "internal",
-			Disabled:    false,
-		},
-	}}
+	repo := &ProviderRepository{providersCache: map[string]*model.Provider{"email": expected}}
+	got, err := repo.GetProvider(context.Background(), &connector, "steam")
 
-	repo.GetProvider(context.Background(), &connector, "steam")
+	assert.NoError(t, err)
+	assert.Equal(t, expected, got)
+	mockPool.AssertExpectations(t)
 }
