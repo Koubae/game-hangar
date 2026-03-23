@@ -12,6 +12,11 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+var (
+	Now             = time.Now()
+	AccountIDTest01 = uuid.New()
+)
+
 type MockDBPool struct {
 	mock.Mock
 }
@@ -97,17 +102,34 @@ func (m *MockRow) MockScan(argsN int, err error, values ...any) {
 			switch ptr := ptr.(type) {
 			case *int:
 				*ptr = val.(int)
+			case **int:
+				*ptr = val.(*int)
+
 			case *int64:
 				*ptr = val.(int64)
+			case **int64:
+				*ptr = val.(*int64)
+
 			case *string:
 				*ptr = val.(string)
+			case **string:
+				*ptr = val.(*string)
+
 			case *bool:
 				*ptr = val.(bool)
+			case **bool:
+				*ptr = val.(*bool)
 
 			case *uuid.UUID:
 				*ptr = val.(uuid.UUID)
+			case **uuid.UUID:
+				*ptr = val.(*uuid.UUID)
+
 			case *time.Time:
 				*ptr = val.(time.Time)
+			case **time.Time:
+				*ptr = val.(*time.Time)
+
 			case *any:
 				*ptr = val
 
