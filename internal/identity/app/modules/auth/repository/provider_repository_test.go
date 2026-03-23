@@ -56,23 +56,7 @@ func TestProviderRepository_GetProvider_CacheMiss(t *testing.T) {
 	}
 
 	mockRow := new(testutil.MockRow)
-	mockRow.On("Scan", mockRow.Args(7)...).Run(func(args mock.Arguments) {
-		id := args.Get(0).(*int)
-		*id = 2
-
-		name := args.Get(1).(*string)
-		*name = "email"
-
-		displayName := args.Get(2).(*string)
-		*displayName = "Email"
-
-		category := args.Get(3).(*string)
-		*category = "internal"
-
-		disabled := args.Get(4).(*bool)
-
-		*disabled = false
-	}).Return(nil)
+	mockRow.MockScan(7, nil, expected.ID, expected.Name, expected.DisplayName, expected.Category, expected.Disabled)
 
 	mockPool := new(testutil.MockDBPool)
 	mockPool.On("QueryRow", mock.Anything, mock.Anything, "steam").Return(mockRow)

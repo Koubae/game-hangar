@@ -83,3 +83,22 @@ func (m *MockRow) Scan(dest ...any) error {
 	args := m.Called(dest...)
 	return args.Error(0)
 }
+
+func (m *MockRow) MockScan(argsN int, err error, values ...any) {
+	m.On("Scan", m.Args(argsN)...).Run(func(args mock.Arguments) {
+		set := func(_index int, val any) {
+			switch ptr := args.Get(_index).(type) {
+			case *int:
+				*ptr = val.(int)
+			case *string:
+				*ptr = val.(string)
+			case *bool:
+				*ptr = val.(bool)
+			}
+		}
+
+		for i, val := range values {
+			set(i, val)
+		}
+	}).Return(err)
+}
