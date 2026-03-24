@@ -253,13 +253,9 @@ func TestCredentialRepository_CreateAccountCredentialOnErrors(t *testing.T) {
 
 			id, err := repo.CreateAccountCredential(ctx, &connector, *params)
 
-			if tt.errReturned != nil || tt.errThrown != nil {
-				assert.Error(t, err)
-				assert.ErrorIs(t, err, tt.errReturned)
-			} else { // TODO: eleminate this else block???
-				assert.NoError(t, err)
-				assert.NotEqual(t, 0, id)
-			}
+			assert.Error(t, err)
+			assert.ErrorIs(t, err, tt.errReturned)
+
 			assert.Equal(t, tt.expectedID, id)
 		})
 	}
