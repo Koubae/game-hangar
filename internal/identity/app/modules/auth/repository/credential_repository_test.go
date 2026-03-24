@@ -111,3 +111,42 @@ func TestCredentialRepository_GetCredentialByProvider(t *testing.T) {
 		})
 	}
 }
+
+func TestCredentialRepository_CreateAccountCredential(t *testing.T) {
+	t.Parallel()
+
+	params := NewAccountCredential{
+		Credential: "unit-test-user-123",
+		AccountID:  testutil.AccountIDTest01,
+		ProviderID: 1,
+		Secret:     "sha255-secret",
+		SecretType: "password",
+		Verified:   true,
+		VerifiedAt: &testutil.Now,
+	}
+	expectedID := int64(1234)
+
+	common.CreateLogger(common.LogLevelError, "")
+	mockRow := new(testutil.MockRow)
+	mockRow.MockScan(1, nil, expectedID)
+
+	mockPool := new(testutil.MockDBPool)
+	mockPool.On("QueryRow", mock.Anything, mock.Anything, pgx.StrictNamedArgs{
+		"credential":  params.Credential,
+		"account_id":  params.AccountID,
+		"provider_id": params.ProviderID,
+		"secret":      params.Secret,
+		"secret_type": params.SecretType,
+		"verified":    params.Verified,
+		"verified_at": params.VerifiedAt,
+	}).Return(mockRow)
+
+	ctx := context.Background()
+	connector := postgres.ConnectorPostgres{Pool: mockPool}
+	repo := NewCredentialRepository()
+
+	id, err := repo.CreateAccountCredential(ctx, &connector, params)
+
+	assert.NoError(t, err)
+	assert.Equal(t, expectedID, id)
+}
