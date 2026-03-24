@@ -51,6 +51,22 @@ func (r *CredentialRepository) GetCredentialByProvider(
  	`
 
 	var m model.AccountCredential
+
+	// TODO: check whethe taking care of possible TIMESTAMP NULL values should be taken care
+	// As below snippet of code
+	// @AI convo https://chatgpt.com/c/69c13b6e-d878-8388-aba0-c132ea17d152
+	// 	var verifiedAt pgtype.Timestamptz
+	// var disabledAt pgtype.Timestamptz
+	// 	if verifiedAt.Valid {
+	// 	t := verifiedAt.Time
+	// 	ac.VerifiedAt = &t
+	// }
+	//
+	// if disabledAt.Valid {
+	// 	t := disabledAt.Time
+	// 	ac.DisabledAt = &t
+	// }
+
 	if err := db.SelectOne(ctx, query, providerID, credential).Scan(
 		&m.ID,
 		&m.Credential,
