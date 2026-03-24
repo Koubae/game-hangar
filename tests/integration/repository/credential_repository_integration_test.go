@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/repository"
+	"github.com/koubae/game-hangar/pkg/database"
 	"github.com/koubae/game-hangar/pkg/database/postgres"
 	"github.com/koubae/game-hangar/tests/integration"
 	"github.com/stretchr/testify/assert"
@@ -17,6 +18,12 @@ type testData struct {
 	accountID1 string
 	username1  string
 	email1     string
+}
+
+type credExpected struct {
+	AccountID  string
+	ProviderID int64
+	Credential string
 }
 
 func createTestAccount(
@@ -59,12 +66,71 @@ func TestCredentialRepository_GetCredentialByProvider(t *testing.T) {
 	defer tearDown(integration.ResetDB)
 
 	testData := createTestAccount(t, ctx, connector)
-
-	print(testData.accountID1)
+	tests := []struct {
+		id          string
+		providerID  int64
+		username    string
+		expected    *credExpected
+		errReturned error
+	}{
+		{
+			id:         "record-is-found",
+			providerID: 1,
+			username:   testData.username1,
+			expected: &credExpected{
+				AccountID:  testData.accountID1,
+				ProviderID: 1,
+				Credential: testData.username1,
+			},
+			errReturned: nil,
+		},
+		{
+			id:          "record-is-not-found",
+			providerID:  1,
+			username:    "does-not-exists",
+			expected:    nil,
+			errReturned: database.ErrNotFound,
+		},
+		{
+			id:          "record-is-not-found-wrong-provider",
+			providerID:  2,
+			username:    testData.username1,
+			expected:    nil,
+			errReturned: database.ErrNotFound,
+		},
+	}
 
 	repo := repository.NewCredentialRepository()
-	model, err := repo.GetCredentialByProvider(ctx, connector, 1, testData.username1)
+	for _, tt := range tests {
+		t.Run(tt.id, func(t *testing.T) {
+			model, err := repo.GetCredentialByProvider(
+				ctx,
+				connector,
+				tt.providerID,
+				tt.username,
+			)
 
-	assert.NoError(t, err)
-	assert.Equal(t, testData.username1, model.Credential)
+			if tt.id == "unexpected-error" {
+				connector.Shutdown()
+			}
+
+			if tt.errReturned != nil {
+				assert.Error(t, err)
+				assert.ErrorIs(t, tt.errReturned, err)
+			} else {
+				assert.NoError(t, err)
+			}
+
+			var result *credExpected
+			if tt.expected != nil {
+				result = &credExpected{
+					AccountID:  model.AccountID.String(),
+					ProviderID: model.ProviderID,
+					Credential: model.Credential,
+				}
+			}
+
+			assert.Equal(t, tt.expected, result)
+		})
+	}
 }
