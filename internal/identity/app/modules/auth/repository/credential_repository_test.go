@@ -150,3 +150,83 @@ func TestCredentialRepository_CreateAccountCredential(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, expectedID, id)
 }
+
+func TestCredentialRepository_CreateAccountCredentialOnErrors(t *testing.T) {
+	t.Parallel()
+
+	providerID := int64(1)
+	username := "unit-test-user-123"
+	tests := []struct {
+		id          string
+		params      *NewAccountCredential
+		expectedID  int64
+		errThrown   error
+		errReturned error
+	}{
+		{
+			id: "validation-err-verified-required",
+			params: &NewAccountCredential{
+				Credential: username,
+				AccountID:  testutil.AccountIDTest01,
+				ProviderID: providerID,
+				Secret:     "sha255-secret",
+				SecretType: "password",
+				Verified:   true,
+				VerifiedAt: nil,
+			},
+			expectedID:  int64(0),
+			errThrown:   nil,
+			errReturned: ErrVerifiedAtRequired,
+		},
+		{
+			id: "validation-err-nil-when-f",
+			params: &NewAccountCredential{
+				Credential: username,
+				AccountID:  testutil.AccountIDTest01,
+				ProviderID: providerID,
+				Secret:     "sha255-secret",
+				SecretType: "password",
+				Verified:   false,
+				VerifiedAt: &testutil.Now,
+			},
+			expectedID:  int64(0),
+			errThrown:   nil,
+			errReturned: ErrVerifiedNilWhenIsFalse,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.id, func(t *testing.T) {
+			common.CreateLogger(common.LogLevelError, "")
+			mockRow := new(testutil.MockRow)
+			mockRow.MockScan(1, nil, tt.expectedID)
+
+			params := tt.params
+
+			mockPool := new(testutil.MockDBPool)
+			mockPool.On("QueryRow", mock.Anything, mock.Anything, pgx.StrictNamedArgs{
+				"credential":  params.Credential,
+				"account_id":  params.AccountID,
+				"provider_id": params.ProviderID,
+				"secret":      params.Secret,
+				"secret_type": params.SecretType,
+				"verified":    params.Verified,
+				"verified_at": params.VerifiedAt,
+			}).Return(mockRow)
+
+			ctx := context.Background()
+			connector := postgres.ConnectorPostgres{Pool: mockPool}
+			repo := NewCredentialRepository()
+
+			id, err := repo.CreateAccountCredential(ctx, &connector, *params)
+
+			if tt.errReturned != nil || tt.errThrown != nil {
+				assert.Error(t, err)
+				assert.ErrorIs(t, err, tt.errReturned)
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.Equal(t, tt.expectedID, id)
+		})
+	}
+}

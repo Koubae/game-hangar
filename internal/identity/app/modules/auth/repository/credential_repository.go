@@ -12,6 +12,11 @@ import (
 	"github.com/koubae/game-hangar/pkg/database"
 )
 
+var (
+	ErrVerifiedAtRequired     = errors.New("verified_at is required when verified=true")
+	ErrVerifiedNilWhenIsFalse = errors.New("verified_at must be nil when verified=false")
+)
+
 type ICredentialRepository interface {
 	CreateAccountCredential(ctx context.Context, db database.DBTX, params NewAccountCredential) (int64, error)
 	GetCredentialByProvider(ctx context.Context, db database.DBTX, providerID int64, credential string) (*model.AccountCredential, error)
@@ -29,10 +34,10 @@ type NewAccountCredential struct {
 
 func (p *NewAccountCredential) Validate() error {
 	if p.Verified && p.VerifiedAt == nil {
-		return errors.New("verified_at is required when verified=true")
+		return ErrVerifiedAtRequired
 	}
 	if !p.Verified && p.VerifiedAt != nil {
-		return errors.New("verified_at must be nil when verified=false")
+		return ErrVerifiedNilWhenIsFalse
 	}
 	return nil
 }
