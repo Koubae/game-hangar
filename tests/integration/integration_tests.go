@@ -12,6 +12,37 @@ import (
 
 const AppPrefix = "TESTING_"
 
+type (
+	DBTearDownFN    func(ctx context.Context, connector *postgres.ConnectorPostgres) error
+	DBTearDownTasks func(tasks ...DBTearDownFN)
+)
+
+func DBWithCleanup(t *testing.T) (context.Context, *postgres.ConnectorPostgres, DBTearDownTasks) {
+	t.Helper()
+
+	ctx := context.Background()
+	connector := IntegrationTestConnector(t)
+
+	return ctx, connector, func(tasks ...DBTearDownFN) {
+		t.Helper()
+
+		t.Cleanup(func() {
+			defer connector.Shutdown()
+
+			for _, fn := range tasks {
+				if fn == nil {
+					continue
+				}
+
+				err := fn(ctx, connector)
+				if err != nil {
+					t.Error(err)
+				}
+			}
+		})
+	}
+}
+
 func IntegrationTestConnector(t *testing.T) *postgres.ConnectorPostgres {
 	t.Helper()
 	if testing.Short() {

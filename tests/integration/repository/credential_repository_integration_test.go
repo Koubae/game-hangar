@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"context"
 	"fmt"
 	"testing"
 
@@ -11,16 +10,18 @@ import (
 )
 
 func TestCredentialRepository_GetCredentialByProvider(t *testing.T) {
-	ctx := context.Background()
-
-	connector := integration.IntegrationTestConnector(t)
-	defer connector.Shutdown()
-	defer func() {
-		err := integration.ResetDB(ctx, connector)
-		if err != nil {
-			t.Error(err)
-		}
-	}()
+	// ctx := context.Background()
+	//
+	// connector := integration.IntegrationTestConnector(t)
+	// defer connector.Shutdown()
+	// defer func() {
+	// 	err := integration.ResetDB(ctx, connector)
+	// 	if err != nil {
+	// 		t.Error(err)
+	// 	}
+	// }()
+	ctx, connector, tearDown := integration.DBWithCleanup(t)
+	tearDown(integration.ResetDB)
 
 	id := uuid.NewString()
 	username := "user-itegration-" + id[:8]
