@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"reflect"
 	"testing"
 
@@ -148,6 +149,7 @@ func TestCredentialRepository_CreateAccountCredential(t *testing.T) {
 	id, err := repo.CreateAccountCredential(ctx, &connector, params)
 
 	assert.NoError(t, err)
+	assert.NotEqual(t, 0, id)
 	assert.Equal(t, expectedID, id)
 }
 
@@ -156,6 +158,7 @@ func TestCredentialRepository_CreateAccountCredentialOnErrors(t *testing.T) {
 
 	providerID := int64(1)
 	username := "unit-test-user-123"
+	mockedDBErr := errors.New("mocked-db-error")
 	tests := []struct {
 		id          string
 		params      *NewAccountCredential
@@ -193,13 +196,28 @@ func TestCredentialRepository_CreateAccountCredentialOnErrors(t *testing.T) {
 			errThrown:   nil,
 			errReturned: ErrVerifiedNilWhenIsFalse,
 		},
+		{
+			id: "on-db-error-any",
+			params: &NewAccountCredential{
+				Credential: username,
+				AccountID:  testutil.AccountIDTest01,
+				ProviderID: providerID,
+				Secret:     "sha255-secret",
+				SecretType: "password",
+				Verified:   true,
+				VerifiedAt: &testutil.Now,
+			},
+			expectedID:  int64(0),
+			errThrown:   mockedDBErr,
+			errReturned: mockedDBErr,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.id, func(t *testing.T) {
 			common.CreateLogger(common.LogLevelError, "")
 			mockRow := new(testutil.MockRow)
-			mockRow.MockScan(1, nil, tt.expectedID)
+			mockRow.MockScan(1, tt.errThrown, tt.expectedID)
 
 			params := tt.params
 
@@ -223,8 +241,9 @@ func TestCredentialRepository_CreateAccountCredentialOnErrors(t *testing.T) {
 			if tt.errReturned != nil || tt.errThrown != nil {
 				assert.Error(t, err)
 				assert.ErrorIs(t, err, tt.errReturned)
-			} else {
+			} else { // TODO: eleminate this else block???
 				assert.NoError(t, err)
+				assert.NotEqual(t, 0, id)
 			}
 			assert.Equal(t, tt.expectedID, id)
 		})
