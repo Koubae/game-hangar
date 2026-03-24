@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
@@ -45,9 +44,6 @@ func TestProviderRepository_GetProvider_CacheHit(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Same(t, expected, got)
 	mockPool.AssertExpectations(t)
-
-	fmt.Println("Press Enter to exit...")
-	fmt.Scanln()
 }
 
 func TestProviderRepository_GetProvider_CacheMiss(t *testing.T) {

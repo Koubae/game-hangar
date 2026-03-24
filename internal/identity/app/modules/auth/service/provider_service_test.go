@@ -22,8 +22,8 @@ func (m *MockProviderRepository) LoadProviders(ctx context.Context, db database.
 	_ = m.Called(ctx, db)
 }
 
-func (m *MockProviderRepository) GetProvider(ctx context.Context, db database.DBTX, name string) (*model.Provider, error) {
-	args := m.Called(ctx, db, name)
+func (m *MockProviderRepository) GetProvider(ctx context.Context, db database.DBTX, source string, _type string) (*model.Provider, error) {
+	args := m.Called(ctx, db, source, _type)
 
 	provider, _ := args.Get(0).(*model.Provider)
 	return provider, args.Error(1)
@@ -35,24 +35,28 @@ func TestProviderService_IsProviderEnabled(t *testing.T) {
 	common.CreateLogger("INFO", "/tmp/")
 
 	tests := []struct {
-		name         string
-		providerName string
-		setupMock    func(repo *MockProviderRepository)
-		want         bool
+		id     string
+		source string
+		_type  string
+
+		setupMock func(repo *MockProviderRepository)
+		want      bool
 	}{
 		{
-			name:         "returns true when provider is enabled",
-			providerName: "steam",
+			id:     "returns true when provider is enabled",
+			source: "global",
+			_type:  "steam",
 			setupMock: func(repo *MockProviderRepository) {
 				repo.
-					On("GetProvider", mock.Anything, mock.Anything, "steam").
+					On("GetProvider", mock.Anything, mock.Anything, "global", "steam").
 					Run(func(args mock.Arguments) {
 						ctx := args.Get(0).(context.Context)
 						_, hasDeadline := ctx.Deadline()
 						assert.True(t, hasDeadline, "expected context to have deadline")
 					}).
 					Return(&model.Provider{
-						Name:     "steam",
+						Source:   "global",
+						Type:     "steam",
 						Disabled: false,
 					}, nil).
 					Once()
@@ -60,18 +64,20 @@ func TestProviderService_IsProviderEnabled(t *testing.T) {
 			want: true,
 		},
 		{
-			name:         "returns false when provider is disabled",
-			providerName: "steam",
+			id:     "returns false when provider is disabled",
+			source: "global",
+			_type:  "steam",
 			setupMock: func(repo *MockProviderRepository) {
 				repo.
-					On("GetProvider", mock.Anything, mock.Anything, "steam").
+					On("GetProvider", mock.Anything, mock.Anything, "global", "steam").
 					Run(func(args mock.Arguments) {
 						ctx := args.Get(0).(context.Context)
 						_, hasDeadline := ctx.Deadline()
 						assert.True(t, hasDeadline, "expected context to have deadline")
 					}).
 					Return(&model.Provider{
-						Name:     "steam",
+						Source:   "global",
+						Type:     "steam",
 						Disabled: true,
 					}, nil).
 					Once()
@@ -79,11 +85,12 @@ func TestProviderService_IsProviderEnabled(t *testing.T) {
 			want: false,
 		},
 		{
-			name:         "returns false when repository returns error",
-			providerName: "steam",
+			id:     "returns false when repository returns error",
+			source: "global",
+			_type:  "steam",
 			setupMock: func(repo *MockProviderRepository) {
 				repo.
-					On("GetProvider", mock.Anything, mock.Anything, "steam").
+					On("GetProvider", mock.Anything, mock.Anything, "global", "steam").
 					Run(func(args mock.Arguments) {
 						ctx := args.Get(0).(context.Context)
 						_, hasDeadline := ctx.Deadline()
@@ -100,7 +107,7 @@ func TestProviderService_IsProviderEnabled(t *testing.T) {
 	connector := postgres.ConnectorPostgres{Pool: mockPool}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		t.Run(tt.id, func(t *testing.T) {
 			t.Parallel()
 
 			repo := new(MockProviderRepository)
@@ -108,7 +115,7 @@ func TestProviderService_IsProviderEnabled(t *testing.T) {
 
 			svc := NewProviderService(&connector, repo)
 
-			got := svc.IsProviderEnabled(context.Background(), tt.providerName)
+			got := svc.IsProviderEnabled(context.Background(), tt.source, tt._type)
 
 			assert.Equal(t, tt.want, got)
 			repo.AssertExpectations(t)

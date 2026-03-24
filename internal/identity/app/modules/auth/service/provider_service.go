@@ -22,15 +22,19 @@ func NewProviderService(c database.Connector, r repository.IProviderRepository) 
 	}
 }
 
-func (s *ProviderService) IsProviderEnabled(ctx context.Context, name string) bool {
+func (s *ProviderService) IsProviderEnabled(ctx context.Context, source string, _type string) bool {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
 	logger := common.GetLogger()
 
-	provider, err := s.repository.GetProvider(ctx, s.connector, name)
+	provider, err := s.repository.GetProvider(ctx, s.connector, source, _type)
 	if err != nil {
-		logger.Error("error while checking if provider is enabled", zap.String("name", name), zap.Error(err))
+		logger.Error("error while checking if provider is enabled",
+			zap.String("source", source),
+			zap.String("type", _type),
+			zap.Error(err),
+		)
 		return false
 	}
 
