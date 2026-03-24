@@ -12,7 +12,7 @@ import (
 
 const AppPrefix = "TESTING_"
 
-func SetupTest(t *testing.T) *postgres.ConnectorPostgres {
+func IntegrationTestConnector(t *testing.T) *postgres.ConnectorPostgres {
 	t.Helper()
 	if testing.Short() {
 		t.Skip("skipping integration test in short mode")

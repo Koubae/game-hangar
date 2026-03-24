@@ -13,7 +13,7 @@ import (
 func TestCredentialRepository_GetCredentialByProvider(t *testing.T) {
 	ctx := context.Background()
 
-	connector := integration.SetupTest(t)
+	connector := integration.IntegrationTestConnector(t)
 	defer connector.Shutdown()
 	defer func() {
 		err := integration.ResetDB(ctx, connector)
