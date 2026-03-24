@@ -12,8 +12,8 @@ import (
 )
 
 func TestProviderRepository_GetProvider(t *testing.T) {
-	connector := integration.IntegrationTestConnector(t)
-	defer connector.Shutdown()
+	_, connector, tearDown := integration.DBWithCleanup(t)
+	defer tearDown()
 
 	tests := []struct {
 		id       string
@@ -129,8 +129,8 @@ func TestProviderRepository_GetProvider(t *testing.T) {
 }
 
 func TestProviderRepository_GetProviderFoundWhenCacheMiss(t *testing.T) {
-	connector := integration.IntegrationTestConnector(t)
-	defer connector.Shutdown()
+	_, connector, tearDown := integration.DBWithCleanup(t)
+	defer tearDown()
 
 	providerName := "username"
 	providerRepository := repository.NewProviderRepository()
@@ -154,8 +154,8 @@ func TestProviderRepository_GetProviderFoundWhenCacheMiss(t *testing.T) {
 }
 
 func TestProviderRepository_GetProviderNotFound(t *testing.T) {
-	connector := integration.IntegrationTestConnector(t)
-	defer connector.Shutdown()
+	_, connector, tearDown := integration.DBWithCleanup(t)
+	defer tearDown()
 
 	providerNotExists := "not-exists"
 	providerRepository := repository.NewProviderRepository()
