@@ -77,36 +77,37 @@ func TestCredentialRepository_GetCredentialByProvider(t *testing.T) {
 
 	fieldsCount := reflect.TypeFor[model.AccountCredential]().NumField()
 	for _, tt := range tests {
-		common.CreateLogger(common.LogLevelError, "")
-		mockRow := new(testutil.MockRow)
-		mockRow.MockScan(
-			fieldsCount,
-			tt.errThrown,
-			modelToValues(tt.expected)...,
-		)
+		t.Run(tt.id, func(t *testing.T) {
+			common.CreateLogger(common.LogLevelError, "")
+			mockRow := new(testutil.MockRow)
+			mockRow.MockScan(
+				fieldsCount,
+				tt.errThrown,
+				modelToValues(tt.expected)...,
+			)
 
-		mockPool := new(testutil.MockDBPool)
-		mockPool.On("QueryRow", mock.Anything, mock.Anything, providerID, username).Return(mockRow)
+			mockPool := new(testutil.MockDBPool)
+			mockPool.On("QueryRow", mock.Anything, mock.Anything, providerID, username).Return(mockRow)
 
-		connector := postgres.ConnectorPostgres{Pool: mockPool}
-		repo := NewCredentialRepository()
+			connector := postgres.ConnectorPostgres{Pool: mockPool}
+			repo := NewCredentialRepository()
 
-		model, err := repo.GetCredentialByProvider(
-			context.Background(),
-			&connector,
-			providerID,
-			username,
-		)
+			model, err := repo.GetCredentialByProvider(
+				context.Background(),
+				&connector,
+				providerID,
+				username,
+			)
 
-		if tt.errThrown != nil {
-			assert.Error(t, err)
-			assert.ErrorIs(t, err, tt.errReturned)
-		} else {
-			assert.NoError(t, err)
-		}
+			if tt.errThrown != nil {
+				assert.Error(t, err)
+				assert.ErrorIs(t, err, tt.errReturned)
+			} else {
+				assert.NoError(t, err)
+			}
 
-		assert.Equal(t, tt.expected, model)
-		mockPool.AssertExpectations(t)
-
+			assert.Equal(t, tt.expected, model)
+			mockPool.AssertExpectations(t)
+		})
 	}
 }
