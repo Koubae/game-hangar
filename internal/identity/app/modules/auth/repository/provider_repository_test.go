@@ -23,7 +23,8 @@ func TestProviderRepository_GetProvider_CacheHit(t *testing.T) {
 
 	expected := &model.Provider{
 		ID:          1,
-		Name:        "stream",
+		Source:      "global",
+		Type:        "stream",
 		DisplayName: "Steam",
 		Category:    "platform",
 		Disabled:    false,
@@ -34,8 +35,12 @@ func TestProviderRepository_GetProvider_CacheHit(t *testing.T) {
 	mockPool := new(testutil.MockDBPool)
 	connector := postgres.ConnectorPostgres{Pool: mockPool}
 
-	repo := &ProviderRepository{providersCache: map[string]*model.Provider{"steam": expected}}
-	got, err := repo.GetProvider(context.Background(), &connector, "steam")
+	repo := &ProviderRepository{
+		providersCache: map[string]map[string]*model.Provider{
+			"global": {"steam": expected},
+		},
+	}
+	got, err := repo.GetProvider(context.Background(), &connector, "global", "steam")
 
 	assert.NoError(t, err)
 	assert.Same(t, expected, got)
@@ -57,7 +62,8 @@ func TestProviderRepository_GetProvider_CacheMiss(t *testing.T) {
 			id: "record-is-found",
 			expected: &model.Provider{
 				ID:          2,
-				Name:        "email",
+				Source:      "global",
+				Type:        "email",
 				DisplayName: "Email",
 				Category:    "internal",
 				Disabled:    false,
@@ -78,23 +84,31 @@ func TestProviderRepository_GetProvider_CacheMiss(t *testing.T) {
 			mockRow := new(testutil.MockRow)
 
 			if tt.expected != nil {
-				mockRow.MockScan(7, nil,
+				mockRow.MockScan(8, nil,
 					tt.expected.ID,
-					tt.expected.Name,
+					tt.expected.Source,
+					tt.expected.Type,
 					tt.expected.DisplayName,
 					tt.expected.Category,
 					tt.expected.Disabled,
 				)
 			} else {
-				mockRow.MockScan(7, pgx.ErrNoRows)
+				mockRow.MockScan(8, pgx.ErrNoRows)
 			}
 
 			mockPool := new(testutil.MockDBPool)
-			mockPool.On("QueryRow", mock.Anything, mock.Anything, "steam").Return(mockRow)
+			mockPool.On("QueryRow", mock.Anything, mock.Anything, pgx.StrictNamedArgs{
+				"source": "global", "type": "steam",
+			}).Return(mockRow)
 
 			connector := postgres.ConnectorPostgres{Pool: mockPool}
-			repo := &ProviderRepository{providersCache: map[string]*model.Provider{"email": tt.expected}}
-			got, err := repo.GetProvider(context.Background(), &connector, "steam")
+
+			repo := &ProviderRepository{
+				providersCache: map[string]map[string]*model.Provider{
+					"global": {"email": tt.expected},
+				},
+			}
+			got, err := repo.GetProvider(context.Background(), &connector, "global", "steam")
 
 			if tt.err != nil {
 				assert.Error(t, err)

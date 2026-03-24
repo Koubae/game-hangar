@@ -6,9 +6,12 @@ import (
 	"github.com/google/uuid"
 )
 
+// TODO: Add hardcoded list of available type. ENUM???
+
 type Provider struct {
 	ID          int       `json:"id"`
-	Name        string    `json:"name"`
+	Source      string    `json:"source"`
+	Type        string    `json:"type"`
 	DisplayName string    `json:"display_name"`
 	Category    string    `json:"category"`
 	Disabled    bool      `json:"disabled"`
