@@ -53,5 +53,4 @@ func main() {
 		migrator.Logger.Fatal("failed to run migration: ", zap.Error(err), zap.String("result", result))
 	}
 	migrator.Logger.Info("Migration result (demo data): ", zap.String("result", result))
-
 }

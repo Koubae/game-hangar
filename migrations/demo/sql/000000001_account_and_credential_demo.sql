@@ -8,30 +8,29 @@ VALUES ('account_test_1', 'account_test_1@test.com', '06e1b677-a4fe-42cf-8afd-ce
 SELECT * FROM account;
 
 -- Providers
-INSERT INTO provider (id, name, display_name, category)
+INSERT INTO provider (id, source, type, display_name, category)
 VALUES
     -- Managed
-    (1, 'username',   'Username',            'managed'),
-    (2, 'email',      'Email',               'managed'),
-    (3, 'device',     'Device',              'managed'),
+    (1,  'global', 'username',   'Username',            'managed'),
+    (2,  'global', 'email',      'Email',               'managed'),
+    (3,  'global', 'device',     'Device',              'managed'),
     -- Anonymous
-    (4, 'anonymous',  'Anonymous',           'anonymous'),
-    (5, 'guest',      'Guest',               'anonymous'),
+    (4,  'global', 'anonymous',  'Anonymous',           'anonymous'),
+    (5,  'global', 'guest',      'Guest',               'anonymous'),
     -- Platform
-    (6, 'steam',      'Steam',               'platform'),
-    (7, 'epic',       'Epic Games',          'platform'),
-    (8, 'psn',        'PlayStation Network', 'platform'),
-    (9, 'xbox',       'Xbox',                'platform'),
-    (10, 'nintendo',   'Nintendo',            'platform'),
-    (11, 'gpg',        'Google Play Games',   'platform'),
-    (12, 'gamecenter', 'Apple Game Center',   'platform'),
+    (6,  'global', 'steam',      'Steam',               'platform'),
+    (7,  'global', 'epic',       'Epic Games',          'platform'),
+    (8,  'global', 'psn',        'PlayStation Network', 'platform'),
+    (9,  'global', 'xbox',       'Xbox',                'platform'),
+    (10, 'global', 'nintendo',   'Nintendo',            'platform'),
+    (11, 'global', 'gpg',        'Google Play Games',   'platform'),
+    (12, 'global', 'gamecenter', 'Apple Game Center',   'platform'),
     -- Social
-    (13, 'google',     'Google',              'social'),
-    (14, 'apple',      'Apple',               'social'),
-    (15, 'discord',    'Discord',             'social'),
-    (16, 'facebook',   'Facebook',            'social')
+    (13, 'global', 'google',     'Google',              'social'),
+    (14, 'global', 'apple',      'Apple',               'social'),
+    (15, 'global', 'discord',    'Discord',             'social'),
+    (16, 'global', 'facebook',   'Facebook',            'social')
 ;
-
 
 SELECT * FROM provider;
 
@@ -46,8 +45,8 @@ DECLARE
     account_2_id UUID := (SELECT id FROM account WHERE username = 'account_test_2');
     account_3_id UUID := (SELECT id FROM account WHERE username = 'account_test_3');
     -- Provider IDs (selected by name)
-    provider_username BIGINT := (SELECT id FROM provider WHERE name = 'username');
-    provider_email    BIGINT := (SELECT id FROM provider WHERE name = 'email');
+    provider_username BIGINT := (SELECT id FROM provider WHERE source = 'global' AND type = 'username');
+    provider_email    BIGINT := (SELECT id FROM provider WHERE source = 'global' AND type = 'email');
 BEGIN
     INSERT INTO account_credentials (credential, account_id, provider_id, secret, verified, verified_at)
     VALUES
@@ -92,7 +91,7 @@ SELECT * FROM account WHERE id = '06e1b677-a4fe-42cf-8afd-ceec867d1fa5';
 SELECT * FROM account_credentials WHERE account_id = '06e1b677-a4fe-42cf-8afd-ceec867d1fa5';
 
 
-SELECT account.*,  provider.name, credentials.*
+SELECT account.*, provider.source, provider.type, credentials.*
 FROM account account
          JOIN account_credentials credentials ON account.id = credentials.account_id
          JOIN provider provider ON credentials.provider_id = provider.id
@@ -102,7 +101,7 @@ WHERE account.id = '06e1b677-a4fe-42cf-8afd-ceec867d1fa5'
 ;
 
 
-SELECT account.*,  provider.name, credentials.*
+SELECT account.*, provider.source, provider.type, credentials.*
 FROM account account
          JOIN account_credentials credentials ON account.id = credentials.account_id
          JOIN provider provider ON credentials.provider_id = provider.id

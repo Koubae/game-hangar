@@ -6,9 +6,35 @@ import (
 	"github.com/google/uuid"
 )
 
+type ProviderType string
+
+const (
+	// Managed
+	Username ProviderType = "username"
+	Email    ProviderType = "email"
+	Device   ProviderType = "device"
+	// Anonymous
+	Anonymous ProviderType = "anonymous"
+	Guest     ProviderType = "guest"
+	// Platform
+	Steam      ProviderType = "steam"
+	Epic       ProviderType = "epic"
+	PSN        ProviderType = "psn"
+	Xbox       ProviderType = "xbox"
+	Nintendo   ProviderType = "nintendo"
+	GPG        ProviderType = "gpg"        // Google Play Games
+	GameCenter ProviderType = "gamecenter" // Apple Game Center
+	// Social
+	Google   ProviderType = "google"
+	Apple    ProviderType = "apple"
+	Discord  ProviderType = "discord"
+	Facebook ProviderType = "facebook"
+)
+
 type Provider struct {
 	ID          int       `json:"id"`
-	Name        string    `json:"name"`
+	Source      string    `json:"source"`
+	Type        string    `json:"type"`
 	DisplayName string    `json:"display_name"`
 	Category    string    `json:"category"`
 	Disabled    bool      `json:"disabled"`

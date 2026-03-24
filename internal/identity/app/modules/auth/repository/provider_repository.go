@@ -15,17 +15,17 @@ import (
 
 type IProviderRepository interface {
 	LoadProviders(ctx context.Context, db database.DBTX)
-	GetProvider(ctx context.Context, db database.DBTX, name string) (*model.Provider, error)
+	GetProvider(ctx context.Context, db database.DBTX, source string, _type string) (*model.Provider, error)
 }
 
 type ProviderRepository struct {
 	mu             sync.RWMutex
-	providersCache map[string]*model.Provider
+	providersCache map[string]map[string]*model.Provider
 }
 
 func NewProviderRepository() *ProviderRepository {
 	r := &ProviderRepository{
-		providersCache: make(map[string]*model.Provider),
+		providersCache: make(map[string]map[string]*model.Provider),
 	}
 	return r
 }
@@ -34,7 +34,7 @@ func (r *ProviderRepository) LoadProviders(ctx context.Context, db database.DBTX
 	logger := common.GetLogger()
 	logger.Info("loading providers...")
 
-	const query = "SELECT id, name, display_name, category, disabled, created, updated FROM provider"
+	const query = "SELECT id, source, type, display_name, category, disabled, created, updated FROM provider"
 
 	rows, err := db.SelectMany(ctx, query)
 	if err != nil {
@@ -48,7 +48,8 @@ func (r *ProviderRepository) LoadProviders(ctx context.Context, db database.DBTX
 		var p model.Provider
 		if err := rows.Scan(
 			&p.ID,
-			&p.Name,
+			&p.Source,
+			&p.Type,
 			&p.DisplayName,
 			&p.Category,
 			&p.Disabled,
@@ -58,44 +59,62 @@ func (r *ProviderRepository) LoadProviders(ctx context.Context, db database.DBTX
 			logger.Error("failed to scan provider", zap.Error(err))
 			continue
 		}
-		r.providersCache[p.Name] = &p
+
+		r.addProviderInCache(p.Source, p.Type, &p)
+
 	}
 	r.mu.Unlock()
 
 	logger.Info("providers loaded", zap.Int("count", len(r.providersCache)))
 }
 
-func (r *ProviderRepository) GetProvider(ctx context.Context, db database.DBTX, name string) (*model.Provider, error) {
+// addProviderInCache should be called within the r.mu.Lock
+func (r *ProviderRepository) addProviderInCache(source string, _type string, p *model.Provider) {
+	if _, ok := r.providersCache[source]; !ok {
+		r.providersCache[source] = make(map[string]*model.Provider)
+	}
+
+	r.providersCache[source][p.Type] = p
+}
+
+func (r *ProviderRepository) GetProvider(ctx context.Context, db database.DBTX, source string, _type string) (*model.Provider, error) {
 	r.mu.RLock()
-	m, ok := r.providersCache[name]
-	r.mu.RUnlock()
+	defer r.mu.RUnlock()
+
+	s, ok := r.providersCache[source]
 	if ok {
-		return m, nil
+		m, ok := s[_type]
+		if ok {
+			return m, nil
+		}
+
 	}
 
 	logger := common.GetLogger()
-	logger.Warn("provider not found in cache, attempt to load from db", zap.String("name", name))
+	logger.Warn("provider not found in cache, attempt to load from db", zap.String("source", source), zap.String("type", _type))
 
-	m, err := r.getProvider(ctx, db, name)
+	m, err := r.getProvider(ctx, db, source, _type)
 	if err != nil {
 		return nil, err
 	}
 
+	r.addProviderInCache(source, _type, m)
 	return m, nil
 }
 
-func (r *ProviderRepository) getProvider(ctx context.Context, db database.DBTX, name string) (*model.Provider, error) {
+func (r *ProviderRepository) getProvider(ctx context.Context, db database.DBTX, source string, _type string) (*model.Provider, error) {
 	const query = `
-		SELECT id, name, display_name, category, disabled, created, updated 
+		SELECT id, source, type, display_name, category, disabled, created, updated 
 			FROM provider
-		WHERE name = $1 
+		WHERE source = @source AND type = @type 
 
 	`
 
 	var m model.Provider
-	if err := db.SelectOne(ctx, query, name).Scan(
+	if err := db.SelectOne(ctx, query, pgx.StrictNamedArgs{"source": source, "type": _type}).Scan(
 		&m.ID,
-		&m.Name,
+		&m.Source,
+		&m.Type,
 		&m.DisplayName,
 		&m.Category,
 		&m.Disabled,
