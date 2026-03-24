@@ -6,7 +6,30 @@ import (
 	"github.com/google/uuid"
 )
 
-// TODO: Add hardcoded list of available type. ENUM???
+type ProviderType string
+
+const (
+	// Managed
+	Username ProviderType = "username"
+	Email    ProviderType = "email"
+	Device   ProviderType = "device"
+	// Anonymous
+	Anonymous ProviderType = "anonymous"
+	Guest     ProviderType = "guest"
+	// Platform
+	Steam      ProviderType = "steam"
+	Epic       ProviderType = "epic"
+	PSN        ProviderType = "psn"
+	Xbox       ProviderType = "xbox"
+	Nintendo   ProviderType = "nintendo"
+	GPG        ProviderType = "gpg"        // Google Play Games
+	GameCenter ProviderType = "gamecenter" // Apple Game Center
+	// Social
+	Google   ProviderType = "google"
+	Apple    ProviderType = "apple"
+	Discord  ProviderType = "discord"
+	Facebook ProviderType = "facebook"
+)
 
 type Provider struct {
 	ID          int       `json:"id"`
