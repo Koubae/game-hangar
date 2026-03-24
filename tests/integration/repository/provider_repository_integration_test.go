@@ -2,13 +2,13 @@ package repository
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/model"
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/repository"
 	"github.com/koubae/game-hangar/pkg/database"
 	"github.com/koubae/game-hangar/tests/integration"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestProviderRepository_GetProvider(t *testing.T) {
@@ -187,18 +187,39 @@ func TestProviderRepository_GetProviderNotFound(t *testing.T) {
 	_, connector, tearDown := integration.DBWithCleanup(t)
 	defer tearDown()
 
-	source := "global"
-	_type := "not-exists"
-	providerRepository := repository.NewProviderRepository()
-	providerRepository.LoadProviders(context.Background(), connector)
-
-	provider, err := providerRepository.GetProvider(context.Background(), connector, source, _type)
-	if err != nil {
-		if !errors.Is(err, database.ErrNotFound) {
-			t.Fatalf("Failed to get provider: %v", err)
-		}
+	tests := []struct {
+		id          string
+		source      string
+		_type       string
+		expected    *model.Provider
+		errReturned error
+	}{
+		{
+			id:          "not-found-because-type-not-exists",
+			source:      "global",
+			_type:       "not-exists",
+			expected:    nil,
+			errReturned: database.ErrNotFound,
+		},
+		{
+			id:          "not-found-because-source-not-exists",
+			source:      "not-exists",
+			_type:       "username",
+			expected:    nil,
+			errReturned: database.ErrNotFound,
+		},
 	}
-	if provider != nil {
-		t.Fatalf("Provider is not nil")
+
+	for _, tt := range tests {
+		t.Run(tt.id, func(t *testing.T) {
+			providerRepository := repository.NewProviderRepository()
+			providerRepository.LoadProviders(context.Background(), connector)
+
+			model, err := providerRepository.GetProvider(context.Background(), connector, tt.source, tt._type)
+
+			assert.Error(t, err)
+			assert.ErrorIs(t, tt.errReturned, err)
+			assert.Equal(t, tt.expected, model)
+		})
 	}
 }
