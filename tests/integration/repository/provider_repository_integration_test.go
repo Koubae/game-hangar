@@ -17,86 +17,106 @@ func TestProviderRepository_GetProvider(t *testing.T) {
 
 	tests := []struct {
 		id       string
-		name     string
+		source   string
+		_type    string
 		expected model.Provider
 	}{
 		{
-			id:   "provider-username",
-			name: "username",
+			id:     "provider-username",
+			source: "global",
+			_type:  "username",
 			expected: model.Provider{
-				Name:        "username",
+				Source:      "global",
+				Type:        "username",
 				DisplayName: "Username",
 				Category:    "managed",
 			},
 		},
 		{
-			id:   "provider-email",
-			name: "email",
+			id:     "provider-email",
+			source: "global",
+
+			_type: "email",
 			expected: model.Provider{
-				Name:        "email",
+				Source:      "global",
+				Type:        "email",
 				DisplayName: "Email",
 				Category:    "managed",
 			},
 		},
 		{
-			id:   "provider-device",
-			name: "device",
+			id:     "provider-device",
+			source: "global",
+			_type:  "device",
 			expected: model.Provider{
-				Name:        "device",
+				Source:      "global",
+				Type:        "device",
 				DisplayName: "Device",
 				Category:    "managed",
 			},
 		},
 		{
-			id:   "provider-guest",
-			name: "guest",
+			id:     "provider-guest",
+			source: "global",
+			_type:  "guest",
 			expected: model.Provider{
-				Name:        "guest",
+				Source:      "global",
+				Type:        "guest",
 				DisplayName: "Guest",
 				Category:    "anonymous",
 			},
 		},
 		{
-			id:   "provider-anonymous",
-			name: "anonymous",
+			id:     "provider-anonymous",
+			source: "global",
+			_type:  "anonymous",
 			expected: model.Provider{
-				Name:        "anonymous",
+				Source:      "global",
+				Type:        "anonymous",
 				DisplayName: "Anonymous",
 				Category:    "anonymous",
 			},
 		},
 		{
-			id:   "provider-steam",
-			name: "steam",
+			id:     "provider-steam",
+			source: "global",
+			_type:  "steam",
 			expected: model.Provider{
-				Name:        "steam",
+				Source:      "global",
+				Type:        "steam",
 				DisplayName: "Steam",
 				Category:    "platform",
 			},
 		},
 		{
-			id:   "provider-playstation",
-			name: "psn",
+			id:     "provider-playstation",
+			source: "global",
+			_type:  "psn",
 			expected: model.Provider{
-				Name:        "psn",
+				Source:      "global",
+				Type:        "psn",
 				DisplayName: "PlayStation Network",
 				Category:    "platform",
 			},
 		},
 		{
-			id:   "provider-xbox",
-			name: "xbox",
+			id:     "provider-xbox",
+			source: "global",
+			_type:  "xbox",
 			expected: model.Provider{
-				Name:        "xbox",
+				Source:      "global",
+				Type:        "xbox",
 				DisplayName: "Xbox",
 				Category:    "platform",
 			},
 		},
 		{
-			id:   "provider-nintendo",
-			name: "nintendo",
+			id:     "provider-nintendo",
+			source: "global",
+			_type:  "nintendo",
 			expected: model.Provider{
-				Name:        "nintendo",
+				Source:      "global",
+				Type:        "nintendo",
 				DisplayName: "Nintendo",
 				Category:    "platform",
 			},
@@ -107,7 +127,7 @@ func TestProviderRepository_GetProvider(t *testing.T) {
 	providerRepository.LoadProviders(context.Background(), connector)
 	for _, tt := range tests {
 		t.Run(tt.id, func(t *testing.T) {
-			provider, err := providerRepository.GetProvider(context.Background(), connector, tt.name)
+			provider, err := providerRepository.GetProvider(context.Background(), connector, tt.source, tt._type)
 			if err != nil {
 				t.Fatalf("Failed to get provider: %v", err)
 			}
@@ -115,8 +135,12 @@ func TestProviderRepository_GetProvider(t *testing.T) {
 				t.Fatalf("Provider is nil")
 			}
 
-			if provider.Name != tt.expected.Name {
-				t.Fatalf("Provider name is not '%s' got: %s\n ", tt.expected.Name, provider.Name)
+			if provider.Source != tt.expected.Source {
+				t.Fatalf("Provider source is not '%s' got: %s\n ", tt.expected.Source, provider.Source)
+			}
+
+			if provider.Type != tt.expected.Type {
+				t.Fatalf("Provider type is not '%s' got: %s\n ", tt.expected.Type, provider.Type)
 			}
 			if provider.DisplayName != tt.expected.DisplayName {
 				t.Fatalf("Provider display name is not '%s' \n got: %s", tt.expected.DisplayName, provider.DisplayName)
@@ -132,9 +156,10 @@ func TestProviderRepository_GetProviderFoundWhenCacheMiss(t *testing.T) {
 	_, connector, tearDown := integration.DBWithCleanup(t)
 	defer tearDown()
 
-	providerName := "username"
+	source := "global"
+	_type := "username"
 	providerRepository := repository.NewProviderRepository()
-	provider, err := providerRepository.GetProvider(context.Background(), connector, providerName)
+	provider, err := providerRepository.GetProvider(context.Background(), connector, source, _type)
 	if err != nil {
 		t.Fatalf("Failed to get provider: %v", err)
 	}
@@ -142,9 +167,14 @@ func TestProviderRepository_GetProviderFoundWhenCacheMiss(t *testing.T) {
 		t.Fatalf("Provider is nil")
 	}
 
-	if provider.Name != providerName {
-		t.Fatalf("Provider name is not '%s' got: %s\n ", providerName, provider.Name)
+	if provider.Source != source {
+		t.Fatalf("Provider source is not '%s' got: %s\n ", source, provider.Source)
 	}
+
+	if provider.Type != _type {
+		t.Fatalf("Provider type is not '%s' got: %s\n ", _type, provider.Type)
+	}
+
 	if provider.DisplayName != "Username" {
 		t.Fatalf("Provider display name is not '%s' \n got: %s", "Username", provider.DisplayName)
 	}
@@ -157,11 +187,12 @@ func TestProviderRepository_GetProviderNotFound(t *testing.T) {
 	_, connector, tearDown := integration.DBWithCleanup(t)
 	defer tearDown()
 
-	providerNotExists := "not-exists"
+	source := "global"
+	_type := "not-exists"
 	providerRepository := repository.NewProviderRepository()
 	providerRepository.LoadProviders(context.Background(), connector)
 
-	provider, err := providerRepository.GetProvider(context.Background(), connector, providerNotExists)
+	provider, err := providerRepository.GetProvider(context.Background(), connector, source, _type)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotFound) {
 			t.Fatalf("Failed to get provider: %v", err)
