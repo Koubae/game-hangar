@@ -127,16 +127,16 @@ migrate-demo-data-status:
 # Test DB
 # --------------------------------
 migrate-test-identity-up:
-	@go run ./migrations/identity/migrate_identity.go -action up -limit 1 -env .env.testing -appPrefix TESTING_
+	@go run ./migrations/identity/migrate_identity.go -action up -limit 0 -env .env.testing -appPrefix TESTING_
 migrate-test-identity-down:
-	@go run ./migrations/identity/migrate_identity.go -action down -limit 1 -env .env.testing -appPrefix TESTING_
+	@go run ./migrations/identity/migrate_identity.go -action down -limit 0 -env .env.testing -appPrefix TESTING_
 migrate-test-identity-status:
 	@go run ./migrations/identity/migrate_identity.go -action status -env .env.testing -appPrefix TESTING_
 
 migrate-test-demo-data-up:
-	@go run ./migrations/demo/migrate_demo_data.go -action up -limit 1 -env .env.testing -appPrefix TESTING_
+	@go run ./migrations/demo/migrate_demo_data.go -action up -limit 0 -env .env.testing -appPrefix TESTING_
 migrate-test-demo-data-down:
-	@go run ./migrations/demo/migrate_demo_data.go -action down -limit 1 -env .env.testing -appPrefix TESTING_
+	@go run ./migrations/demo/migrate_demo_data.go -action down -limit 0 -env .env.testing -appPrefix TESTING_
 migrate-test-demo-data-status:
 	@go run ./migrations/demo/migrate_demo_data.go -action status -env .env.testing -appPrefix TESTING_
 
