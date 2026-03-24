@@ -15,6 +15,12 @@ import (
 var (
 	Now             = time.Now()
 	AccountIDTest01 = uuid.New()
+
+	DBMockErrDuplicateKey = &pgconn.PgError{
+		Code:           "23505",
+		ConstraintName: "some_unique_constraint_name",
+		Message:        "duplicate key value violates unique constraint",
+	}
 )
 
 type MockDBPool struct {

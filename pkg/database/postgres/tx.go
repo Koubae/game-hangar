@@ -45,3 +45,7 @@ func (t *PostgresTransaction) Commit(ctx context.Context) error {
 func (t *PostgresTransaction) Rollback(ctx context.Context) error {
 	return t.tx.Rollback(ctx)
 }
+
+func (t *PostgresTransaction) MapDBErrToDomainErr(err error) error {
+	return MapPostgresErrToDomainErr(err)
+}

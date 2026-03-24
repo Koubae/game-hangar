@@ -8,13 +8,17 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-var ErrNotFound = errors.New("resource not found")
+var (
+	ErrNotFound   = errors.New("resource not found")
+	ErrrDuplicate = errors.New("resource is duplicate")
+)
 
 // DBTX pool-backed connector and a transaction wrapper implement this.
 type DBTX interface {
 	SelectMany(ctx context.Context, query string, args ...any) (pgx.Rows, error)
 	SelectOne(ctx context.Context, query string, args ...any) pgx.Row
 	SQL(ctx context.Context, query string, args ...any) (pgconn.CommandTag, error)
+	MapDBErrToDomainErr(err error) error
 }
 
 type Transaction interface {

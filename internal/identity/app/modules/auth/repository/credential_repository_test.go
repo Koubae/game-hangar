@@ -211,6 +211,21 @@ func TestCredentialRepository_CreateAccountCredentialOnErrors(t *testing.T) {
 			errThrown:   mockedDBErr,
 			errReturned: mockedDBErr,
 		},
+		{
+			id: "on-db-error-duplicate-resource",
+			params: &NewAccountCredential{
+				Credential: username,
+				AccountID:  testutil.AccountIDTest01,
+				ProviderID: providerID,
+				Secret:     "sha255-secret",
+				SecretType: "password",
+				Verified:   true,
+				VerifiedAt: &testutil.Now,
+			},
+			expectedID:  int64(0),
+			errThrown:   testutil.DBMockErrDuplicateKey,
+			errReturned: database.ErrrDuplicate,
+		},
 	}
 
 	for _, tt := range tests {

@@ -122,3 +122,7 @@ func (c *ConnectorPostgres) Transaction(
 
 	return &PostgresTransaction{tx: tx}, nil
 }
+
+func (c *ConnectorPostgres) MapDBErrToDomainErr(err error) error {
+	return MapPostgresErrToDomainErr(err)
+}

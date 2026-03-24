@@ -101,7 +101,7 @@ func (r *CredentialRepository) CreateAccountCredential(
 		},
 	).Scan(&id)
 	if err != nil {
-		return 0, err
+		return 0, db.MapDBErrToDomainErr(err)
 	}
 
 	return id, nil
