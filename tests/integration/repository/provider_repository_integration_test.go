@@ -7,35 +7,12 @@ import (
 
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/model"
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/repository"
-	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/database"
-	"github.com/koubae/game-hangar/pkg/database/postgres"
 	"github.com/koubae/game-hangar/tests/integration"
 )
 
-func setupTest(t *testing.T) *postgres.ConnectorPostgres {
-	t.Helper()
-	if testing.Short() {
-		t.Skip("skipping integration test in short mode")
-	}
-
-	_ = common.NewConfig(common.CreateLogger(common.LogLevelInfo, ""), ".env.testing", integration.AppPrefix)
-
-	config, err := postgres.LoadConfig(integration.AppPrefix)
-	if err != nil {
-		t.Fatalf("Failed to load config: %v", err)
-	}
-
-	connector, err := postgres.NewConnector(config)
-	if err != nil {
-		t.Fatalf("Failed to create connector (is database running?): %v", err)
-	}
-
-	return connector
-}
-
 func TestProviderRepository_GetProvider(t *testing.T) {
-	connector := setupTest(t)
+	connector := integration.SetupTest(t)
 	defer connector.Shutdown()
 
 	tests := []struct {
@@ -152,7 +129,7 @@ func TestProviderRepository_GetProvider(t *testing.T) {
 }
 
 func TestProviderRepository_GetProviderFoundWhenCacheMiss(t *testing.T) {
-	connector := setupTest(t)
+	connector := integration.SetupTest(t)
 	defer connector.Shutdown()
 
 	providerName := "username"
@@ -177,7 +154,7 @@ func TestProviderRepository_GetProviderFoundWhenCacheMiss(t *testing.T) {
 }
 
 func TestProviderRepository_GetProviderNotFound(t *testing.T) {
-	connector := setupTest(t)
+	connector := integration.SetupTest(t)
 	defer connector.Shutdown()
 
 	providerNotExists := "not-exists"
