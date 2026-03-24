@@ -1,6 +1,9 @@
 package integration
 
 import (
+	"context"
+	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/koubae/game-hangar/pkg/common"
@@ -28,4 +31,18 @@ func SetupTest(t *testing.T) *postgres.ConnectorPostgres {
 	}
 
 	return connector
+}
+
+func ResetDB(ctx context.Context, connector *postgres.ConnectorPostgres) error {
+	tables := strings.Join([]string{
+		`"public"."account_credentials"`,
+		`"public"."account"`,
+	}, ", ")
+
+	query := `TRUNCATE TABLE ` + tables + ` RESTART IDENTITY CASCADE`
+	if _, err := connector.SQL(ctx, query); err != nil {
+		return fmt.Errorf("truncate test tables: %w", err)
+	}
+
+	return nil
 }
