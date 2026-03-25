@@ -5,10 +5,11 @@ TODO (Game Hangar)
 Identity
 ========
 
-* Get Cred by Provider (repo) ✅
-* Create Credential  (repo) ✅ 
-* Does cred exists? (service) 
-* Create credential (service) needs to accept a transaction connection
+* CredRepo: Get Cred by Provider (repo) ✅
+* CredRepo: Create Credential  (repo) ✅ 
+* CredService: Create Username Creadential ✅ 
+* CredService: Get Credential by provider ✅
+
 * Create Account (repo)
 * Create Account (service)
 
