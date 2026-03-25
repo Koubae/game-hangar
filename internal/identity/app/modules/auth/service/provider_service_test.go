@@ -7,27 +7,11 @@ import (
 
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/model"
 	"github.com/koubae/game-hangar/internal/testunit"
-	"github.com/koubae/game-hangar/pkg/database"
 	"github.com/koubae/game-hangar/pkg/database/postgres"
 	"github.com/koubae/game-hangar/pkg/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
-
-type MockProviderRepository struct {
-	mock.Mock
-}
-
-func (m *MockProviderRepository) LoadProviders(ctx context.Context, db database.DBTX) {
-	_ = m.Called(ctx, db)
-}
-
-func (m *MockProviderRepository) GetProvider(ctx context.Context, db database.DBTX, source string, _type string) (*model.Provider, error) {
-	args := m.Called(ctx, db, source, _type)
-
-	provider, _ := args.Get(0).(*model.Provider)
-	return provider, args.Error(1)
-}
 
 func TestProviderService_IsProviderEnabled(t *testing.T) {
 	t.Parallel()
@@ -39,14 +23,14 @@ func TestProviderService_IsProviderEnabled(t *testing.T) {
 		source string
 		_type  string
 
-		setupMock func(repo *MockProviderRepository)
+		setupMock func(repo *testunit.MockProviderRepository)
 		want      bool
 	}{
 		{
 			id:     "returns true when provider is enabled",
 			source: "global",
 			_type:  "steam",
-			setupMock: func(repo *MockProviderRepository) {
+			setupMock: func(repo *testunit.MockProviderRepository) {
 				repo.
 					On("GetProvider", mock.Anything, mock.Anything, "global", "steam").
 					Run(func(args mock.Arguments) {
@@ -67,7 +51,7 @@ func TestProviderService_IsProviderEnabled(t *testing.T) {
 			id:     "returns false when provider is disabled",
 			source: "global",
 			_type:  "steam",
-			setupMock: func(repo *MockProviderRepository) {
+			setupMock: func(repo *testunit.MockProviderRepository) {
 				repo.
 					On("GetProvider", mock.Anything, mock.Anything, "global", "steam").
 					Run(func(args mock.Arguments) {
@@ -88,7 +72,7 @@ func TestProviderService_IsProviderEnabled(t *testing.T) {
 			id:     "returns false when repository returns error",
 			source: "global",
 			_type:  "steam",
-			setupMock: func(repo *MockProviderRepository) {
+			setupMock: func(repo *testunit.MockProviderRepository) {
 				repo.
 					On("GetProvider", mock.Anything, mock.Anything, "global", "steam").
 					Run(func(args mock.Arguments) {
@@ -110,7 +94,7 @@ func TestProviderService_IsProviderEnabled(t *testing.T) {
 		t.Run(tt.id, func(t *testing.T) {
 			t.Parallel()
 
-			repo := new(MockProviderRepository)
+			repo := new(testunit.MockProviderRepository)
 			tt.setupMock(repo)
 
 			svc := NewProviderService(&connector, repo)
