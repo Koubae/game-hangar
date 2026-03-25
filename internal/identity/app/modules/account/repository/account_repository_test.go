@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"reflect"
 	"testing"
 
@@ -17,6 +18,79 @@ import (
 
 func TestAccountRepository_CreateAccount(t *testing.T) {
 	t.Parallel()
+
+	emailTest := "test@unit.test"
+	mockedDBErr := errors.New("mocked-db-error")
+	tests := []struct {
+		id          string
+		params      *NewAccount
+		expected    string
+		errThrown   error
+		errReturned error
+	}{
+		{
+			id: "resource-created",
+			params: &NewAccount{
+				Username: "account-01",
+				Email:    &emailTest,
+			},
+			expected:    "account-01",
+			errThrown:   nil,
+			errReturned: nil,
+		},
+		{
+			id: "on-db-error-duplicate-resource",
+			params: &NewAccount{
+				Username: "account-01",
+				Email:    &emailTest,
+			},
+			expected:    "",
+			errThrown:   testutil.DBMockErrDuplicateKey,
+			errReturned: &database.ErrDuplicate{},
+		},
+		{
+			id: "on-db-error-any",
+			params: &NewAccount{
+				Username: "account-01",
+				Email:    &emailTest,
+			},
+			expected:    "",
+			errThrown:   mockedDBErr,
+			errReturned: mockedDBErr,
+		},
+	}
+
+	ctx := context.Background()
+	for _, tt := range tests {
+		t.Run(tt.id, func(t *testing.T) {
+			common.CreateLogger(common.LogLevelDPanic, "")
+			mockRow := new(testutil.MockRow)
+			mockRow.MockScan(1, tt.errThrown, tt.expected)
+
+			params := tt.params
+
+			mockPool := new(testutil.MockDBPool)
+			mockPool.On("QueryRow", mock.Anything, mock.Anything, pgx.StrictNamedArgs{
+				"username": params.Username,
+				"email":    params.Email,
+			}).
+				Return(mockRow)
+
+			connector := postgres.ConnectorPostgres{Pool: mockPool}
+			repo := NewAccountRepository()
+
+			id, err := repo.CreateAccount(ctx, &connector, *params)
+
+			if tt.errReturned != nil {
+				assert.Error(t, err)
+				assert.ErrorIs(t, err, tt.errReturned)
+				assert.Nil(t, id)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, &tt.expected, id)
+			}
+		})
+	}
 }
 
 func TestAccountRepository_GetAccount(t *testing.T) {
