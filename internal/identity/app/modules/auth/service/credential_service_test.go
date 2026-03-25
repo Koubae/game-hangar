@@ -6,6 +6,7 @@ import (
 
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/model"
 	"github.com/koubae/game-hangar/internal/testunit"
+	"github.com/koubae/game-hangar/pkg/database"
 	"github.com/koubae/game-hangar/pkg/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -23,7 +24,7 @@ func TestCredentialService_GetCredentialByProvider(t *testing.T) {
 		provider      int64
 		credential    string
 		setupMock     func(repo *testunit.MockCredentialRepository)
-		expected      string
+		expected      *string
 		errorReturned error
 	}{
 		{
@@ -47,8 +48,27 @@ func TestCredentialService_GetCredentialByProvider(t *testing.T) {
 					}, nil).
 					Once()
 			},
-			expected:      username,
+			expected:      &username,
 			errorReturned: nil,
+		},
+		{
+			id:         "record-is-not-found",
+			provider:   providerID,
+			credential: username,
+			setupMock: func(repo *testunit.MockCredentialRepository) {
+				repo.
+					On(
+						"GetCredentialByProvider",
+						mock.Anything,
+						connector,
+						providerID,
+						username,
+					).
+					Return(nil, database.ErrNotFound).
+					Once()
+			},
+			expected:      nil,
+			errorReturned: database.ErrNotFound,
 		},
 	}
 
@@ -71,11 +91,11 @@ func TestCredentialService_GetCredentialByProvider(t *testing.T) {
 			if tt.errorReturned != nil {
 				assert.Error(t, err)
 				assert.ErrorIs(t, err, tt.errorReturned)
+				assert.Nil(t, result)
 			} else {
 				assert.NoError(t, err)
+				assert.Equal(t, *tt.expected, result.Credential)
 			}
-
-			assert.Equal(t, tt.expected, result.Credential)
 		})
 	}
 }
