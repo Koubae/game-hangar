@@ -42,12 +42,6 @@ func (p *NewAccountCredential) Validate() error {
 	return nil
 }
 
-// TODO: GetCredentialBy Provider + credential (string) ✅
-// TODO: (Service layer..redundant on repo) Does Credential Exists? (By Provider + credential)
-// TODO: Get Credential by account_id, provider_id => credential (string)
-// TODO: Create Credential
-// TODO: Handle Auth
-// TODO: CreateCredential
 type CredentialRepository struct{}
 
 func NewCredentialRepository() *CredentialRepository {

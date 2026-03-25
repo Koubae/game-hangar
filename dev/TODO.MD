@@ -5,6 +5,22 @@ TODO (Game Hangar)
 Identity
 ========
 
+* Get Cred by Provider (repo) ✅
+* Create Credential  (repo) ✅ 
+* Does cred exists? (service) 
+* Create Account (repo)
+* Create Account (service)
+
+* Register by username
+  * API endpoint + handler/controller 
+  * Service 
+    0. Does Provider exists? 
+    1. Cred exists?
+    2. Create Account (transaction) -> get id 
+    3. Create Credential (transaction) -> get id 
+
+  * Auth type: username (JWT Access-Token)
+
 ### Auth API Endpoints
 
 ```bash
