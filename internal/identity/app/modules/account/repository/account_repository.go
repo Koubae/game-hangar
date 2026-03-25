@@ -7,7 +7,6 @@ import (
 	"net/mail"
 	"strings"
 
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/koubae/game-hangar/internal/identity/app/modules/account/model"
 	"github.com/koubae/game-hangar/pkg/database"
@@ -27,7 +26,7 @@ type IAccountRepository interface {
 	GetAccount(
 		ctx context.Context,
 		db database.DBTX,
-		id uuid.UUID,
+		id string,
 	) (*model.Account, error)
 }
 
