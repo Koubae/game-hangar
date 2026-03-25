@@ -13,13 +13,26 @@ import (
 )
 
 var (
-	ErrVerifiedAtRequired     = errors.New("verified_at is required when verified=true")
-	ErrVerifiedNilWhenIsFalse = errors.New("verified_at must be nil when verified=false")
+	ErrVerifiedAtRequired = errors.New(
+		"verified_at is required when verified=true",
+	)
+	ErrVerifiedNilWhenIsFalse = errors.New(
+		"verified_at must be nil when verified=false",
+	)
 )
 
 type ICredentialRepository interface {
-	CreateAccountCredential(ctx context.Context, db database.DBTX, params NewAccountCredential) (int64, error)
-	GetCredentialByProvider(ctx context.Context, db database.DBTX, providerID int64, credential string) (*model.AccountCredential, error)
+	CreateAccountCredential(
+		ctx context.Context,
+		db database.DBTX,
+		params NewAccountCredential,
+	) (int64, error)
+	GetCredentialByProvider(
+		ctx context.Context,
+		db database.DBTX,
+		providerID int64,
+		credential string,
+	) (*model.AccountCredential, error)
 }
 
 type NewAccountCredential struct {
@@ -143,7 +156,10 @@ func (r *CredentialRepository) GetCredentialByProvider(
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, database.ErrNotFound
 		}
-		return nil, fmt.Errorf("error while GetCredentialByProvider, error: %w", err)
+		return nil, fmt.Errorf(
+			"error while GetCredentialByProvider, error: %w",
+			err,
+		)
 	}
 
 	return &m, nil

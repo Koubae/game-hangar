@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/model"
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/repository"
 	"github.com/koubae/game-hangar/pkg/common"
@@ -25,6 +26,67 @@ func NewCredentialService(
 		db:         d,
 		repository: r,
 	}
+}
+
+func (s *CredentialService) CreateCredentialTypeUsername(
+	ctx context.Context,
+	credential string,
+	accountID uuid.UUID,
+	provider *model.Provider,
+	secret string,
+) (int64, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	logger := common.GetLogger()
+
+	if model.ProviderType(provider.Type) != model.Username {
+		logger.Warn(
+			"[CredentialService] create credential got incorrect provider type",
+			zap.String("providerSource", provider.Source),
+			zap.String("providerType", provider.Type),
+			zap.String("providerName", provider.DisplayName),
+		)
+		return 0, ErrCreateCredentialIncorrectProviderType
+	}
+
+	verifiedAt := time.Now().UTC()
+	params := repository.NewAccountCredential{
+		Credential: credential,
+		AccountID:  accountID,
+		ProviderID: provider.ID,
+		Secret:     secret,
+		SecretType: "password",
+		Verified:   true,
+		VerifiedAt: &verifiedAt,
+	}
+
+	id, err := s.repository.CreateAccountCredential(ctx, s.db, params)
+	if err != nil {
+		if !errors.Is(err, database.ErrrDuplicate) {
+			logger.Error(
+				"[CredentialService] unexpected error while creating new credential",
+				zap.Error(err),
+				zap.String("credential", credential),
+				zap.String("accountID", accountID.String()),
+				zap.String("providerSource", provider.Source),
+				zap.String("providerType", provider.Type),
+				zap.String("providerName", provider.DisplayName),
+			)
+		}
+		return 0, err
+	}
+
+	logger.Debug(
+		"[CredentialService] created new credential",
+		zap.Int64("id", id),
+		zap.String("credential", credential),
+		zap.String("accountID", accountID.String()),
+		zap.String("providerSource", provider.Source),
+		zap.String("providerType", provider.Type),
+		zap.String("providerName", provider.DisplayName),
+	)
+	return id, nil
 }
 
 func (s *CredentialService) GetCredentialByProvider(
@@ -54,7 +116,7 @@ func (s *CredentialService) getCredentialByProvider(
 	if err != nil {
 		if !errors.Is(err, database.ErrNotFound) {
 			logger.Error(
-				"error while getting credential by provider",
+				"[CredentialService] error while getting credential by provider",
 				zap.Int64("providerID", providerID),
 				zap.String("credential", credential),
 				zap.Error(err),

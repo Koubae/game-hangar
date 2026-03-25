@@ -4,7 +4,10 @@ import (
 	"context"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/model"
+
+	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/repository"
 	"github.com/koubae/game-hangar/internal/testunit"
 	"github.com/koubae/game-hangar/pkg/database"
 	"github.com/koubae/game-hangar/pkg/testutil"
@@ -114,6 +117,147 @@ func TestCredentialService_GetCredentialByProvider(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.Equal(t, *tt.expected, result.Credential)
+			}
+		})
+	}
+}
+
+func TestCredentialService_CreateCredentialTypeUsername(t *testing.T) {
+	t.Parallel()
+
+	testunit.Setup()
+	connector := testunit.MockDBConnector()
+	username := "unit-test-user-123"
+
+	tests := []struct {
+		id            string
+		credential    string
+		accountID     uuid.UUID
+		provider      *model.Provider
+		setupMock     func(repo *testunit.MockCredentialRepository)
+		expected      int64
+		errorReturned error
+	}{
+		{
+			id:         "credential-created",
+			credential: username,
+			accountID:  testutil.AccountIDTest01,
+			provider:   testunit.ProviderUsername,
+			setupMock: func(repo *testunit.MockCredentialRepository) {
+				repo.
+					On("CreateAccountCredential",
+						mock.Anything,
+						connector,
+						mock.AnythingOfType("repository.NewAccountCredential"),
+					).
+					Run(func(args mock.Arguments) {
+						params := args.Get(2).(repository.NewAccountCredential)
+						assert.Equal(t, "password", params.SecretType)
+						assert.True(
+							t,
+							params.Verified,
+							"CreateCredentialTypeUsername should set verified to true",
+						)
+					}).
+					Return(int64(9999), nil).
+					Once()
+			},
+			expected:      int64(9999),
+			errorReturned: nil,
+		},
+		{
+			id:         "credential-is-duplicated",
+			credential: username,
+			accountID:  testutil.AccountIDTest01,
+			provider:   testunit.ProviderUsername,
+			setupMock: func(repo *testunit.MockCredentialRepository) {
+				repo.
+					On("CreateAccountCredential",
+						mock.Anything,
+						connector,
+						mock.AnythingOfType("repository.NewAccountCredential"),
+					).
+					Run(func(args mock.Arguments) {
+						params := args.Get(2).(repository.NewAccountCredential)
+						assert.Equal(t, "password", params.SecretType)
+						assert.True(
+							t,
+							params.Verified,
+							"CreateCredentialTypeUsername should set verified to true",
+						)
+					}).
+					Return(int64(0), database.ErrrDuplicate).
+					Once()
+			},
+			expected:      int64(0),
+			errorReturned: database.ErrrDuplicate,
+		},
+		{
+			id:         "on-db-error",
+			credential: username,
+			accountID:  testutil.AccountIDTest01,
+			provider:   testunit.ProviderUsername,
+			setupMock: func(repo *testunit.MockCredentialRepository) {
+				repo.
+					On("CreateAccountCredential",
+						mock.Anything,
+						connector,
+						mock.AnythingOfType("repository.NewAccountCredential"),
+					).
+					Run(func(args mock.Arguments) {
+						params := args.Get(2).(repository.NewAccountCredential)
+						assert.Equal(t, "password", params.SecretType)
+						assert.True(
+							t,
+							params.Verified,
+							"CreateCredentialTypeUsername should set verified to true",
+						)
+					}).
+					Return(int64(0), testunit.ErrDBGeneric).
+					Once()
+			},
+			expected:      int64(0),
+			errorReturned: testunit.ErrDBGeneric,
+		},
+
+		{
+			id:         "on-wrong-provider-type",
+			credential: username,
+			accountID:  testutil.AccountIDTest01,
+			provider:   testunit.ProviderEmail,
+			setupMock: func(repo *testunit.MockCredentialRepository) {
+				repo.AssertNotCalled(t, "CreateAccountCredential")
+			},
+			expected:      int64(0),
+			errorReturned: ErrCreateCredentialIncorrectProviderType,
+		},
+	}
+
+	ctx := context.Background()
+	for _, tt := range tests {
+		t.Run(tt.id, func(t *testing.T) {
+			t.Parallel()
+
+			repo := new(testunit.MockCredentialRepository)
+			tt.setupMock(repo)
+
+			service := NewCredentialService(connector, repo)
+
+			result, err := service.CreateCredentialTypeUsername(
+				ctx,
+				tt.credential,
+				tt.accountID,
+				tt.provider,
+				"secret-hash-sha256",
+			)
+
+			if tt.errorReturned != nil {
+				assert.Error(t, err)
+				assert.ErrorIs(t, err, tt.errorReturned)
+				assert.Equal(t, int64(0), result)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expected, result)
 			}
 		})
 	}
