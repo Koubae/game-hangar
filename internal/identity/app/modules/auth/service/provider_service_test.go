@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/model"
-	"github.com/koubae/game-hangar/pkg/common"
+	"github.com/koubae/game-hangar/internal/testunit"
 	"github.com/koubae/game-hangar/pkg/database"
 	"github.com/koubae/game-hangar/pkg/database/postgres"
 	"github.com/koubae/game-hangar/pkg/testutil"
@@ -32,7 +32,7 @@ func (m *MockProviderRepository) GetProvider(ctx context.Context, db database.DB
 func TestProviderService_IsProviderEnabled(t *testing.T) {
 	t.Parallel()
 
-	common.CreateLogger("INFO", "/tmp/")
+	testunit.Setup()
 
 	tests := []struct {
 		id     string
