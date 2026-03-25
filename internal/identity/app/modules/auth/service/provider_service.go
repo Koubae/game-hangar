@@ -11,13 +11,13 @@ import (
 )
 
 type ProviderService struct {
-	connector  database.Connector
+	db         database.DBTX
 	repository repository.IProviderRepository
 }
 
-func NewProviderService(c database.Connector, r repository.IProviderRepository) *ProviderService {
+func NewProviderService(d database.DBTX, r repository.IProviderRepository) *ProviderService {
 	return &ProviderService{
-		connector:  c,
+		db:         d,
 		repository: r,
 	}
 }
@@ -28,7 +28,7 @@ func (s *ProviderService) IsProviderEnabled(ctx context.Context, source string, 
 
 	logger := common.GetLogger()
 
-	provider, err := s.repository.GetProvider(ctx, s.connector, source, _type)
+	provider, err := s.repository.GetProvider(ctx, s.db, source, _type)
 	if err != nil {
 		logger.Error("error while checking if provider is enabled",
 			zap.String("source", source),
