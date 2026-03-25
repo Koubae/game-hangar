@@ -19,13 +19,20 @@ import (
 type LogLevel string
 
 const (
-	LogLevelDebug LogLevel = "debug"
-	LogLevelInfo  LogLevel = "info"
-	LogLevelWarn  LogLevel = "warn"
-	LogLevelError LogLevel = "error"
+	LogLevelDebug  LogLevel = "debug"
+	LogLevelInfo   LogLevel = "info"
+	LogLevelWarn   LogLevel = "warn"
+	LogLevelError  LogLevel = "error"
+	LogLevelDPanic LogLevel = "dpanic"
 )
 
-var LogLevels = [4]LogLevel{LogLevelDebug, LogLevelInfo, LogLevelWarn, LogLevelError}
+var LogLevels = [5]LogLevel{
+	LogLevelDebug,
+	LogLevelInfo,
+	LogLevelWarn,
+	LogLevelError,
+	LogLevelDPanic,
+}
 
 type Logger interface {
 	Debug(msg string, fields ...zap.Field)
@@ -114,8 +121,12 @@ func CreateLogger(logLevel LogLevel, filePath string) *AppLogger {
 		zapLevel = zapcore.WarnLevel
 	case "error":
 		zapLevel = zapcore.ErrorLevel
+	case "dpanic":
+		zapLevel = zapcore.DPanicLevel
 	default:
-		log.Fatal("Logger level invalid, must be one of: DEBUG, INFO, WARN, or ERROR")
+		log.Fatal(
+			"Logger level invalid, must be one of: DEBUG, INFO, WARN, or ERROR",
+		)
 	}
 	level := zap.NewAtomicLevelAt(zapLevel)
 

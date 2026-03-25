@@ -186,11 +186,11 @@ func TestCredentialService_CreateCredentialTypeUsername(t *testing.T) {
 							"CreateCredentialTypeUsername should set verified to true",
 						)
 					}).
-					Return(int64(0), database.ErrrDuplicate).
+					Return(int64(0), &database.ErrDuplicate{}).
 					Once()
 			},
 			expected:      int64(0),
-			errorReturned: database.ErrrDuplicate,
+			errorReturned: &database.ErrDuplicate{},
 		},
 		{
 			id:         "on-db-error",

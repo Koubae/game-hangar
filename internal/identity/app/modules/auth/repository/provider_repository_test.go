@@ -39,7 +39,12 @@ func TestProviderRepository_GetProvider_CacheHit(t *testing.T) {
 			"global": {"steam": expected},
 		},
 	}
-	got, err := repo.GetProvider(context.Background(), &connector, "global", "steam")
+	got, err := repo.GetProvider(
+		context.Background(),
+		&connector,
+		"global",
+		"steam",
+	)
 
 	assert.NoError(t, err)
 	assert.Same(t, expected, got)
@@ -76,7 +81,7 @@ func TestProviderRepository_GetProvider_CacheMiss(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.id, func(t *testing.T) {
-			common.CreateLogger(common.LogLevelInfo, "")
+			common.CreateLogger(common.LogLevelDPanic, "")
 			mockRow := new(testutil.MockRow)
 
 			if tt.expected != nil {
@@ -95,7 +100,8 @@ func TestProviderRepository_GetProvider_CacheMiss(t *testing.T) {
 			mockPool := new(testutil.MockDBPool)
 			mockPool.On("QueryRow", mock.Anything, mock.Anything, pgx.StrictNamedArgs{
 				"source": "global", "type": "steam",
-			}).Return(mockRow)
+			}).
+				Return(mockRow)
 
 			connector := postgres.ConnectorPostgres{Pool: mockPool}
 
@@ -104,7 +110,12 @@ func TestProviderRepository_GetProvider_CacheMiss(t *testing.T) {
 					"global": {"email": tt.expected},
 				},
 			}
-			got, err := repo.GetProvider(context.Background(), &connector, "global", "steam")
+			got, err := repo.GetProvider(
+				context.Background(),
+				&connector,
+				"global",
+				"steam",
+			)
 
 			if tt.err != nil {
 				assert.Error(t, err)

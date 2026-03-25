@@ -17,7 +17,9 @@ type (
 	DBTearDownTasks func(tasks ...DBTearDownFN)
 )
 
-func DBWithCleanup(t *testing.T) (context.Context, *postgres.ConnectorPostgres, DBTearDownTasks) {
+func DBWithCleanup(
+	t *testing.T,
+) (context.Context, *postgres.ConnectorPostgres, DBTearDownTasks) {
 	t.Helper()
 
 	ctx := context.Background()
@@ -49,7 +51,11 @@ func IntegrationTestConnector(t *testing.T) *postgres.ConnectorPostgres {
 		t.Skip("skipping integration test in short mode")
 	}
 
-	_ = common.NewConfig(common.CreateLogger(common.LogLevelInfo, ""), ".env.testing", AppPrefix)
+	_ = common.NewConfig(
+		common.CreateLogger(common.LogLevelDPanic, ""),
+		".env.testing",
+		AppPrefix,
+	)
 
 	config, err := postgres.LoadConfig(AppPrefix)
 	if err != nil {

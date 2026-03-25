@@ -18,6 +18,11 @@ type testData struct {
 	accountID1 string
 	username1  string
 	email1     string
+
+	accountID2UUID uuid.UUID
+	accountID2     string
+	username2      string
+	email2         string
 }
 
 type credExpected struct {
@@ -35,13 +40,18 @@ func createTestAccount(
 	username := "user-itegration-" + id[:8]
 	email := fmt.Sprintf("%s@integration.test", username)
 
+	id2 := uuid.NewString()
+	uuid2, _ := uuid.Parse(id2)
+	username2 := "user-itegration-" + id2[:8]
+	email2 := fmt.Sprintf("%s@integration.test", username2)
+
 	var err error
 	var accountID uuid.UUID
 	err = connector.SelectOne(ctx, `
 		INSERT INTO account (id, username, email)
-			VALUES ($1, $2, $3)
+			VALUES ($1, $2, $3), ($4, $5, $6)
 		RETURNING id 
-	;`, id, username, email).Scan(&accountID)
+	;`, id, username, email, id2, username2, email2).Scan(&accountID)
 	require.NoError(t, err)
 	require.NotEqual(t, 0, accountID)
 
@@ -58,6 +68,11 @@ func createTestAccount(
 		accountID1: id,
 		username1:  username,
 		email1:     email,
+
+		accountID2UUID: uuid2,
+		accountID2:     id2,
+		username2:      username2,
+		email2:         email2,
 	}
 }
 
@@ -110,10 +125,6 @@ func TestCredentialRepository_GetCredentialByProvider(t *testing.T) {
 				tt.username,
 			)
 
-			if tt.id == "unexpected-error" {
-				connector.Shutdown()
-			}
-
 			if tt.errReturned != nil {
 				assert.Error(t, err)
 				assert.ErrorIs(t, tt.errReturned, err)
@@ -131,6 +142,54 @@ func TestCredentialRepository_GetCredentialByProvider(t *testing.T) {
 			}
 
 			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestCredentialRepository_CreateAccountCredential(t *testing.T) {
+	ctx, connector, tearDown := integration.DBWithCleanup(t)
+	defer tearDown(integration.ResetDB)
+
+	testData := createTestAccount(t, ctx, connector)
+	tests := []struct {
+		id          string
+		params      repository.NewAccountCredential
+		errReturned error
+	}{
+		{
+			id: "credential-created",
+			params: repository.NewAccountCredential{
+				Credential: testData.username2,
+				AccountID:  testData.accountID2UUID,
+				ProviderID: 1,
+				Secret:     "secret-hash-sha256",
+			},
+			errReturned: nil,
+		},
+		{
+			id: "err-duplicate-credential",
+			params: repository.NewAccountCredential{
+				Credential: testData.username2,
+				AccountID:  testData.accountID2UUID,
+				ProviderID: 1,
+				Secret:     "secret-hash-sha256",
+			},
+			errReturned: &database.ErrDuplicate{},
+		},
+	}
+
+	repo := repository.NewCredentialRepository()
+	for _, tt := range tests {
+		t.Run(tt.id, func(t *testing.T) {
+			id, err := repo.CreateAccountCredential(ctx, connector, tt.params)
+			if tt.errReturned != nil {
+				assert.Error(t, err)
+				assert.ErrorIs(t, tt.errReturned, err)
+				assert.Equal(t, int64(0), id)
+			} else {
+				assert.NoError(t, err)
+				assert.NotEqual(t, int64(0), id)
+			}
 		})
 	}
 }

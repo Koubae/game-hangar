@@ -63,7 +63,7 @@ func (s *CredentialService) CreateCredentialTypeUsername(
 
 	id, err := s.repository.CreateAccountCredential(ctx, s.db, params)
 	if err != nil {
-		if !errors.Is(err, database.ErrrDuplicate) {
+		if !errors.Is(err, &database.ErrDuplicate{}) {
 			logger.Error(
 				"[CredentialService] unexpected error while creating new credential",
 				zap.Error(err),

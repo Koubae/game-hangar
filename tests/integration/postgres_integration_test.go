@@ -15,7 +15,11 @@ func setupTest(t *testing.T) *postgres.ConnectorPostgres {
 		t.Skip("skipping integration test in short mode")
 	}
 
-	_ = common.NewConfig(common.CreateLogger(common.LogLevelInfo, ""), ".env.testing", AppPrefix)
+	_ = common.NewConfig(
+		common.CreateLogger(common.LogLevelDPanic, ""),
+		".env.testing",
+		AppPrefix,
+	)
 
 	config, err := postgres.LoadConfig(AppPrefix)
 	if err != nil {

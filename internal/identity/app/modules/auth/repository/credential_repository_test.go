@@ -79,7 +79,7 @@ func TestCredentialRepository_GetCredentialByProvider(t *testing.T) {
 	fieldsCount := reflect.TypeFor[model.AccountCredential]().NumField()
 	for _, tt := range tests {
 		t.Run(tt.id, func(t *testing.T) {
-			common.CreateLogger(common.LogLevelError, "")
+			common.CreateLogger(common.LogLevelDPanic, "")
 			mockRow := new(testutil.MockRow)
 			mockRow.MockScan(
 				fieldsCount,
@@ -88,7 +88,8 @@ func TestCredentialRepository_GetCredentialByProvider(t *testing.T) {
 			)
 
 			mockPool := new(testutil.MockDBPool)
-			mockPool.On("QueryRow", mock.Anything, mock.Anything, providerID, username).Return(mockRow)
+			mockPool.On("QueryRow", mock.Anything, mock.Anything, providerID, username).
+				Return(mockRow)
 
 			connector := postgres.ConnectorPostgres{Pool: mockPool}
 			repo := NewCredentialRepository()
@@ -127,7 +128,7 @@ func TestCredentialRepository_CreateAccountCredential(t *testing.T) {
 	}
 	expectedID := int64(1234)
 
-	common.CreateLogger(common.LogLevelError, "")
+	common.CreateLogger(common.LogLevelDPanic, "")
 	mockRow := new(testutil.MockRow)
 	mockRow.MockScan(1, nil, expectedID)
 
@@ -224,13 +225,13 @@ func TestCredentialRepository_CreateAccountCredentialOnErrors(t *testing.T) {
 			},
 			expectedID:  int64(0),
 			errThrown:   testutil.DBMockErrDuplicateKey,
-			errReturned: database.ErrrDuplicate,
+			errReturned: &database.ErrDuplicate{},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.id, func(t *testing.T) {
-			common.CreateLogger(common.LogLevelError, "")
+			common.CreateLogger(common.LogLevelDPanic, "")
 			mockRow := new(testutil.MockRow)
 			mockRow.MockScan(1, tt.errThrown, tt.expectedID)
 
@@ -245,7 +246,8 @@ func TestCredentialRepository_CreateAccountCredentialOnErrors(t *testing.T) {
 				"secret_type": params.SecretType,
 				"verified":    params.Verified,
 				"verified_at": params.VerifiedAt,
-			}).Return(mockRow)
+			}).
+				Return(mockRow)
 
 			ctx := context.Background()
 			connector := postgres.ConnectorPostgres{Pool: mockPool}
