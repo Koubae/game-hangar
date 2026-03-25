@@ -7,8 +7,6 @@ import (
 
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/model"
 	"github.com/koubae/game-hangar/internal/testunit"
-	"github.com/koubae/game-hangar/pkg/database/postgres"
-	"github.com/koubae/game-hangar/pkg/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -87,9 +85,7 @@ func TestProviderService_IsProviderEnabled(t *testing.T) {
 		},
 	}
 
-	mockPool := new(testutil.MockDBPool)
-	connector := postgres.ConnectorPostgres{Pool: mockPool}
-
+	connector := testunit.MockDBConnector()
 	for _, tt := range tests {
 		t.Run(tt.id, func(t *testing.T) {
 			t.Parallel()
@@ -97,7 +93,7 @@ func TestProviderService_IsProviderEnabled(t *testing.T) {
 			repo := new(testunit.MockProviderRepository)
 			tt.setupMock(repo)
 
-			svc := NewProviderService(&connector, repo)
+			svc := NewProviderService(connector, repo)
 
 			got := svc.IsProviderEnabled(context.Background(), tt.source, tt._type)
 

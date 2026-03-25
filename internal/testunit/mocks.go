@@ -4,21 +4,65 @@ import (
 	"context"
 
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/model"
+	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/repository"
 	"github.com/koubae/game-hangar/pkg/database"
+	"github.com/koubae/game-hangar/pkg/database/postgres"
+	"github.com/koubae/game-hangar/pkg/testutil"
 	"github.com/stretchr/testify/mock"
 )
+
+func MockDBConnector() *postgres.ConnectorPostgres {
+	mockPool := new(testutil.MockDBPool)
+	connector := postgres.ConnectorPostgres{Pool: mockPool}
+	return &connector
+}
 
 type MockProviderRepository struct {
 	mock.Mock
 }
 
-func (m *MockProviderRepository) LoadProviders(ctx context.Context, db database.DBTX) {
+func (m *MockProviderRepository) LoadProviders(
+	ctx context.Context,
+	db database.DBTX,
+) {
 	_ = m.Called(ctx, db)
 }
 
-func (m *MockProviderRepository) GetProvider(ctx context.Context, db database.DBTX, source string, _type string) (*model.Provider, error) {
+func (m *MockProviderRepository) GetProvider(
+	ctx context.Context,
+	db database.DBTX,
+	source string,
+	_type string,
+) (*model.Provider, error) {
 	args := m.Called(ctx, db, source, _type)
 
 	provider, _ := args.Get(0).(*model.Provider)
 	return provider, args.Error(1)
+}
+
+type MockCredentialRepository struct {
+	mock.Mock
+}
+
+func (m *MockCredentialRepository) GetCredentialByProvider(
+	ctx context.Context,
+	db database.DBTX,
+	providerID int64,
+	credential string,
+) (*model.AccountCredential, error) {
+	args := m.Called(ctx, db, providerID, credential)
+
+	model, _ := args.Get(0).(*model.AccountCredential)
+	return model, args.Error(1)
+}
+
+func (m *MockCredentialRepository) CreateAccountCredential(
+	ctx context.Context,
+	db database.DBTX,
+	params repository.NewAccountCredential,
+) (int64, error) {
+	args := m.Called(ctx, db, params)
+
+	id, _ := args.Get(0).(int64)
+	return id, args.Error(1)
 }
