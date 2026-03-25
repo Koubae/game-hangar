@@ -8,6 +8,7 @@ Identity
 * Get Cred by Provider (repo) ✅
 * Create Credential  (repo) ✅ 
 * Does cred exists? (service) 
+* Create credential (service) needs to accept a transaction connection
 * Create Account (repo)
 * Create Account (service)
 

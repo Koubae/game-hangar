@@ -38,5 +38,5 @@ func (s *ProviderService) IsProviderEnabled(ctx context.Context, source string, 
 		return false
 	}
 
-	return provider.Disabled == false
+	return !provider.Disabled
 }
