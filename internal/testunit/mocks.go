@@ -2,6 +2,7 @@ package testunit
 
 import (
 	"context"
+	"errors"
 
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/model"
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/repository"
@@ -10,6 +11,8 @@ import (
 	"github.com/koubae/game-hangar/pkg/testutil"
 	"github.com/stretchr/testify/mock"
 )
+
+var ErrDBGeneric = errors.New("mock-db-error")
 
 func MockDBConnector() *postgres.ConnectorPostgres {
 	mockPool := new(testutil.MockDBPool)

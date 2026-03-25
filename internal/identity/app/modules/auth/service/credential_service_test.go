@@ -70,6 +70,25 @@ func TestCredentialService_GetCredentialByProvider(t *testing.T) {
 			expected:      nil,
 			errorReturned: database.ErrNotFound,
 		},
+		{
+			id:         "on-db-error",
+			provider:   providerID,
+			credential: username,
+			setupMock: func(repo *testunit.MockCredentialRepository) {
+				repo.
+					On(
+						"GetCredentialByProvider",
+						mock.Anything,
+						connector,
+						providerID,
+						username,
+					).
+					Return(nil, testunit.ErrDBGeneric).
+					Once()
+			},
+			expected:      nil,
+			errorReturned: testunit.ErrDBGeneric,
+		},
 	}
 
 	ctx := context.Background()
