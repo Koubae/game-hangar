@@ -18,3 +18,8 @@ func (dto *CreateAccountDTO) Validate() error {
 	}
 	return nil
 }
+
+type DTOAccount struct {
+	ID       string `json:"id"`
+	Username string `json:"username" binding:"required"`
+}

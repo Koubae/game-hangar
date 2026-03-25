@@ -23,7 +23,10 @@ func NewAuthController(container di.Container) *AuthController {
 	}
 }
 
-func (c *AuthController) RegisterByUsername(w http.ResponseWriter, r *http.Request) {
+func (c *AuthController) RegisterByUsername(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
 	var payload dto.CreateAccountDTO
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		web.WriteBusinessErrorResponse(
@@ -44,10 +47,17 @@ func (c *AuthController) RegisterByUsername(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	web.WriteJSONResponse(w, http.StatusCreated, account)
+	response := dto.DTOAccount{
+		ID:       account.ID,
+		Username: account.Username,
+	}
+	web.WriteJSONResponse(w, http.StatusCreated, response)
 }
 
-func (c *AuthController) LoginByUsername(w http.ResponseWriter, r *http.Request) {
+func (c *AuthController) LoginByUsername(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
 	w.WriteHeader(http.StatusOK)
 	_, _ = io.WriteString(w, "ok LoginByUsername\n")
 }
