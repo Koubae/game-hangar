@@ -23,7 +23,7 @@ type IAccountRepository interface {
 		ctx context.Context,
 		db database.DBTX,
 		params NewAccount,
-	) (uuid.UUID, error)
+	) (string, error)
 	GetAccount(
 		ctx context.Context,
 		db database.DBTX,
@@ -63,7 +63,7 @@ func (r *AccountRepository) CreateAccount(
 	ctx context.Context,
 	db database.DBTX,
 	params NewAccount,
-) (*uuid.UUID, error) {
+) (*string, error) {
 	if err := params.Validate(); err != nil {
 		return nil, err
 	}
@@ -79,10 +79,10 @@ func (r *AccountRepository) CreateAccount(
 			@username,
 			@email 	
 		)
-		RETURNING id 
+		RETURNING id::text
 	`
 
-	var id uuid.UUID
+	var id string
 	err := db.SelectOne( // TODO: rename this. maybe we should keep same naming convention as pgx API'???
 		ctx,
 		query,
@@ -102,11 +102,11 @@ func (r *AccountRepository) CreateAccount(
 func (r *AccountRepository) GetAccount(
 	ctx context.Context,
 	db database.DBTX,
-	id uuid.UUID,
+	id string,
 ) (*model.Account, error) {
 	const query = `
 	SELECT 
-			id,
+			id::text,
 			username, 
 			email, 
 			disabled,
@@ -134,5 +134,5 @@ func (r *AccountRepository) GetAccount(
 		)
 	}
 
-	return nil, nil
+	return &m, nil
 }
