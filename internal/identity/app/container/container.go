@@ -4,7 +4,6 @@ import (
 	"context"
 
 	accountRepo "github.com/koubae/game-hangar/internal/identity/app/modules/account/repository"
-	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/repository"
 	authRepo "github.com/koubae/game-hangar/internal/identity/app/modules/auth/repository"
 	authSrv "github.com/koubae/game-hangar/internal/identity/app/modules/auth/service"
 	"github.com/koubae/game-hangar/pkg/common"
@@ -19,6 +18,7 @@ type IdentityAuthContainer interface {
 	CredentialRepository() authRepo.ICredentialRepository
 
 	ProviderService(db database.DBTX) *authSrv.ProviderService
+	CredentialService(db database.DBTX) *authSrv.CredentialService
 }
 
 type IdentityAccountContainer interface {
@@ -49,7 +49,8 @@ type AppContainer struct {
 	accountRepositoryFactory accountRepo.AccountRepositoryFactory
 
 	// NOTE: Services
-	providerServiceFactory authSrv.ProviderServiceFactory
+	providerServiceFactory   authSrv.ProviderServiceFactory
+	credentialServiceFactory authSrv.CredentialServiceFactory
 }
 
 func NewAppContainer(
@@ -71,24 +72,16 @@ func NewAppContainer(
 	)
 
 	// NOTE: Repositories
-	providerRepositoryFactory := func() authRepo.IProviderRepository {
-		return authRepo.NewProviderRepository()
-	}
+	providerRepositoryFactory := authRepo.NewProviderRepository
 	providerRepository := providerRepositoryFactory()
 	providerRepository.LoadProviders(context.TODO(), connector)
 
-	credentialRepositoryFactory := func() authRepo.ICredentialRepository {
-		return authRepo.NewCredentialRepository()
-	}
-
-	accountRepositoryFactory := func() accountRepo.IAccountRepository {
-		return accountRepo.NewAccountRepository()
-	}
+	credentialRepositoryFactory := authRepo.NewCredentialRepository
+	accountRepositoryFactory := accountRepo.NewAccountRepository
 
 	// NOTE: Services
-	providerServiceFactory := func(d database.DBTX, r repository.IProviderRepository) *authSrv.ProviderService {
-		return authSrv.NewProviderService(d, r)
-	}
+	providerServiceFactory := authSrv.NewProviderService
+	credentialServiceFactory := authSrv.NewCredentialService
 
 	return &AppContainer{
 		logger:                      logger,
@@ -97,6 +90,7 @@ func NewAppContainer(
 		credentialRepositoryFactory: credentialRepositoryFactory,
 		accountRepositoryFactory:    accountRepositoryFactory,
 		providerServiceFactory:      providerServiceFactory,
+		credentialServiceFactory:    credentialServiceFactory,
 	}, nil
 }
 
@@ -170,4 +164,13 @@ func (c *AppContainer) ProviderService(
 		db = c.connector
 	}
 	return c.providerServiceFactory(db, c.ProviderRepository())
+}
+
+func (c *AppContainer) CredentialService(
+	db database.DBTX,
+) *authSrv.CredentialService {
+	if db == nil {
+		db = c.connector
+	}
+	return c.credentialServiceFactory(db, c.CredentialRepository())
 }

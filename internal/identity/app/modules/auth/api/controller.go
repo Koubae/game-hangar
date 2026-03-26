@@ -89,6 +89,23 @@ func (c *AuthController) RegisterByUsername(
 		zap.Bool("enabled?", isUsernameAuthEnabled),
 	)
 
+	credSrv := c.container.CredentialService(nil)
+	cred2, err := credSrv.GetCredentialByProvider(
+		ctx,
+		int64(providerID),
+		credential,
+	)
+	if err != nil {
+		logger.Warn(
+			"error while gett cred",
+			zap.String("cred", credential),
+			zap.Error(err),
+		)
+	} else {
+		logger.Info("succcess cred (service!!!!)",
+			zap.String("cred", cred2.Credential), zap.String("accID", cred2.AccountID.String()))
+	}
+
 	// TODO: -----------------------------
 
 	service := accountService.AccountService{}
