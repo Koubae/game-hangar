@@ -8,7 +8,6 @@ import (
 
 	"github.com/koubae/game-hangar/internal/identity/app/container"
 	"github.com/koubae/game-hangar/internal/identity/app/modules/account/dto"
-	accountService "github.com/koubae/game-hangar/internal/identity/app/modules/account/service"
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/web"
 	"go.uber.org/zap"
@@ -52,7 +51,7 @@ func (c *AuthController) RegisterByUsername(
 	secret := payload.Password // TODO: HASHHHHHHHHH
 	accountAuthSrv := c.container.AccountAuthService(nil)
 
-	err := accountAuthSrv.RegisterByUsername(
+	accountID, credID, err := accountAuthSrv.RegisterByUsername(
 		ctx,
 		payload.Source,
 		payload.Username,
@@ -64,16 +63,17 @@ func (c *AuthController) RegisterByUsername(
 
 	// TODO: -----------------------------
 
-	service := accountService.AccountService{}
-	account, err := service.CreateAccount(payload)
-	if err != nil {
-		web.WriteBusinessErrorResponse(w, err)
-		return
-	}
-
+	// service := accountService.AccountService{}
+	// account, err := service.CreateAccount(payload)
+	// if err != nil {
+	// 	web.WriteBusinessErrorResponse(w, err)
+	// 	return
+	// }
+	//
 	response := dto.DTOAccount{
-		ID:       account.ID,
-		Username: account.Username,
+		ID:       *accountID,
+		CredID:   *credID,
+		Username: payload.Username,
 	}
 	web.WriteJSONResponse(w, http.StatusCreated, response)
 }

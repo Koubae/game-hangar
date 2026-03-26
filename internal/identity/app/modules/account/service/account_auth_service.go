@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/koubae/game-hangar/internal/identity/app/modules/account/repository"
 	authModel "github.com/koubae/game-hangar/internal/identity/app/modules/auth/model"
@@ -44,8 +45,11 @@ func NewAccountAuthService(
 	}
 }
 
-var ErrRegistrationCredExists = errors.New(
-	"registration error: credential already exists",
+var (
+	ErrRegistrationCredExists = errors.New(
+		"registration error: credential already exists",
+	)
+	ErrAccountCreation = errors.New("unexpected error while creating account")
 )
 
 func (s *AccountAuthService) RegisterByUsername(
@@ -53,7 +57,7 @@ func (s *AccountAuthService) RegisterByUsername(
 	source string,
 	credential string,
 	secret string,
-) error {
+) (*string, *int64, error) {
 	n := "[AccountAuthService.RegisterByUsername]"
 
 	logger := common.GetLogger()
@@ -73,7 +77,7 @@ func (s *AccountAuthService) RegisterByUsername(
 		string(authModel.Username),
 	)
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
 
 	cred, err := s.credentialSrvProvider(s.db).GetCredentialByProvider(
@@ -86,10 +90,10 @@ func (s *AccountAuthService) RegisterByUsername(
 			zap.String("source", source),
 			zap.String("credential", credential),
 		)
-		return ErrRegistrationCredExists
+		return nil, nil, ErrRegistrationCredExists
 	} else if err != nil {
 		if !errors.Is(err, database.ErrNotFound) {
-			return err
+			return nil, nil, err
 		}
 	}
 
@@ -97,7 +101,7 @@ func (s *AccountAuthService) RegisterByUsername(
 		IsoLevel: pgx.ReadCommitted,
 	})
 	if err != nil {
-		return &database.ErrOpenTransaction{Err: err}
+		return nil, nil, &database.ErrOpenTransaction{Err: err}
 	}
 	defer func() {
 		if rbErr := tx.Rollback(ctx); rbErr != nil &&
@@ -109,6 +113,46 @@ func (s *AccountAuthService) RegisterByUsername(
 	// NOTE: TRANSACTION BEGIN
 	// WARN: All below operation are within a transaction
 
+	credServiceTX := s.credentialSrvProvider(tx)
+
+	id, err := s.repository.CreateAccount(ctx, tx, repository.NewAccount{
+		Username: credential,
+		Email:    nil,
+	},
+	)
+	if err != nil {
+		if errors.Is(
+			err,
+			repository.ErrUsernameRequired,
+		) || errors.Is(
+			err,
+			repository.ErrInvalidEmailFormat,
+		) {
+			return nil, nil, err
+		}
+
+		logger.Error(n+"error while creating account", zap.Error(err))
+		return nil, nil, ErrAccountCreation
+	}
+
+	accountID, _ := uuid.Parse(*id)
+	credID, err := credServiceTX.CreateCredentialTypeUsername(
+		ctx,
+		credential,
+		accountID,
+		provider,
+		secret,
+	)
+	if err != nil {
+		logger.Error(
+			n+"error while creating credential, rolling back account",
+			zap.String("accountID", *id),
+			zap.Error(err),
+		)
+
+		return nil, nil, err
+	}
+
 	if err = tx.Commit(ctx); err != nil {
 		logger.Error(
 			n+" error on commit",
@@ -118,8 +162,14 @@ func (s *AccountAuthService) RegisterByUsername(
 			),
 			zap.Error(err),
 		)
-		return err
+		return nil, nil, err
 	}
 
-	return nil
+	logger.Info("created new account using username credentials",
+		zap.String("accountID", *id),
+		zap.Int64("credentialID", credID),
+		zap.String("source", source),
+		zap.String("credential", credential),
+	)
+	return id, &credID, nil
 }

@@ -21,6 +21,7 @@ func (dto *CreateAccountDTO) Validate() error {
 }
 
 type DTOAccount struct {
-	ID       string `json:"id"`
-	Username string `json:"username" binding:"required"`
+	ID       string `json:"id"            binding:"required"`
+	CredID   int64  `json:"credential_id" binding:"required"`
+	Username string `json:"username"      binding:"required"`
 }
