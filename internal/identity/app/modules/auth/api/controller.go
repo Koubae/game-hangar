@@ -77,6 +77,18 @@ func (c *AuthController) RegisterByUsername(
 		logger.Info("succcess cred",
 			zap.String("cred", cred.Credential), zap.String("accID", cred.AccountID.String()))
 	}
+
+	providerService := c.container.ProviderService(nil)
+	isUsernameAuthEnabled := providerService.IsProviderEnabled(
+		ctx,
+		"global",
+		"username",
+	)
+	logger.Info(
+		"is username prov enabled?",
+		zap.Bool("enabled?", isUsernameAuthEnabled),
+	)
+
 	// TODO: -----------------------------
 
 	service := accountService.AccountService{}

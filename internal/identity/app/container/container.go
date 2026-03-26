@@ -4,7 +4,9 @@ import (
 	"context"
 
 	accountRepo "github.com/koubae/game-hangar/internal/identity/app/modules/account/repository"
+	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/repository"
 	authRepo "github.com/koubae/game-hangar/internal/identity/app/modules/auth/repository"
+	authSrv "github.com/koubae/game-hangar/internal/identity/app/modules/auth/service"
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/database"
 	"github.com/koubae/game-hangar/pkg/database/postgres"
@@ -13,15 +15,20 @@ import (
 )
 
 type IdentityAuthContainer interface {
-	// ProviderService(db database.DBTX) authRepository.IProviderRepository
 	ProviderRepository() authRepo.IProviderRepository
 	CredentialRepository() authRepo.ICredentialRepository
+
+	ProviderService(db database.DBTX) *authSrv.ProviderService
+}
+
+type IdentityAccountContainer interface {
 	AccountRepository() accountRepo.IAccountRepository
 }
 
 type IdentityContainer interface {
 	di.Container
 	IdentityAuthContainer
+	IdentityAccountContainer
 
 	WithDB(db database.DBTX) Scope
 	DB() *postgres.ConnectorPostgres
@@ -40,6 +47,9 @@ type AppContainer struct {
 
 	accountRepository        accountRepo.IAccountRepository
 	accountRepositoryFactory accountRepo.AccountRepositoryFactory
+
+	// NOTE: Services
+	providerServiceFactory authSrv.ProviderServiceFactory
 }
 
 func NewAppContainer(
@@ -60,6 +70,7 @@ func NewAppContainer(
 		zap.String("db", connector.String()),
 	)
 
+	// NOTE: Repositories
 	providerRepositoryFactory := func() authRepo.IProviderRepository {
 		return authRepo.NewProviderRepository()
 	}
@@ -74,12 +85,18 @@ func NewAppContainer(
 		return accountRepo.NewAccountRepository()
 	}
 
+	// NOTE: Services
+	providerServiceFactory := func(d database.DBTX, r repository.IProviderRepository) *authSrv.ProviderService {
+		return authSrv.NewProviderService(d, r)
+	}
+
 	return &AppContainer{
 		logger:                      logger,
 		connector:                   connector,
 		providerRepository:          providerRepository,
 		credentialRepositoryFactory: credentialRepositoryFactory,
 		accountRepositoryFactory:    accountRepositoryFactory,
+		providerServiceFactory:      providerServiceFactory,
 	}, nil
 }
 
@@ -144,4 +161,13 @@ func (c *AppContainer) AccountRepository() accountRepo.IAccountRepository {
 	}
 
 	return c.accountRepository
+}
+
+func (c *AppContainer) ProviderService(
+	db database.DBTX,
+) *authSrv.ProviderService {
+	if db == nil {
+		db = c.connector
+	}
+	return c.providerServiceFactory(db, c.ProviderRepository())
 }
