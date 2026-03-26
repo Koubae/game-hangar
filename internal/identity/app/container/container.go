@@ -3,6 +3,7 @@ package container
 import (
 	"context"
 
+	accountRepo "github.com/koubae/game-hangar/internal/identity/app/modules/account/repository"
 	authRepo "github.com/koubae/game-hangar/internal/identity/app/modules/auth/repository"
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/database"
@@ -15,6 +16,7 @@ type IdentityAuthContainer interface {
 	// ProviderService(db database.DBTX) authRepository.IProviderRepository
 	ProviderRepository() authRepo.IProviderRepository
 	CredentialRepository() authRepo.ICredentialRepository
+	AccountRepository() accountRepo.IAccountRepository
 }
 
 type IdentityContainer interface {
@@ -23,21 +25,21 @@ type IdentityContainer interface {
 
 	WithDB(db database.DBTX) Scope
 	DB() *postgres.ConnectorPostgres
-
-	// Repositories
-	// ProviderRepository() authRepo.IProviderauthRepo
 }
 
 type AppContainer struct {
 	logger    common.Logger
 	connector *postgres.ConnectorPostgres
 
-	// Repositories
+	// NOTE: Repositories
 	providerRepository        authRepo.IProviderRepository
 	providerRepositoryFactory func() authRepo.IProviderRepository
 
 	credentialRepository        authRepo.ICredentialRepository
 	credentialRepositoryFactory func() authRepo.ICredentialRepository
+
+	accountRepository        accountRepo.IAccountRepository
+	accountRepositoryFactory func() accountRepo.IAccountRepository
 }
 
 func NewAppContainer(
@@ -68,11 +70,16 @@ func NewAppContainer(
 		return authRepo.NewCredentialRepository()
 	}
 
+	accountRepositoryFactory := func() accountRepo.IAccountRepository {
+		return accountRepo.NewAccountRepository()
+	}
+
 	return &AppContainer{
 		logger:                      logger,
 		connector:                   connector,
 		providerRepository:          providerRepository,
 		credentialRepositoryFactory: credentialRepositoryFactory,
+		accountRepositoryFactory:    accountRepositoryFactory,
 	}, nil
 }
 
@@ -129,4 +136,12 @@ func (c *AppContainer) CredentialRepository() authRepo.ICredentialRepository {
 	}
 
 	return c.credentialRepository
+}
+
+func (c *AppContainer) AccountRepository() accountRepo.IAccountRepository {
+	if c.accountRepository == nil {
+		c.accountRepository = c.accountRepositoryFactory()
+	}
+
+	return c.accountRepository
 }

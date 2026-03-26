@@ -22,7 +22,7 @@ type IAccountRepository interface {
 		ctx context.Context,
 		db database.DBTX,
 		params NewAccount,
-	) (string, error)
+	) (*string, error)
 	GetAccount(
 		ctx context.Context,
 		db database.DBTX,
@@ -53,7 +53,7 @@ func (p *NewAccount) Validate() error {
 
 type AccountRepository struct{}
 
-func NewAccountRepository() *AccountRepository {
+func NewAccountRepository() IAccountRepository {
 	r := &AccountRepository{}
 	return r
 }
