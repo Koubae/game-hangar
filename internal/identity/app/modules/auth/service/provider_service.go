@@ -15,14 +15,23 @@ type ProviderService struct {
 	repository repository.IProviderRepository
 }
 
-func NewProviderService(d database.DBTX, r repository.IProviderRepository) *ProviderService {
+type ProviderServiceFactory func(d database.DBTX, r repository.IProviderRepository) *ProviderService
+
+func NewProviderService(
+	d database.DBTX,
+	r repository.IProviderRepository,
+) *ProviderService {
 	return &ProviderService{
 		db:         d,
 		repository: r,
 	}
 }
 
-func (s *ProviderService) IsProviderEnabled(ctx context.Context, source string, _type string) bool {
+func (s *ProviderService) IsProviderEnabled(
+	ctx context.Context,
+	source string,
+	_type string,
+) bool {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 

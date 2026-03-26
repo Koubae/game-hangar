@@ -35,6 +35,8 @@ type ICredentialRepository interface {
 	) (*model.AccountCredential, error)
 }
 
+type CredentialRepositoryFactory func() ICredentialRepository
+
 type NewAccountCredential struct {
 	Credential string
 	AccountID  uuid.UUID
@@ -57,7 +59,7 @@ func (p *NewAccountCredential) Validate() error {
 
 type CredentialRepository struct{}
 
-func NewCredentialRepository() *CredentialRepository {
+func NewCredentialRepository() ICredentialRepository {
 	r := &CredentialRepository{}
 	return r
 }

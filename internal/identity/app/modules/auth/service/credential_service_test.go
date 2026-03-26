@@ -1,4 +1,4 @@
-package service
+package service_test
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/model"
+	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/service"
 
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/repository"
 	"github.com/koubae/game-hangar/internal/testunit"
@@ -18,8 +19,9 @@ import (
 func TestCredentialService_GetCredentialByProvider(t *testing.T) {
 	t.Parallel()
 
-	testunit.Setup()
-	connector := testunit.MockDBConnector()
+	container := testunit.NewTestIdentityAppContainer(t)
+	connector := container.DB()
+
 	providerID := int64(1)
 	username := "unit-test-user-123"
 	tests := []struct {
@@ -99,10 +101,10 @@ func TestCredentialService_GetCredentialByProvider(t *testing.T) {
 		t.Run(tt.id, func(t *testing.T) {
 			t.Parallel()
 
-			repo := new(testunit.MockCredentialRepository)
+			repo := container.CredentialRepository().(*testunit.MockCredentialRepository)
 			tt.setupMock(repo)
 
-			service := NewCredentialService(connector, repo)
+			service := service.NewCredentialService(connector, repo)
 
 			result, err := service.GetCredentialByProvider(
 				ctx,
@@ -229,7 +231,7 @@ func TestCredentialService_CreateCredentialTypeUsername(t *testing.T) {
 				repo.AssertNotCalled(t, "CreateAccountCredential")
 			},
 			expected:      int64(0),
-			errorReturned: ErrCreateCredentialIncorrectProviderType,
+			errorReturned: service.ErrCreateCredentialIncorrectProviderType,
 		},
 	}
 
@@ -241,7 +243,7 @@ func TestCredentialService_CreateCredentialTypeUsername(t *testing.T) {
 			repo := new(testunit.MockCredentialRepository)
 			tt.setupMock(repo)
 
-			service := NewCredentialService(connector, repo)
+			service := service.NewCredentialService(connector, repo)
 
 			result, err := service.CreateCredentialTypeUsername(
 				ctx,

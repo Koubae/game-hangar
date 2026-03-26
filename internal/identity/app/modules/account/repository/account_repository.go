@@ -22,13 +22,15 @@ type IAccountRepository interface {
 		ctx context.Context,
 		db database.DBTX,
 		params NewAccount,
-	) (string, error)
+	) (*string, error)
 	GetAccount(
 		ctx context.Context,
 		db database.DBTX,
 		id string,
 	) (*model.Account, error)
 }
+
+type AccountRepositoryFactory func() IAccountRepository
 
 // TODO: This stuff should go in a "domain" layer. or dto??
 type NewAccount struct {
@@ -53,7 +55,7 @@ func (p *NewAccount) Validate() error {
 
 type AccountRepository struct{}
 
-func NewAccountRepository() *AccountRepository {
+func NewAccountRepository() IAccountRepository {
 	r := &AccountRepository{}
 	return r
 }
