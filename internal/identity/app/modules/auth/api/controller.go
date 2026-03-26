@@ -43,84 +43,23 @@ func (c *AuthController) RegisterByUsername(
 	logger := c.container.Logger()
 	logger.Info(
 		"RegisterByUsername called",
+		zap.String("source", payload.Source),
 		zap.String("username", payload.Username),
 	)
 
 	// TODO: Remove this ---------
-	providerRepo := c.container.ProviderRepository()
-	logger.Info(
-		"provider repo",
-		zap.String("repo", fmt.Sprintf("%+v", providerRepo)),
-	)
 
-	credRepo := c.container.CredentialRepository()
-	logger.Info(
-		"cre repo",
-		zap.String("credRepo", fmt.Sprintf("%v", credRepo)),
-	)
+	secret := payload.Password // TODO: HASHHHHHHHHH
+	accountAuthSrv := c.container.AccountAuthService(nil)
 
-	providerID := 1
-	credential := "account_test_1"
-	cred, err := credRepo.GetCredentialByProvider(
+	err := accountAuthSrv.RegisterByUsername(
 		ctx,
-		c.container.DB(),
-		int64(providerID),
-		credential,
+		payload.Source,
+		payload.Username,
+		secret,
 	)
 	if err != nil {
-		logger.Warn(
-			"error while gett cred",
-			zap.String("cred", credential),
-			zap.Error(err),
-		)
-	} else {
-		logger.Info("succcess cred",
-			zap.String("cred", cred.Credential), zap.String("accID", cred.AccountID.String()))
-	}
-
-	providerService := c.container.ProviderService(nil)
-	isUsernameAuthEnabled := providerService.IsProviderEnabled(
-		ctx,
-		"global",
-		"username",
-	)
-	logger.Info(
-		"is username prov enabled?",
-		zap.Bool("enabled?", isUsernameAuthEnabled),
-	)
-
-	credSrv := c.container.CredentialService(nil)
-	cred2, err := credSrv.GetCredentialByProvider(
-		ctx,
-		int64(providerID),
-		credential,
-	)
-	if err != nil {
-		logger.Warn(
-			"error while gett cred",
-			zap.String("cred", credential),
-			zap.Error(err),
-		)
-	} else {
-		logger.Info("succcess cred (service!!!!)",
-			zap.String("cred", cred2.Credential), zap.String("accID", cred2.AccountID.String()))
-	}
-
-	scope := c.container.WithDB(nil)
-
-	credSrvScoped := scope.CredentialService()
-	myCred, err := credSrvScoped.GetCredentialByProvider(
-		ctx, int64(providerID), credential,
-	)
-	if err != nil {
-		logger.Warn(
-			"error while gett cred",
-			zap.String("cred", credential),
-			zap.Error(err),
-		)
-	} else {
-		logger.Info("succcess cred (service!!!!) fucking scoped",
-			zap.String("cred", myCred.Credential), zap.String("accID", myCred.AccountID.String()))
+		logger.Error("error while registring account", zap.Error(err))
 	}
 
 	// TODO: -----------------------------

@@ -92,6 +92,31 @@ func (l *AppLogger) LogCloser(loggerTmp Logger, z *zap.Logger) {
 	}
 }
 
+func (l *AppLogger) TimeIt(level string, name string) func() {
+	lvl, err := zapcore.ParseLevel(level)
+	if err != nil {
+		l.Warn(
+			"bad log level passed to TimeIt, defaults to info",
+			zap.String("bad-level", level),
+			zap.Error(err),
+		)
+		lvl = zapcore.InfoLevel
+	}
+
+	start := time.Now()
+
+	return func() {
+		end := time.Now()
+		elapsed := end.Sub(start)
+
+		l.Log(lvl, name+" operation finished",
+			zap.Time("start", start.UTC()),
+			zap.Time("end", end.UTC()),
+			zap.String("elapsed_s", fmt.Sprintf("%.6f", elapsed.Seconds())),
+		)
+	}
+}
+
 var logger *AppLogger
 
 func GetLogger() *AppLogger {

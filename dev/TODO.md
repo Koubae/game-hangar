@@ -24,7 +24,6 @@ Identity
       1. Hash passwords & Secrets 
       2. Create JWT Token 
   * Register by username
-    * API endpoint + handler/controller 
     * Service 
       0. Does Provider exists? 
       1. Cred exists?
@@ -36,7 +35,8 @@ Identity
   2. Create JWT Token 
   3. Auth type: username (JWT Access-Token)
 
-* AuthRegister Controller 
+* AuthRegister Controller
+   * API endpoint + handler/controller
 
 ### Auth API Endpoints
 
@@ -117,6 +117,15 @@ DELETE /v1/accounts/me/identities/device
 curl --location 'http://localhost:10000/api/v1/auth/register/username' \
 --header 'Content-Type: application/json' \
 --data '{
+  "source":   "global",
+  "username": "user-1",
+  "password": "test"
+}'
+
+curl --location 'http://localhost:10000/api/v1/auth/register/username' \
+--header 'Content-Type: application/json' \
+--data '{
+  "source":   "game-1",
   "username": "user-1",
   "password": "test"
 }'
