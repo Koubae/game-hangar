@@ -1,97 +1,108 @@
 ---
 name: Go DI FastAPI-style
-overview: "Map a FastAPI-like \"Depends / Provider\" mental model onto Go using a single composition root: stable accessor methods on the container interface, with production vs test differing only in how dependencies are assembled (constructor, deps struct, or optional Wire/dig if you want auto-wiring)."
+overview: "Hybrid DI: app-scoped singletons (e.g. provider repository) plus tx-scoped factories on the container that take database.DBTX and build service chains (credential repo → credential service → account auth service). Production vs test differs only at NewAppContainer / deps wiring."
 todos:
   - id: deps-struct
-    content: "Optional: introduce IdentityDeps + NewAppContainer(deps) + NewProductionIdentityContainer split"
+    content: "Optional: IdentityDeps + NewAppContainer(deps) + production helper for tests"
     status: pending
   - id: interface-fields
-    content: Store repos as interface types; fix ProviderRepository return type (avoid *I)
+    content: "IdentityAuthContainer: ProviderRepository() returns IProviderRepository (not *I); store interface on struct"
+    status: pending
+  - id: tx-scope-factories
+    content: Add container factories or IdentityScope taking DBTX; wire CredentialRepository → CredentialService → AccountAuthService
     status: pending
   - id: wire-or-dig
-    content: "Optional later: adopt google/wire or uber/dig if graph grows large"
+    content: "Optional later: google/wire or uber/dig if the graph becomes unwieldy"
     status: pending
 isProject: false
 ---
 
-# Dependency injection: FastAPI-like providers in Go
+# Dependency injection: FastAPI-like providers in Go (updated)
 
-## How this differs from FastAPI
+## Mixed lifetimes (your actual requirement)
 
-FastAPI resolves `Depends()` per request using introspection and builds a graph at runtime. Go has no equivalent built-in. Common approaches:
+- **Singleton (app lifetime):** `[ProviderRepository](internal/identity/app/modules/auth/repository/)` — loaded once in `[NewAppContainer](internal/identity/app/container/container.go)`, **no change** to that pattern.
+- **Tx- / exec-scoped:** `[CredentialRepository](internal/identity/app/modules/auth/repository/credential_repository.go)` and upcoming **Account module** services. They must use the **same** `[database.DBTX](pkg/database)` — either the pool/connector for non-transactional work or a **single transaction** when the handler starts `BeginTx` and passes that handle down.
 
-- **Composition root (idiomatic Go)** — One place constructs the object graph in dependency order; everything else receives **interfaces** (your `[IdentityContainer](internal/identity/app/container/container.go)`, `[ICredentialRepository](internal/identity/app/modules/auth/repository/credential_repository.go)`, etc.). Nested deps are resolved by constructing leaves first, then parents, in that single place.
-- **Explicit provider libraries** — [google/wire](https://github.com/google/wire) (compile-time graph) or [uber/dig](https://github.com/uber-go/dig)/fx (runtime `Provide`), which are the closest to "register a provider function; container figures out args."
+`[ProviderService](internal/identity/app/modules/auth/service/provider_service.go)` already models this: it holds `database.DBTX` + `IProviderRepository`. Reads can use the pool; anything that must be atomic with account/account-credentials uses the **transaction** you pass in.
 
-Your idea — **stable** `Provide`**-style methods on the container, only the root constructor chan♣ges for tests** — matches the composition-root pattern and is a good fit.
+## “Provider” in Go = explicit factory with a scope argument
 
-## Recommended shape for your codebase
+FastAPI resolves `Depends()` per request automatically. In Go, the practical equivalent is:
 
-**1. Keep consumer-facing API as interfaces**
+1. **Optional / explicit scope:** The caller passes `db database.DBTX` (pool or tx). No hidden globals for scoped deps.
+2. **Container knows the recipe:** Methods on `[AppContainer](internal/identity/app/container/container.go)` (or a small wrapper) **construct** the chain in order. Same function bodies in prod and tests; tests swap only what `[NewAppContainer](internal/identity/app/container/container.go)` wired (singletons) or pass a **mock `DBTX`** / fake tx into the factory.
 
-You already pass `[di.Container](pkg/di/container.go)` and cast to `[IdentityContainer](internal/identity/app/container/container.go)` in `[api_router.go](internal/identity/app/modules/auth/api/api_router.go)`. Extend that pattern: handlers and services should depend on **small interfaces** (e.g. `ICredentialRepository`), not `*AppContainer`, where practical.
-
-**2. `AppContainer` holds pre-built deps; methods only return them**
-
-- Production: `[NewAppContainer](internal/identity/app/container/container.go)` loads config, opens DB, calls `NewProviderRepository()`, etc., and stores `**interface` types** on the struct (e.g. `providerRepository repository.IProviderRepository` — not pointer-to-interface).
-- Each "provider" is a method like `ProviderRepository() repository.IProviderRepository` that returns the field. Tests never swap these methods — they swap **what was stored** when the container was built.
-
-**3. Two clean ways to avoid duplicating "test `NewAppContainer`" logic**
-
-
-| Approach                  | Idea                                                                                                                                                                                                                                                                                                                                       |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Deps / options struct** | Define `IdentityDeps` (or use functional options) with `DB`, repos, logger. `NewAppContainer(deps IdentityDeps) *AppContainer` has no I/O. A separate `NewProductionIdentityContainer(ctx, appPrefix, logger)` loads env, opens postgres, fills `IdentityDeps`, and calls `NewAppContainer`. Tests call `NewAppContainer` with mocks only. |
-| **Two constructors**      | `NewAppContainer(...)` for prod (current) + `NewAppContainerForTest(deps ...)` that skips DB init. Slightly more duplication unless both call a shared private `newAppContainerCore(deps)`.                                                                                                                                                |
-
-
-Both preserve your goal: **call sites and accessor methods stay the same**; only the root wiring changes.
-
-**4. Nested dependencies**
-
-There is no magic resolver unless you add Wire/dig. The rule is: **in one function** (production helper or Wire injector), build `A`, then `B(A)`, then `C(B)` — exactly the same order FastAPI would infer, but written explicitly once.
+### Example chain (what you described)
 
 ```mermaid
-flowchart LR
-  subgraph root [Composition root only]
-    NewProd[NewProduction...]
+flowchart TB
+  subgraph singleton [AppContainer singleton]
+    PR[ProviderRepository]
   end
-  subgraph deps [Built once]
-    DB[DB]
-    Repo[Repos]
-    Svc[Services]
+  subgraph perCall [Factory methods scoped by DBTX]
+    DBTX[database.DBTX]
+    CR[CredentialRepository]
+    CS[CredentialService]
+    AS[AccountAuthService]
+    DBTX --> CR
+    CR --> CS
+    CS --> AS
+    PR --> AS
   end
-  NewProd --> DB --> Repo --> Svc
-  subgraph stable [Unchanged in tests]
-    AC[AppContainer methods]
-  end
-  Svc --> AC
 ```
 
 
 
-## Optional: closer to FastAPI semantics
+- `**CredentialRepository`:** typically stateless (`NewCredentialRepository()`); factory can return the interface each time, same concrete type, **but every method call uses the `db` you pass into the service/repository method** (your repos already take `ctx, db, …`). The important part is services are constructed with the **same** `DBTX` instance for the whole use-case.
+- `**AccountAuthService`:** constructor takes `db` + deps (`CredentialService`, maybe `ProviderService`, etc.). Container factory builds inner services first, then the account service.
 
-If you want **provider functions** that declare dependencies as parameters (like FastAPI):
+## Two equivalent API shapes (pick one style, same semantics)
 
-- **Wire**: you write `func NewX(db *postgres.Connector) X` and Wire generates the initializer. Tests use a different injector set or manual `NewX(mockDB)`.
-- **dig**: `c.Provide(NewX)` and dig invokes `NewX` with resolved args. Tests register alternate constructors.
+**A. Methods on `AppContainer`**
 
-This adds tooling and learning cost; it pays off on large graphs.
+```go
+func (c *AppContainer) CredentialRepository() repository.ICredentialRepository
+func (c *AppContainer) CredentialService(db database.DBTX) *CredentialService
+func (c *AppContainer) AccountAuthService(db database.DBTX) *AccountAuthService
+```
 
-## Small note on current code
+Note: if `CredentialRepository` is stateless, `CredentialRepository()` needs no `db`; only services that **close over** `db` need it. Repos that don’t hold `db` stay trivial singletons at type level; alignment is “all calls for this request use this `db`.”
 
-`[ProviderRepository() *repository.IProviderRepository](internal/identity/app/container/container.go)` returns a **pointer to interface**, which is atypical in Go and easy to misuse; prefer returning `repository.IProviderRepository` and storing the repo as an interface value on the struct.
+**B. Scoped handle (nice when many tx-scoped deps exist)**
 
-## Testing story (aligned with your goal)
+```go
+type IdentityScope struct {
+    c  *AppContainer
+    db database.DBTX
+}
 
-- **Unit tests** for handlers/services: inject a **mock `IdentityContainer`** or mock repos directly — no real `AppContainer`.
-- **Integration / higher-level tests**: `NewAppContainer` (or `NewAppContainer(deps)`) with fake DB or mocked repos via the deps struct.
+func (c *AppContainer) Scope(db database.DBTX) IdentityScope
 
-You do **not** need to reimplement every Provide method for tests if accessors only return constructor-time fields.
+func (s IdentityScope) AccountAuthService() *AccountAuthService {
+    // build CredentialService(s.db, ...), then AccountAuthService(s.db, ...)
+}
+```
 
-## Clarifying question (affects design only if you need it)
+Handlers: `tx, _ := connector.BeginTx(...); defer tx.Rollback(); svc := container.Scope(tx).AccountAuthService()`. One place passes `db`; nested chain stays DRY.
 
-Are all dependencies **application-lifetime singletons** (current style: one DB, one repo set for the whole HTTP server), or do you need **per-request** resolution (e.g. request-scoped DB tx, user context)? Per-request scope usually pushes you toward handler middleware passing `context` + scoped structs, or a request-scoped dig child container — not a single global `AppContainer` field per dep.
+## What not to do (unless you really want magic)
 
-If your answer is "singletons only," the deps struct + single core constructor is enough and matches what you described.
+- Sticking **tx-only** in `context.Context` with unexported keys works but makes “what this handler needs” implicit and harder to test; **explicit `database.DBTX` in factory args** matches your “optionally pass something” and keeps the container as the composition root.
+
+## Wire / dig
+
+Still optional. Tx-scoped graphs are **small and explicit**; factory methods or `IdentityScope` are usually enough. Wire/dig help when registration grows huge.
+
+## Testing
+
+- **Singletons:** mocked via `NewAppContainer(deps)` or test container that patches `providerRepository`.
+- **Scoped chain:** call `AccountAuthService(mockDBTX)` (or `Scope(mockDBTX).…`) with a stub `DBTX` implementation; no second implementation of the factory methods.
+
+## Small note on current `IdentityAuthContainer`
+
+Ensure `ProviderRepository()` returns `repository.IProviderRepository` (interface value), not `*repository.IProviderRepository`, and the struct field is `repository.IProviderRepository`.
+
+## Resolved clarification
+
+You need **both** singleton and **tx-scoped** construction. Provider repository remains singleton; credential path and account auth stack are built **on demand** with a shared `database.DBTX` supplied by the caller (handler or orchestrating service).
