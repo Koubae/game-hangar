@@ -125,6 +125,16 @@ curl --location 'http://localhost:10000/api/v1/auth/register/username' \
 curl --location 'http://localhost:10000/api/v1/auth/register/username' \
 --header 'Content-Type: application/json' \
 --data '{
+  "source":   "global",
+  "username": "account_test_1",
+  "password": "test"
+}'
+
+
+
+curl --location 'http://localhost:10000/api/v1/auth/register/username' \
+--header 'Content-Type: application/json' \
+--data '{
   "source":   "game-1",
   "username": "user-1",
   "password": "test"

@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/koubae/game-hangar/internal/identity/app/modules/account/repository"
@@ -41,13 +42,17 @@ func NewAccountAuthService(
 	}
 }
 
+var ErrRegistrationCredExists = errors.New(
+	"registration error: credential already exists",
+)
+
 func (s *AccountAuthService) RegisterByUsername(
 	ctx context.Context,
 	source string,
 	credential string,
 	secret string,
 ) error {
-	n := "[AccountAuthService.Register]"
+	n := "[AccountAuthService.RegisterByUsername]"
 
 	logger := common.GetLogger()
 	defer logger.TimeIt("info", n)()
@@ -70,6 +75,23 @@ func (s *AccountAuthService) RegisterByUsername(
 	}
 
 	_ = provider
+
+	cred, err := s.credentialSrv.GetCredentialByProvider(
+		ctx,
+		provider.ID,
+		credential,
+	)
+	if cred != nil {
+		logger.Warn(n+"attempt to create account using existing credentials",
+			zap.String("source", source),
+			zap.String("credential", credential),
+		)
+		return ErrRegistrationCredExists
+	} else if err != nil {
+		if !errors.Is(err, database.ErrNotFound) {
+			return err
+		}
+	}
 
 	return nil
 }
