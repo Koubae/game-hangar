@@ -1,4 +1,4 @@
-package repository
+package repository_test
 
 import (
 	"context"
@@ -8,6 +8,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/koubae/game-hangar/internal/identity/app/modules/account/model"
+	"github.com/koubae/game-hangar/internal/identity/app/modules/account/repository"
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/database"
 	"github.com/koubae/game-hangar/pkg/database/postgres"
@@ -23,14 +24,14 @@ func TestAccountRepository_CreateAccount(t *testing.T) {
 	mockedDBErr := errors.New("mocked-db-error")
 	tests := []struct {
 		id          string
-		params      *NewAccount
+		params      *repository.NewAccount
 		expected    string
 		errThrown   error
 		errReturned error
 	}{
 		{
 			id: "resource-created",
-			params: &NewAccount{
+			params: &repository.NewAccount{
 				Username: "account-01",
 				Email:    &emailTest,
 			},
@@ -40,7 +41,7 @@ func TestAccountRepository_CreateAccount(t *testing.T) {
 		},
 		{
 			id: "on-db-error-duplicate-resource",
-			params: &NewAccount{
+			params: &repository.NewAccount{
 				Username: "account-01",
 				Email:    &emailTest,
 			},
@@ -50,7 +51,7 @@ func TestAccountRepository_CreateAccount(t *testing.T) {
 		},
 		{
 			id: "on-db-error-any",
-			params: &NewAccount{
+			params: &repository.NewAccount{
 				Username: "account-01",
 				Email:    &emailTest,
 			},
@@ -77,7 +78,7 @@ func TestAccountRepository_CreateAccount(t *testing.T) {
 				Return(mockRow)
 
 			connector := postgres.ConnectorPostgres{Pool: mockPool}
-			repo := NewAccountRepository()
+			repo := repository.NewAccountRepository()
 
 			id, err := repo.CreateAccount(ctx, &connector, *params)
 
@@ -158,7 +159,7 @@ func TestAccountRepository_GetAccount(t *testing.T) {
 				Return(mockRow)
 
 			connector := postgres.ConnectorPostgres{Pool: mockPool}
-			repo := NewAccountRepository()
+			repo := repository.NewAccountRepository()
 
 			model, err := repo.GetAccount(ctx, &connector, tt.accountID)
 

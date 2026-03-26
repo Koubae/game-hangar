@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/model"
-	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/repository"
+	authModel "github.com/koubae/game-hangar/internal/identity/app/modules/auth/model"
+	authRepo "github.com/koubae/game-hangar/internal/identity/app/modules/auth/repository"
 	"github.com/koubae/game-hangar/pkg/database"
 	"github.com/koubae/game-hangar/pkg/database/postgres"
 	"github.com/koubae/game-hangar/pkg/testutil"
@@ -24,6 +24,10 @@ type MockProviderRepository struct {
 	mock.Mock
 }
 
+func NewMockProviderRepository() authRepo.IProviderRepository {
+	return new(MockProviderRepository)
+}
+
 func (m *MockProviderRepository) LoadProviders(
 	ctx context.Context,
 	db database.DBTX,
@@ -36,10 +40,10 @@ func (m *MockProviderRepository) GetProvider(
 	db database.DBTX,
 	source string,
 	_type string,
-) (*model.Provider, error) {
+) (*authModel.Provider, error) {
 	args := m.Called(ctx, db, source, _type)
 
-	provider, _ := args.Get(0).(*model.Provider)
+	provider, _ := args.Get(0).(*authModel.Provider)
 	return provider, args.Error(1)
 }
 
@@ -52,17 +56,17 @@ func (m *MockCredentialRepository) GetCredentialByProvider(
 	db database.DBTX,
 	providerID int64,
 	credential string,
-) (*model.AccountCredential, error) {
+) (*authModel.AccountCredential, error) {
 	args := m.Called(ctx, db, providerID, credential)
 
-	model, _ := args.Get(0).(*model.AccountCredential)
+	model, _ := args.Get(0).(*authModel.AccountCredential)
 	return model, args.Error(1)
 }
 
 func (m *MockCredentialRepository) CreateAccountCredential(
 	ctx context.Context,
 	db database.DBTX,
-	params repository.NewAccountCredential,
+	params authRepo.NewAccountCredential,
 ) (int64, error) {
 	args := m.Called(ctx, db, params)
 

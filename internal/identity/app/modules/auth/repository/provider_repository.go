@@ -27,12 +27,12 @@ type ProviderRepositoryFactory func() IProviderRepository
 
 type ProviderRepository struct {
 	mu             sync.RWMutex
-	providersCache map[string]map[string]*model.Provider
+	ProvidersCache map[string]map[string]*model.Provider
 }
 
-func NewProviderRepository() *ProviderRepository {
+func NewProviderRepository() IProviderRepository {
 	r := &ProviderRepository{
-		providersCache: make(map[string]map[string]*model.Provider),
+		ProvidersCache: make(map[string]map[string]*model.Provider),
 	}
 	return r
 }
@@ -75,7 +75,7 @@ func (r *ProviderRepository) LoadProviders(
 	}
 	r.mu.Unlock()
 
-	logger.Info("providers loaded", zap.Int("count", len(r.providersCache)))
+	logger.Info("providers loaded", zap.Int("count", len(r.ProvidersCache)))
 }
 
 // addProviderInCache should be called within the r.mu.Lock
@@ -84,11 +84,11 @@ func (r *ProviderRepository) addProviderInCache(
 	_type string,
 	p *model.Provider,
 ) {
-	if _, ok := r.providersCache[source]; !ok {
-		r.providersCache[source] = make(map[string]*model.Provider)
+	if _, ok := r.ProvidersCache[source]; !ok {
+		r.ProvidersCache[source] = make(map[string]*model.Provider)
 	}
 
-	r.providersCache[source][p.Type] = p
+	r.ProvidersCache[source][p.Type] = p
 }
 
 func (r *ProviderRepository) GetProvider(
@@ -100,7 +100,7 @@ func (r *ProviderRepository) GetProvider(
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	s, ok := r.providersCache[source]
+	s, ok := r.ProvidersCache[source]
 	if ok {
 		m, ok := s[_type]
 		if ok {

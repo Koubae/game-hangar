@@ -1,4 +1,4 @@
-package repository
+package repository_test
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/model"
+	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/repository"
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/database"
 	"github.com/koubae/game-hangar/pkg/database/postgres"
@@ -34,8 +35,8 @@ func TestProviderRepository_GetProvider_CacheHit(t *testing.T) {
 	mockPool := new(testutil.MockDBPool)
 	connector := postgres.ConnectorPostgres{Pool: mockPool}
 
-	repo := &ProviderRepository{
-		providersCache: map[string]map[string]*model.Provider{
+	repo := &repository.ProviderRepository{
+		ProvidersCache: map[string]map[string]*model.Provider{
 			"global": {"steam": expected},
 		},
 	}
@@ -105,8 +106,8 @@ func TestProviderRepository_GetProvider_CacheMiss(t *testing.T) {
 
 			connector := postgres.ConnectorPostgres{Pool: mockPool}
 
-			repo := &ProviderRepository{
-				providersCache: map[string]map[string]*model.Provider{
+			repo := &repository.ProviderRepository{
+				ProvidersCache: map[string]map[string]*model.Provider{
 					"global": {"email": tt.expected},
 				},
 			}

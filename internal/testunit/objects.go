@@ -5,6 +5,8 @@ import (
 	"github.com/koubae/game-hangar/pkg/testutil"
 )
 
+const AppPrefix = "TESTING_"
+
 var (
 	ProviderUsername = &authModels.Provider{
 		ID:          1,

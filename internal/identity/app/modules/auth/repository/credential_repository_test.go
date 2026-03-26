@@ -1,4 +1,4 @@
-package repository
+package repository_test
 
 import (
 	"context"
@@ -8,6 +8,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/model"
+	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/repository"
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/database"
 	"github.com/koubae/game-hangar/pkg/database/postgres"
@@ -92,7 +93,7 @@ func TestCredentialRepository_GetCredentialByProvider(t *testing.T) {
 				Return(mockRow)
 
 			connector := postgres.ConnectorPostgres{Pool: mockPool}
-			repo := NewCredentialRepository()
+			repo := repository.NewCredentialRepository()
 
 			model, err := repo.GetCredentialByProvider(
 				context.Background(),
@@ -117,7 +118,7 @@ func TestCredentialRepository_GetCredentialByProvider(t *testing.T) {
 func TestCredentialRepository_CreateAccountCredential(t *testing.T) {
 	t.Parallel()
 
-	params := NewAccountCredential{
+	params := repository.NewAccountCredential{
 		Credential: "unit-test-user-123",
 		AccountID:  testutil.AccountIDTest01,
 		ProviderID: 1,
@@ -145,7 +146,7 @@ func TestCredentialRepository_CreateAccountCredential(t *testing.T) {
 
 	ctx := context.Background()
 	connector := postgres.ConnectorPostgres{Pool: mockPool}
-	repo := NewCredentialRepository()
+	repo := repository.NewCredentialRepository()
 
 	id, err := repo.CreateAccountCredential(ctx, &connector, params)
 
@@ -162,14 +163,14 @@ func TestCredentialRepository_CreateAccountCredentialOnErrors(t *testing.T) {
 	mockedDBErr := errors.New("mocked-db-error")
 	tests := []struct {
 		id          string
-		params      *NewAccountCredential
+		params      *repository.NewAccountCredential
 		expectedID  int64
 		errThrown   error
 		errReturned error
 	}{
 		{
 			id: "validation-err-verified-required",
-			params: &NewAccountCredential{
+			params: &repository.NewAccountCredential{
 				Credential: username,
 				AccountID:  testutil.AccountIDTest01,
 				ProviderID: providerID,
@@ -180,11 +181,11 @@ func TestCredentialRepository_CreateAccountCredentialOnErrors(t *testing.T) {
 			},
 			expectedID:  int64(0),
 			errThrown:   nil,
-			errReturned: ErrVerifiedAtRequired,
+			errReturned: repository.ErrVerifiedAtRequired,
 		},
 		{
 			id: "validation-err-nil-when-f",
-			params: &NewAccountCredential{
+			params: &repository.NewAccountCredential{
 				Credential: username,
 				AccountID:  testutil.AccountIDTest01,
 				ProviderID: providerID,
@@ -195,11 +196,11 @@ func TestCredentialRepository_CreateAccountCredentialOnErrors(t *testing.T) {
 			},
 			expectedID:  int64(0),
 			errThrown:   nil,
-			errReturned: ErrVerifiedNilWhenIsFalse,
+			errReturned: repository.ErrVerifiedNilWhenIsFalse,
 		},
 		{
 			id: "on-db-error-any",
-			params: &NewAccountCredential{
+			params: &repository.NewAccountCredential{
 				Credential: username,
 				AccountID:  testutil.AccountIDTest01,
 				ProviderID: providerID,
@@ -214,7 +215,7 @@ func TestCredentialRepository_CreateAccountCredentialOnErrors(t *testing.T) {
 		},
 		{
 			id: "on-db-error-duplicate-resource",
-			params: &NewAccountCredential{
+			params: &repository.NewAccountCredential{
 				Credential: username,
 				AccountID:  testutil.AccountIDTest01,
 				ProviderID: providerID,
@@ -251,7 +252,7 @@ func TestCredentialRepository_CreateAccountCredentialOnErrors(t *testing.T) {
 
 			ctx := context.Background()
 			connector := postgres.ConnectorPostgres{Pool: mockPool}
-			repo := NewCredentialRepository()
+			repo := repository.NewCredentialRepository()
 
 			id, err := repo.CreateAccountCredential(ctx, &connector, *params)
 

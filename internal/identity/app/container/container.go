@@ -1,8 +1,6 @@
 package container
 
 import (
-	"context"
-
 	accountRepo "github.com/koubae/game-hangar/internal/identity/app/modules/account/repository"
 	authRepo "github.com/koubae/game-hangar/internal/identity/app/modules/auth/repository"
 	authSrv "github.com/koubae/game-hangar/internal/identity/app/modules/auth/service"
@@ -53,10 +51,48 @@ type AppContainer struct {
 	credentialServiceFactory authSrv.CredentialServiceFactory
 }
 
+type AppDependencies struct {
+	Logger    common.Logger
+	Connector *postgres.ConnectorPostgres
+
+	ProviderRepositoryFactory   authRepo.ProviderRepositoryFactory
+	CredentialRepositoryFactory authRepo.CredentialRepositoryFactory
+	AccountRepositoryFactory    accountRepo.AccountRepositoryFactory
+	ProviderServiceFactory      authSrv.ProviderServiceFactory
+	CredentialServiceFactory    authSrv.CredentialServiceFactory
+}
+
 func NewAppContainer(
 	appPrefix string,
 	logger common.Logger,
+	dependencies *AppDependencies,
 ) (*AppContainer, error) {
+	var err error
+
+	if dependencies == nil {
+		dependencies, err = createProductionAppDependencies(appPrefix, logger)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	providerRepository := dependencies.ProviderRepositoryFactory()
+
+	return &AppContainer{
+		logger:                      dependencies.Logger,
+		connector:                   dependencies.Connector,
+		providerRepository:          providerRepository,
+		providerRepositoryFactory:   dependencies.ProviderRepositoryFactory,
+		credentialRepositoryFactory: dependencies.CredentialRepositoryFactory,
+		accountRepositoryFactory:    dependencies.AccountRepositoryFactory,
+		providerServiceFactory:      dependencies.ProviderServiceFactory,
+		credentialServiceFactory:    dependencies.CredentialServiceFactory,
+	}, nil
+}
+
+func createProductionAppDependencies(appPrefix string,
+	logger common.Logger,
+) (*AppDependencies, error) {
 	dbConfig, err := postgres.LoadConfig(appPrefix)
 	if err != nil {
 		return nil, err
@@ -73,9 +109,6 @@ func NewAppContainer(
 
 	// NOTE: Repositories
 	providerRepositoryFactory := authRepo.NewProviderRepository
-	providerRepository := providerRepositoryFactory()
-	providerRepository.LoadProviders(context.TODO(), connector)
-
 	credentialRepositoryFactory := authRepo.NewCredentialRepository
 	accountRepositoryFactory := accountRepo.NewAccountRepository
 
@@ -83,14 +116,16 @@ func NewAppContainer(
 	providerServiceFactory := authSrv.NewProviderService
 	credentialServiceFactory := authSrv.NewCredentialService
 
-	return &AppContainer{
-		logger:                      logger,
-		connector:                   connector,
-		providerRepository:          providerRepository,
-		credentialRepositoryFactory: credentialRepositoryFactory,
-		accountRepositoryFactory:    accountRepositoryFactory,
-		providerServiceFactory:      providerServiceFactory,
-		credentialServiceFactory:    credentialServiceFactory,
+	return &AppDependencies{
+		Logger:    logger,
+		Connector: connector,
+
+		ProviderRepositoryFactory:   providerRepositoryFactory,
+		CredentialRepositoryFactory: credentialRepositoryFactory,
+		AccountRepositoryFactory:    accountRepositoryFactory,
+
+		ProviderServiceFactory:   providerServiceFactory,
+		CredentialServiceFactory: credentialServiceFactory,
 	}, nil
 }
 
