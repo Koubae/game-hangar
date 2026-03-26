@@ -4,16 +4,15 @@ import (
 	"context"
 
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/repository"
-	authRepository "github.com/koubae/game-hangar/internal/identity/app/modules/auth/repository"
 	"github.com/koubae/game-hangar/pkg/common"
-	"github.com/koubae/game-hangar/pkg/database"
 	"github.com/koubae/game-hangar/pkg/database/postgres"
 	"github.com/koubae/game-hangar/pkg/di"
 	"go.uber.org/zap"
 )
 
 type IdentityAuthContainer interface {
-	ProviderService(db database.DBTX) authRepository.IProviderRepository
+	// ProviderService(db database.DBTX) authRepository.IProviderRepository
+	ProviderRepository() *repository.IProviderRepository
 }
 
 type IdentityContainer interface {

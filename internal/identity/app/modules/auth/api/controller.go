@@ -6,18 +6,19 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/koubae/game-hangar/internal/identity/app/container"
 	"github.com/koubae/game-hangar/internal/identity/app/modules/account/dto"
 	accountService "github.com/koubae/game-hangar/internal/identity/app/modules/account/service"
 	"github.com/koubae/game-hangar/pkg/common"
-	"github.com/koubae/game-hangar/pkg/di"
 	"github.com/koubae/game-hangar/pkg/web"
+	"go.uber.org/zap"
 )
 
 type AuthController struct {
-	container di.Container
+	container container.IdentityContainer
 }
 
-func NewAuthController(container di.Container) *AuthController {
+func NewAuthController(container container.IdentityContainer) *AuthController {
 	return &AuthController{
 		container: container,
 	}
@@ -39,6 +40,18 @@ func (c *AuthController) RegisterByUsername(
 	}
 
 	// ctx := r.Context()
+	logger := c.container.Logger()
+	logger.Info(
+		"RegisterByUsername called",
+		zap.String("username", payload.Username),
+	)
+
+	// TODO: Remove this
+	providerRepo := c.container.ProviderRepository()
+	logger.Info(
+		"provider repo",
+		zap.String("repo", fmt.Sprintf("%+v", *providerRepo)),
+	)
 
 	service := accountService.AccountService{}
 	account, err := service.CreateAccount(payload)
