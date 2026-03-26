@@ -33,7 +33,8 @@ type AppContainer struct {
 	connector *postgres.ConnectorPostgres
 
 	// Repositories
-	providerRepository repository.IProviderRepository
+	providerRepository        repository.IProviderRepository
+	providerRepositoryFactory func() repository.IProviderRepository
 
 	credentialRepository        repository.ICredentialRepository
 	credentialRepositoryFactory func() repository.ICredentialRepository
@@ -57,7 +58,10 @@ func NewAppContainer(
 		zap.String("db", connector.String()),
 	)
 
-	providerRepository := repository.NewProviderRepository()
+	providerRepositoryFactory := func() repository.IProviderRepository {
+		return repository.NewProviderRepository()
+	}
+	providerRepository := providerRepositoryFactory()
 	providerRepository.LoadProviders(context.TODO(), connector)
 
 	credentialRepositoryFactory := func() repository.ICredentialRepository {
@@ -72,11 +76,11 @@ func NewAppContainer(
 	}, nil
 }
 
+// NOTE:
 // ------------------------------------------
-//
 //	Implements di.Container interface
-//
 // ------------------------------------------
+
 func (c *AppContainer) Logger() common.Logger {
 	return c.logger
 }
@@ -94,6 +98,7 @@ func (c *AppContainer) Shutdown() error {
 	return nil
 }
 
+// NOTE:
 // ------------------------------------------
 // 	Implements IdentityContainer interface
 // ------------------------------------------
@@ -108,6 +113,11 @@ func (c *AppContainer) WithDB(db database.DBTX) Scope {
 func (c *AppContainer) DB() *postgres.ConnectorPostgres {
 	return c.connector
 }
+
+// NOTE:
+// ------------------------------------------
+// 	Dependencies Provider's Factories
+// ------------------------------------------
 
 func (c *AppContainer) ProviderRepository() repository.IProviderRepository {
 	return c.providerRepository
