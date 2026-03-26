@@ -3,7 +3,7 @@ package container
 import (
 	"context"
 
-	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/repository"
+	authRepo "github.com/koubae/game-hangar/internal/identity/app/modules/auth/repository"
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/database"
 	"github.com/koubae/game-hangar/pkg/database/postgres"
@@ -13,8 +13,8 @@ import (
 
 type IdentityAuthContainer interface {
 	// ProviderService(db database.DBTX) authRepository.IProviderRepository
-	ProviderRepository() repository.IProviderRepository
-	CredentialRepository() repository.ICredentialRepository
+	ProviderRepository() authRepo.IProviderRepository
+	CredentialRepository() authRepo.ICredentialRepository
 }
 
 type IdentityContainer interface {
@@ -25,7 +25,7 @@ type IdentityContainer interface {
 	DB() *postgres.ConnectorPostgres
 
 	// Repositories
-	// ProviderRepository() repository.IProviderRepository
+	// ProviderRepository() authRepo.IProviderauthRepo
 }
 
 type AppContainer struct {
@@ -33,11 +33,11 @@ type AppContainer struct {
 	connector *postgres.ConnectorPostgres
 
 	// Repositories
-	providerRepository        repository.IProviderRepository
-	providerRepositoryFactory func() repository.IProviderRepository
+	providerRepository        authRepo.IProviderRepository
+	providerRepositoryFactory func() authRepo.IProviderRepository
 
-	credentialRepository        repository.ICredentialRepository
-	credentialRepositoryFactory func() repository.ICredentialRepository
+	credentialRepository        authRepo.ICredentialRepository
+	credentialRepositoryFactory func() authRepo.ICredentialRepository
 }
 
 func NewAppContainer(
@@ -58,14 +58,14 @@ func NewAppContainer(
 		zap.String("db", connector.String()),
 	)
 
-	providerRepositoryFactory := func() repository.IProviderRepository {
-		return repository.NewProviderRepository()
+	providerRepositoryFactory := func() authRepo.IProviderRepository {
+		return authRepo.NewProviderRepository()
 	}
 	providerRepository := providerRepositoryFactory()
 	providerRepository.LoadProviders(context.TODO(), connector)
 
-	credentialRepositoryFactory := func() repository.ICredentialRepository {
-		return repository.NewCredentialRepository()
+	credentialRepositoryFactory := func() authRepo.ICredentialRepository {
+		return authRepo.NewCredentialRepository()
 	}
 
 	return &AppContainer{
@@ -119,11 +119,11 @@ func (c *AppContainer) DB() *postgres.ConnectorPostgres {
 // 	Dependencies Provider's Factories
 // ------------------------------------------
 
-func (c *AppContainer) ProviderRepository() repository.IProviderRepository {
+func (c *AppContainer) ProviderRepository() authRepo.IProviderRepository {
 	return c.providerRepository
 }
 
-func (c *AppContainer) CredentialRepository() repository.ICredentialRepository {
+func (c *AppContainer) CredentialRepository() authRepo.ICredentialRepository {
 	if c.credentialRepository == nil {
 		c.credentialRepository = c.credentialRepositoryFactory()
 	}
