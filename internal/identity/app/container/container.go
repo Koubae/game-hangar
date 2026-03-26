@@ -5,6 +5,7 @@ import (
 
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/repository"
 	"github.com/koubae/game-hangar/pkg/common"
+	"github.com/koubae/game-hangar/pkg/database"
 	"github.com/koubae/game-hangar/pkg/database/postgres"
 	"github.com/koubae/game-hangar/pkg/di"
 	"go.uber.org/zap"
@@ -19,6 +20,7 @@ type IdentityContainer interface {
 	di.Container
 	IdentityAuthContainer
 
+	WithDB() Scope
 	DB() *postgres.ConnectorPostgres
 
 	// Repositories
@@ -86,6 +88,13 @@ func (c *AppContainer) Shutdown() error {
 // ------------------------------------------
 // 	Implements IdentityContainer interface
 // ------------------------------------------
+
+func (c *AppContainer) WithDB(db database.DBTX) Scope {
+	if db == nil {
+		db = c.connector
+	}
+	return Scope{c: c, db: db}
+}
 
 func (c *AppContainer) DB() *postgres.ConnectorPostgres {
 	return c.connector

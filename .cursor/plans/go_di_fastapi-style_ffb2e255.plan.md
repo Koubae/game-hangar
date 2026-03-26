@@ -1,113 +1,113 @@
 ---
 name: Go DI FastAPI-style
-overview: "Hybrid DI without external libraries: app-scoped singletons plus IdentityScope(db) for tx-scoped service chains. Hand-rolled factories on AppContainer / Scope only."
+overview: Package-level New only in NewAppContainer. AppContainer holds func fields for every constructable dep; IdentityScope calls s.c.* only. Tests swap those fields — IdentityScope unchanged.
 todos:
   - id: deps-struct
-    content: "Optional: IdentityDeps + NewAppContainer(deps) + production helper for tests"
+    content: "Optional: IdentityDeps struct grouping factory fields + NewAppContainer(deps)"
     status: pending
   - id: interface-fields
-    content: "IdentityAuthContainer: ProviderRepository() returns IProviderRepository (not *I); store interface on struct"
+    content: "IdentityAuthContainer: ProviderRepository() returns IProviderRepository (not *I)"
     status: pending
   - id: tx-scope-factories
-    content: Implement IdentityScope + factories; wire CredentialRepository → CredentialService → AccountAuthService
+    content: "AppContainer: all new* func fields; IdentityScope(scope.go) only uses s.c; production wiring only in NewAppContainer"
     status: pending
   - id: wire-or-dig
-    content: Not used — hand-rolled Scope/container factories only
+    content: Not used
     status: cancelled
 isProject: false
 ---
 
-# Dependency injection: FastAPI-like providers in Go (updated)
+# Dependency injection: Method B with container-only factories
 
-## Mixed lifetimes (your actual requirement)
+## Rule you asked for
 
-- **Singleton (app lifetime):** `[ProviderRepository](internal/identity/app/modules/auth/repository/)` — loaded once in `[NewAppContainer](internal/identity/app/container/container.go)`, **no change** to that pattern.
-- **Tx- / exec-scoped:** `[CredentialRepository](internal/identity/app/modules/auth/repository/credential_repository.go)` and upcoming **Account module** services. They share one `[database.DBTX](pkg/database/ports.go)` for the use-case (pool or `[BeginTx](pkg/database/postgres)` transaction).
+- `**IdentityScope` must not call** `authrepo.New…`, `authsvc.New…`, `accountsvc.New…`, or any package-level constructor.
+- `**AppContainer` holds `func` fields** (or a small `IdentityWiring` struct) that *perform* those constructions.
+- `**NewAppContainer` (and only that path for prod)** assigns those fields using the real `New`* functions. **Tests** assign the same fields to closures returning mocks.
+- `**IdentityScope` implementation stays identical** in prod and test; only the container’s field values differ.
 
-`[ProviderService](internal/identity/app/modules/auth/service/provider_service.go)` already models "scoped `DBTX` + singleton repo."
+Package-level `New` appears **only** at the composition root (typically inside `NewAppContainer`), not inside `scope.go`.
 
-## "Provider" in Go = explicit factory; **no Wire, no dig**
+## Mixed lifetimes (unchanged)
 
-Everything is plain Go: structs, constructors, and methods on `[AppContainer](internal/identity/app/container/container.go)` or on a small **scope** type. The scope is just a pair `(container, db)` so you pass `**db` once** and build nested services without repeating arguments.
-
-### Example chain
+- **Singleton:** `[ProviderRepository](internal/identity/app/modules/auth/repository/)` on `[AppContainer](internal/identity/app/container/container.go)`.
+- **Scoped:** `[IdentityScope](internal/identity/app/container/container.go)` carries one `[database.DBTX](pkg/database/ports.go)` (pool or transaction).
 
 ```mermaid
 flowchart TB
-  subgraph singleton [AppContainer singleton]
-    PR[ProviderRepository]
+  subgraph container [AppContainer composition root]
+    newCredRepo["newCredentialRepository func()"]
+    newCredSvc["newCredentialService func(...)"]
+    newProvSvc["newProviderService func(...)"]
+    newAcctSvc["newAccountAuthService func(...)"]
+    PR[ProviderRepository singleton]
   end
-  subgraph perCall [IdentityScope per db]
-    DBTX[database.DBTX]
-    CR[CredentialRepository]
-    CS[CredentialService]
-    PS[ProviderService]
-    AS[AccountAuthService]
-    DBTX --> CR
-    DBTX --> PS
-    CR --> CS
-    CS --> AS
-    PS --> AS
-    PR --> PS
+  subgraph scope [IdentityScope methods]
+    S[Scope db]
+    S --> callFields[only s.c dot factory fields]
   end
+  callFields --> newCredRepo
+  callFields --> newCredSvc
+  callFields --> newProvSvc
+  callFields --> newAcctSvc
+  PR --> newProvSvc
 ```
 
 
 
-- **CredentialRepository:** stateless (see below); repo methods receive `(ctx, db, …)` — when called from a scoped service, `**db` is that request’s `s.db`**.
-- **AccountAuthService:** built last; gets inner services that all close over the same `s.db` where needed.
-
-### Stateless repo vs per-request `db` (concurrency)
-
-**“Stateless”** here means: the `**CredentialRepository` struct has no fields** (no stored connection). It does **not** mean “all HTTP requests share one `db`.” It only means the repo does not *remember* a connection between calls; every call gets `db` from arguments (ultimately the same `database.DBTX` you put on `IdentityScope` for that use-case).
-
-**Per request / per handler invocation:**
-
-1. Handler A runs: `txA, _ := BeginTx(...); sA := container.Scope(txA); svcA := sA.AccountAuthService()`.
-2. Handler B runs: `txB, _ := BeginTx(...); sB := container.Scope(txB); svcB := sB.AccountAuthService()`.
-
-`sA.db` is `**txA`**, `sB.db` is `**txB`**. They are different transactions. Each `svcA` / `svcB` was constructed in that goroutine with **that** scope’s `db`. A million concurrent registers ⇒ a million scopes (small structs), a million txs (or a million logical uses of the pool), **not** one shared tx.
-
-**Singleton pool:** If you use `Scope(connector)` where `connector` is the shared pool, the **object** `connector` is one app-level value, but the pool hands out **different connections** (or serializes safely) per operation — you do not open a million TCP connections; you reuse a bounded pool. For **writes you care about atomically**, you still use `**Scope(tx)`** with one `tx` per request.
-
-**Reusing one `CredentialRepository` instance:** If `NewCredentialRepository()` returns an empty struct with no fields, you *could* share a single global instance — all goroutines can call methods on it safely **as long as** the implementation only uses `ctx`/`db` parameters and no mutable fields. Often people still allocate per scope for clarity; cost is negligible. Either way, **which `db` is used** is determined by **which `Scope(db)` you built**, not by the repo being “stateless.”
-
 ---
 
-## Method A vs Method B (same semantics)
+## `AppContainer` struct (all wiring references)
 
-**Method A — factories on `AppContainer`:** every top-level service needs `db` in the signature:
+Illustrative — adjust types to match your modules.
 
 ```go
-func (c *AppContainer) AccountAuthService(db database.DBTX) *accountsvc.AccountAuthService {
-    credRepo := authrepo.NewCredentialRepository()
-    credSvc := authsvc.NewCredentialService(db, credRepo)
-    provSvc := authsvc.NewProviderService(db, c.ProviderRepository())
-    return accountsvc.NewAccountAuthService(db, credSvc, provSvc)
+type AppContainer struct {
+	logger             common.Logger
+	connector          *postgres.ConnectorPostgres
+	providerRepository repository.IProviderRepository
+
+	newCredentialRepository func() repository.ICredentialRepository
+	newCredentialService    func(db database.DBTX, repo repository.ICredentialRepository) *authsvc.CredentialService
+	newProviderService      func(db database.DBTX, repo repository.IProviderRepository) *authsvc.ProviderService
+	newAccountAuthService func(
+		db database.DBTX,
+		cred *authsvc.CredentialService,
+		prov *authsvc.ProviderService,
+	) *accountsvc.AccountAuthService
 }
 ```
 
-Works fine; when you add more entrypoints you repeat `db` on each method.
+**Production** — `[NewAppContainer](internal/identity/app/container/container.go)` fills these **once**:
 
-**Method B — `IdentityScope`:** you pass `**db` once** when creating the scope; nested providers take `s` only.
+```go
+return &AppContainer{
+	logger:             logger,
+	connector:          connector,
+	providerRepository: providerRepository,
+
+	newCredentialRepository: func() repository.ICredentialRepository {
+		return repository.NewCredentialRepository()
+	},
+	newCredentialService: func(db database.DBTX, repo repository.ICredentialRepository) *authsvc.CredentialService {
+		return authsvc.NewCredentialService(db, repo)
+	},
+	newProviderService: func(db database.DBTX, repo repository.IProviderRepository) *authsvc.ProviderService {
+		return authsvc.NewProviderService(db, repo)
+	},
+	newAccountAuthService: func(db database.DBTX, cred *authsvc.CredentialService, prov *authsvc.ProviderService) *accountsvc.AccountAuthService {
+		return accountsvc.NewAccountAuthService(db, cred, prov)
+	},
+}, nil
+```
+
+Lazy **tx** for account flows: add e.g. `newCredentialServiceForDB func(database.DBTX) *authsvc.CredentialService` on the container (still a field), and inject **that** into `AccountAuthService` instead of a pre-built credential service — same rule: only `NewAppContainer` uses package `New`* inside the closure body.
 
 ---
 
-## Method B: concrete `IdentityScope` pattern (expanded)
-
-### 1. Scope type and constructor
-
-Live next to `AppContainer` (e.g. `[container.go](internal/identity/app/container/container.go)` or `scope.go` in the same package).
+## `IdentityScope` — **only** `s.c.<field>(...)`
 
 ```go
-package container
-
-import (
-	"github.com/koubae/game-hangar/pkg/database"
-)
-
-// IdentityScope binds one DBTX (pool or transaction) to the app singletons for a single use-case.
-// Handlers: tx, err := c.DB().BeginTx(ctx); defer tx.Rollback(); ...; container.Scope(tx).AccountAuthService().DoSomething(ctx)
 type IdentityScope struct {
 	c  *AppContainer
 	db database.DBTX
@@ -117,122 +117,112 @@ func (c *AppContainer) Scope(db database.DBTX) IdentityScope {
 	return IdentityScope{c: c, db: db}
 }
 
-func (s IdentityScope) dbtx() database.DBTX {
-	return s.db
-}
-```
-
-`Scope` is cheap: no allocation beyond the small struct. Same pattern works with the **pool** for read-only flows: `container.Scope(c.DB())` if `ConnectorPostgres` implements `DBTX`.
-
-### 2. Low-level pieces (stateless repo + services that close over `db`)
-
-Illustrative names — align with your real packages.
-
-```go
-// Stateless: can return a package-level singleton OR new struct{} each time — same behavior.
-func (s IdentityScope) credentialRepository() authrepo.ICredentialRepository {
-	return authrepo.NewCredentialRepository()
+func (s IdentityScope) credentialRepository() repository.ICredentialRepository {
+	return s.c.newCredentialRepository()
 }
 
 func (s IdentityScope) credentialService() *authsvc.CredentialService {
-	return authsvc.NewCredentialService(s.db, s.credentialRepository())
+	return s.c.newCredentialService(s.db, s.credentialRepository())
 }
 
 func (s IdentityScope) providerService() *authsvc.ProviderService {
-	return authsvc.NewProviderService(s.db, s.c.ProviderRepository())
+	return s.c.newProviderService(s.db, s.c.ProviderRepository())
 }
 
-// Entry point you call from handlers / orchestration.
 func (s IdentityScope) AccountAuthService() *accountsvc.AccountAuthService {
-	return accountsvc.NewAccountAuthService(
-		s.db,
-		s.credentialService(),
-		s.providerService(),
-	)
+	return s.c.newAccountAuthService(s.db, s.credentialService(), s.providerService())
 }
 ```
 
-Rules:
-
-- **Singletons** come from `s.c` (`ProviderRepository()`, logger, etc.).
-- **Scoped deps** always use `s.db` when constructing services that store `DBTX`.
-- **Private** helpers (`credentialRepository`, `credentialService`) keep the public surface small; only expose `AccountAuthService`, `CredentialService`, etc. if other packages need them.
-
-Optional **memoization within one scope** (usually unnecessary if constructors are cheap):
-
-```go
-type IdentityScope struct {
-	c    *AppContainer
-	db   database.DBTX
-	cred *authsvc.CredentialService // lazy, optional
-}
-
-func (s *IdentityScope) credentialService() *authsvc.CredentialService {
-	if s.cred == nil {
-		s.cred = authsvc.NewCredentialService(s.db, s.credentialRepository())
-	}
-	return s.cred
-}
-```
-
-Note: memoization requires a pointer receiver (`*IdentityScope`) if you mutate the struct. For a value receiver, return a new scope only when you need caching is awkward — **prefer pointer `*IdentityScope` or keep everything allocation-free without cache.** Simplest: value `IdentityScope` + no cache.
-
-### 3. Handler sketch (transactional)
-
-```go
-func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	tx, err := h.container.DB().BeginTx(ctx, pgx.TxOptions{})
-	if err != nil {
-		// handle
-		return
-	}
-	defer func() { _ = tx.Rollback(ctx) }()
-
-	svc := h.container.Scope(tx).AccountAuthService()
-	if err := svc.RegisterUsername(ctx, /* … */); err != nil {
-		// handle
-		return
-	}
-	if err := tx.Commit(ctx); err != nil {
-		// handle
-	}
-}
-```
-
-Non-transactional path: `svc := h.container.Scope(h.container.DB()).AccountAuthService()` (if your connector is a `DBTX`).
-
-### 4. Testing the chain
-
-```go
-mockDB := /* something implementing database.DBTX */
-c := newTestContainer(/* mock provider repo, etc. */)
-
-svc := c.Scope(mockDB).AccountAuthService()
-err := svc.RegisterUsername(context.Background(), /* … */)
-```
-
-You never duplicate factory logic: **same `IdentityScope` methods**, swap `NewAppContainer` / test container and `mockDB`.
+No `authsvc.New` / `repository.New` here — **only** container fields.
 
 ---
 
-## Method A + B together
+## Method A (optional thin wrapper)
 
-You can expose **both**:
+Same factories: **never** call `authrepo.New` in the method body.
 
-- `func (c *AppContainer) Scope(db database.DBTX) IdentityScope` — preferred for handlers.
-- Thin wrappers if you want: `func (c *AppContainer) AccountAuthService(db database.DBTX) *accountsvc.AccountAuthService { return c.Scope(db).AccountAuthService() }`
+```go
+func (c *AppContainer) AccountAuthService(db database.DBTX) *accountsvc.AccountAuthService {
+	return c.Scope(db).AccountAuthService()
+}
+```
+
+---
+
+## Unit test with mocks **without** changing `IdentityScope`
+
+**Idea:** Build an `AppContainer` (or `NewTestAppContainer`) that sets `**newCredentialRepository`** (and any other field) to return mocks. Call `**c.Scope(fakeDB).AccountAuthService()`** — the **same** scope code path as production.
+
+### Example (table-style)
+
+```go
+func TestRegisterViaScope_UsesMockCredentialRepo(t *testing.T) {
+	mockRepo := &mocks.CredentialRepository{}
+	mockRepo.On("GetCredentialByProvider", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		Return(nil, database.ErrNotFound)
+
+	fakeDB := &mocks.DBTX{} // or stub with sqlmock-backed tx
+
+	c := &container.AppContainer{
+		logger:     testLogger,
+		connector:  nil, // or minimal stub if something touches DB()
+		providerRepository: &mocks.ProviderRepository{},
+
+		newCredentialRepository: func() repository.ICredentialRepository { return mockRepo },
+
+		newCredentialService: func(db database.DBTX, r repository.ICredentialRepository) *authsvc.CredentialService {
+			return authsvc.NewCredentialService(db, r) // real service + mock repo — common pattern
+		},
+		newProviderService: func(db database.DBTX, r repository.IProviderRepository) *authsvc.ProviderService {
+			return authsvc.NewProviderService(db, r)
+		},
+		newAccountAuthService: func(db database.DBTX, cred *authsvc.CredentialService, prov *authsvc.ProviderService) *accountsvc.AccountAuthService {
+			return accountsvc.NewAccountAuthService(db, cred, prov)
+		},
+	}
+
+	svc := c.Scope(fakeDB).AccountAuthService()
+	err := svc.RegisterUsername(context.Background(), /* … */)
+
+	require.NoError(t, err)
+	mockRepo.AssertExpectations(t)
+}
+```
+
+What you **did not** change: `**IdentityScope`** method bodies, or handler code shape — only **how `AppContainer` was constructed**.
+
+### What if you need a **fake service** instead of real `NewCredentialService`?
+
+Replace **one field**:
+
+```go
+newCredentialService: func(database.DBTX, repository.ICredentialRepository) *authsvc.CredentialService {
+	return &fakeCredentialService{} // implements same methods your AccountAuthService needs
+},
+```
+
+Still **no** edits to `scope.go`.
+
+### Optional: `NewTestAppContainer(t, opts…)` helper
+
+Centralize defaults for “real” inner wiring and only override the mocks you care about, so tests stay short.
+
+---
+
+## Stateless repo vs `db` (brief)
+
+Each `Scope(db)` gives a different `s.db`. `newCredentialRepository()` returns a **repo instance** (often stateless); **which** `db` is used is whatever you pass into `Scope` and into service methods.
 
 ---
 
 ## What to avoid
 
-- **Tx in `context.Context`** only — possible, but explicit `DBTX` + `Scope` keeps dependencies visible and tests simple.
+- Calling package `New*` from `**IdentityScope`** — breaks “swap via container only.”
+- `**ProviderRepository()`** return type: use `repository.IProviderRepository`, not `*repository.IProviderRepository`.
 
-## Small note on `IdentityAuthContainer`
+---
 
-`ProviderRepository()` should return `repository.IProviderRepository`, not `*repository.IProviderRepository`.
+## Resolved
 
-## Resolved clarification
-
-Singleton **provider repository**; **credential + account** stack built per `Scope(db)` with hand-rolled Go only — no Wire/dig.
+**Factories live on `AppContainer`.** `**IdentityScope` only calls `s.c` fields.** **Unit tests** build a container with **mock-returning func fields**; `**scope.go` unchanged.**
