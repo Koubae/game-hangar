@@ -14,9 +14,6 @@ import (
 
 func TestProviderService_IsProviderEnabled(t *testing.T) {
 	t.Parallel()
-
-	testunit.Setup()
-
 	tests := []struct {
 		id     string
 		source string

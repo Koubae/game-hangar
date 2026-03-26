@@ -13,7 +13,7 @@ Identity
 * Create Account (repo) ✅
 * ~Create Account (service)~ ❌ ->  Create smaller and dedicated services for common Account features instead 
 
-* Container Dependency Injector Provider  
+* Container Dependency Injector Provider  ✅ 
 
 * Create AccountAuth (service)
   * Dependencies: 

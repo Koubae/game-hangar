@@ -19,8 +19,9 @@ import (
 func TestCredentialService_GetCredentialByProvider(t *testing.T) {
 	t.Parallel()
 
-	testunit.Setup()
-	connector := testunit.MockDBConnector()
+	container := testunit.NewTestIdentityAppContainer(t)
+	connector := container.DB()
+
 	providerID := int64(1)
 	username := "unit-test-user-123"
 	tests := []struct {
@@ -100,7 +101,7 @@ func TestCredentialService_GetCredentialByProvider(t *testing.T) {
 		t.Run(tt.id, func(t *testing.T) {
 			t.Parallel()
 
-			repo := new(testunit.MockCredentialRepository)
+			repo := container.CredentialRepository().(*testunit.MockCredentialRepository)
 			tt.setupMock(repo)
 
 			service := service.NewCredentialService(connector, repo)
