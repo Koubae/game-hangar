@@ -23,7 +23,7 @@ FastAPI resolves `Depends()` per request using introspection and builds a graph 
 - **Composition root (idiomatic Go)** — One place constructs the object graph in dependency order; everything else receives **interfaces** (your `[IdentityContainer](internal/identity/app/container/container.go)`, `[ICredentialRepository](internal/identity/app/modules/auth/repository/credential_repository.go)`, etc.). Nested deps are resolved by constructing leaves first, then parents, in that single place.
 - **Explicit provider libraries** — [google/wire](https://github.com/google/wire) (compile-time graph) or [uber/dig](https://github.com/uber-go/dig)/fx (runtime `Provide`), which are the closest to "register a provider function; container figures out args."
 
-Your idea — **stable `Provide`-style methods on the container, only the root constructor changes for tests** — matches the composition-root pattern and is a good fit.
+Your idea — **stable** `Provide`**-style methods on the container, only the root constructor chan♣ges for tests** — matches the composition-root pattern and is a good fit.
 
 ## Recommended shape for your codebase
 

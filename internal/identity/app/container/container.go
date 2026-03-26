@@ -91,6 +91,6 @@ func (c *AppContainer) DB() *postgres.ConnectorPostgres {
 	return c.connector
 }
 
-func (c *AppContainer) ProviderRepository() *repository.IProviderRepository {
-	return &c.providerRepository
+func (c *AppContainer) ProviderRepository() repository.IProviderRepository {
+	return c.providerRepository
 }
