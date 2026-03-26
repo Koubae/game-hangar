@@ -4,19 +4,26 @@ import (
 	"context"
 
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/repository"
+	authRepository "github.com/koubae/game-hangar/internal/identity/app/modules/auth/repository"
 	"github.com/koubae/game-hangar/pkg/common"
+	"github.com/koubae/game-hangar/pkg/database"
 	"github.com/koubae/game-hangar/pkg/database/postgres"
 	"github.com/koubae/game-hangar/pkg/di"
 	"go.uber.org/zap"
 )
 
+type IdentityAuthContainer interface {
+	ProviderService(db database.DBTX) authRepository.IProviderRepository
+}
+
 type IdentityContainer interface {
 	di.Container
+	IdentityAuthContainer
 
 	DB() *postgres.ConnectorPostgres
 
 	// Repositories
-	ProviderRepository() repository.IProviderRepository
+	// ProviderRepository() repository.IProviderRepository
 }
 
 type AppContainer struct {
@@ -27,7 +34,10 @@ type AppContainer struct {
 	providerRepository repository.IProviderRepository
 }
 
-func NewAppContainer(appPrefix string, logger common.Logger) (*AppContainer, error) {
+func NewAppContainer(
+	appPrefix string,
+	logger common.Logger,
+) (*AppContainer, error) {
 	dbConfig, err := postgres.LoadConfig(appPrefix)
 	if err != nil {
 		return nil, err
@@ -37,7 +47,10 @@ func NewAppContainer(appPrefix string, logger common.Logger) (*AppContainer, err
 		return nil, err
 	}
 
-	logger.Info("database connection established", zap.String("db", connector.String()))
+	logger.Info(
+		"database connection established",
+		zap.String("db", connector.String()),
+	)
 
 	providerRepository := repository.NewProviderRepository()
 	providerRepository.LoadProviders(context.TODO(), connector)

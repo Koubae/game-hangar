@@ -10,18 +10,28 @@ Identity
 * CredService: Create Username Creadential ✅ 
 * CredService: Get Credential by provider ✅
 
-* Create Account (repo)
-* Create Account (service)
+* Create Account (repo) ✅
+* ~Create Account (service)~ ❌ ->  Create smaller and dedicated services for common Account features instead 
 
-* Register by username
-  * API endpoint + handler/controller 
-  * Service 
-    0. Does Provider exists? 
-    1. Cred exists?
-    2. Create Account (transaction) -> get id 
-    3. Create Credential (transaction) -> get id 
+* Container Dependency Injector Provider  
 
-  * Auth type: username (JWT Access-Token)
+* Create AccountAuth (service)
+  * Dependencies: 
+    - AccountRepository
+    - CredentialService 
+    - ProviderService 
+    - AuthService 
+      1. Hash passwords & Secrets 
+      2. Create JWT Token 
+  * Register by username
+    * API endpoint + handler/controller 
+    * Service 
+      0. Does Provider exists? 
+      1. Cred exists?
+      2. Create Account (transaction) -> get id 
+      3. Create Credential (transaction) -> get id 
+
+    * Auth type: username (JWT Access-Token)
 
 ### Auth API Endpoints
 
