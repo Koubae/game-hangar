@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/model"
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/repository"
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/database"
@@ -32,13 +33,9 @@ func (s *ProviderService) IsProviderEnabled(
 	source string,
 	_type string,
 ) bool {
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
-
-	logger := common.GetLogger()
-
-	provider, err := s.repository.GetProvider(ctx, s.db, source, _type)
+	provider, err := s.GetProvider(ctx, source, _type)
 	if err != nil {
+		logger := common.GetLogger()
 		logger.Error("error while checking if provider is enabled",
 			zap.String("source", source),
 			zap.String("type", _type),
@@ -48,4 +45,19 @@ func (s *ProviderService) IsProviderEnabled(
 	}
 
 	return !provider.Disabled
+}
+
+func (s *ProviderService) GetProvider(
+	ctx context.Context,
+	source string,
+	_type string,
+) (*model.Provider, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	provider, err := s.repository.GetProvider(ctx, s.db, source, _type)
+	if err != nil {
+		return nil, err
+	}
+	return provider, nil
 }
