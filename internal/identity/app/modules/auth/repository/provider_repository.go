@@ -15,8 +15,15 @@ import (
 
 type IProviderRepository interface {
 	LoadProviders(ctx context.Context, db database.DBTX)
-	GetProvider(ctx context.Context, db database.DBTX, source string, _type string) (*model.Provider, error)
+	GetProvider(
+		ctx context.Context,
+		db database.DBTX,
+		source string,
+		_type string,
+	) (*model.Provider, error)
 }
+
+type ProviderRepositoryFactory func() IProviderRepository
 
 type ProviderRepository struct {
 	mu             sync.RWMutex
@@ -30,7 +37,10 @@ func NewProviderRepository() *ProviderRepository {
 	return r
 }
 
-func (r *ProviderRepository) LoadProviders(ctx context.Context, db database.DBTX) {
+func (r *ProviderRepository) LoadProviders(
+	ctx context.Context,
+	db database.DBTX,
+) {
 	logger := common.GetLogger()
 	logger.Info("loading providers...")
 
@@ -69,7 +79,11 @@ func (r *ProviderRepository) LoadProviders(ctx context.Context, db database.DBTX
 }
 
 // addProviderInCache should be called within the r.mu.Lock
-func (r *ProviderRepository) addProviderInCache(source string, _type string, p *model.Provider) {
+func (r *ProviderRepository) addProviderInCache(
+	source string,
+	_type string,
+	p *model.Provider,
+) {
 	if _, ok := r.providersCache[source]; !ok {
 		r.providersCache[source] = make(map[string]*model.Provider)
 	}
@@ -77,7 +91,12 @@ func (r *ProviderRepository) addProviderInCache(source string, _type string, p *
 	r.providersCache[source][p.Type] = p
 }
 
-func (r *ProviderRepository) GetProvider(ctx context.Context, db database.DBTX, source string, _type string) (*model.Provider, error) {
+func (r *ProviderRepository) GetProvider(
+	ctx context.Context,
+	db database.DBTX,
+	source string,
+	_type string,
+) (*model.Provider, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -91,7 +110,11 @@ func (r *ProviderRepository) GetProvider(ctx context.Context, db database.DBTX, 
 	}
 
 	logger := common.GetLogger()
-	logger.Warn("provider not found in cache, attempt to load from db", zap.String("source", source), zap.String("type", _type))
+	logger.Warn(
+		"provider not found in cache, attempt to load from db",
+		zap.String("source", source),
+		zap.String("type", _type),
+	)
 
 	m, err := r.getProvider(ctx, db, source, _type)
 	if err != nil {
@@ -102,7 +125,12 @@ func (r *ProviderRepository) GetProvider(ctx context.Context, db database.DBTX, 
 	return m, nil
 }
 
-func (r *ProviderRepository) getProvider(ctx context.Context, db database.DBTX, source string, _type string) (*model.Provider, error) {
+func (r *ProviderRepository) getProvider(
+	ctx context.Context,
+	db database.DBTX,
+	source string,
+	_type string,
+) (*model.Provider, error) {
 	const query = `
 		SELECT id, source, type, display_name, category, disabled, created, updated 
 			FROM provider

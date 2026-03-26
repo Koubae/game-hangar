@@ -35,6 +35,8 @@ type ICredentialRepository interface {
 	) (*model.AccountCredential, error)
 }
 
+type CredentialRepositoryFactory func() ICredentialRepository
+
 type NewAccountCredential struct {
 	Credential string
 	AccountID  uuid.UUID

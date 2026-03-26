@@ -30,6 +30,8 @@ type IAccountRepository interface {
 	) (*model.Account, error)
 }
 
+type AccountRepositoryFactory func() IAccountRepository
+
 // TODO: This stuff should go in a "domain" layer. or dto??
 type NewAccount struct {
 	Username string

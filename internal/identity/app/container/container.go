@@ -33,13 +33,13 @@ type AppContainer struct {
 
 	// NOTE: Repositories
 	providerRepository        authRepo.IProviderRepository
-	providerRepositoryFactory func() authRepo.IProviderRepository
+	providerRepositoryFactory authRepo.ProviderRepositoryFactory
 
 	credentialRepository        authRepo.ICredentialRepository
-	credentialRepositoryFactory func() authRepo.ICredentialRepository
+	credentialRepositoryFactory authRepo.CredentialRepositoryFactory
 
 	accountRepository        accountRepo.IAccountRepository
-	accountRepositoryFactory func() accountRepo.IAccountRepository
+	accountRepositoryFactory accountRepo.AccountRepositoryFactory
 }
 
 func NewAppContainer(
