@@ -29,6 +29,23 @@ func (e *ErrDuplicate) Is(target error) bool { // NOTE: Sentinel struct pattern
 	return ok
 }
 
+type ErrOpenTransaction struct {
+	Err error // underlying DB error
+}
+
+func (e *ErrOpenTransaction) Error() string {
+	return fmt.Sprintf("error opening a new DB transaction, error: %v", e.Err)
+}
+
+func (e *ErrOpenTransaction) Unwrap() error {
+	return e.Err
+}
+
+func (e *ErrOpenTransaction) Is(target error) bool {
+	_, ok := target.(*ErrOpenTransaction)
+	return ok
+}
+
 // DBTX pool-backed connector and a transaction wrapper implement this.
 type DBTX interface {
 	SelectMany(ctx context.Context, query string, args ...any) (pgx.Rows, error)

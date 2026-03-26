@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/koubae/game-hangar/internal/identity/app/modules/account/repository"
 	authModel "github.com/koubae/game-hangar/internal/identity/app/modules/auth/model"
 	authSrv "github.com/koubae/game-hangar/internal/identity/app/modules/auth/service"
@@ -14,31 +15,32 @@ import (
 )
 
 type AccountAuthService struct {
-	db         database.DBTX
+	db         database.Connector
 	repository repository.IAccountRepository
 
-	providerSrv   *authSrv.ProviderService
-	credentialSrv *authSrv.CredentialService
+	providerSrv           *authSrv.ProviderService
+	credentialSrvProvider authSrv.CredentialServiceProvider
 }
 
 type AccountAuthServiceFactory func(
-	d database.DBTX,
+	d database.Connector,
 	r repository.IAccountRepository,
 	providerSrv *authSrv.ProviderService,
-	credentialSrv *authSrv.CredentialService,
+	credentialSrvProvider authSrv.CredentialServiceProvider,
 ) *AccountAuthService
 
 func NewAccountAuthService(
-	d database.DBTX,
+	d database.Connector,
 	r repository.IAccountRepository,
 	providerSrv *authSrv.ProviderService,
-	credentialSrv *authSrv.CredentialService,
+
+	credentialSrvProvider authSrv.CredentialServiceProvider,
 ) *AccountAuthService {
 	return &AccountAuthService{
-		db:            d,
-		repository:    r,
-		providerSrv:   providerSrv,
-		credentialSrv: credentialSrv,
+		db:                    d,
+		repository:            r,
+		providerSrv:           providerSrv,
+		credentialSrvProvider: credentialSrvProvider,
 	}
 }
 
@@ -74,9 +76,7 @@ func (s *AccountAuthService) RegisterByUsername(
 		return err
 	}
 
-	_ = provider
-
-	cred, err := s.credentialSrv.GetCredentialByProvider(
+	cred, err := s.credentialSrvProvider(s.db).GetCredentialByProvider(
 		ctx,
 		provider.ID,
 		credential,
@@ -91,6 +91,34 @@ func (s *AccountAuthService) RegisterByUsername(
 		if !errors.Is(err, database.ErrNotFound) {
 			return err
 		}
+	}
+
+	tx, err := s.db.Transaction(ctx, pgx.TxOptions{
+		IsoLevel: pgx.ReadCommitted,
+	})
+	if err != nil {
+		return &database.ErrOpenTransaction{Err: err}
+	}
+	defer func() {
+		if rbErr := tx.Rollback(ctx); rbErr != nil &&
+			!errors.Is(rbErr, pgx.ErrTxClosed) {
+			logger.Error(n+" error on TX Rollback", zap.Error(rbErr))
+		}
+	}()
+
+	// NOTE: TRANSACTION BEGIN
+	// WARN: All below operation are within a transaction
+
+	if err = tx.Commit(ctx); err != nil {
+		logger.Error(
+			n+" error on commit",
+			zap.Bool(
+				"isRollbackError",
+				errors.Is(err, pgx.ErrTxCommitRollback),
+			),
+			zap.Error(err),
+		)
+		return err
 	}
 
 	return nil

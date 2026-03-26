@@ -18,6 +18,8 @@ type CredentialService struct {
 	repository repository.ICredentialRepository
 }
 
+type CredentialServiceProvider func(db database.DBTX) *CredentialService
+
 type CredentialServiceFactory func(
 	d database.DBTX,
 	r repository.ICredentialRepository,

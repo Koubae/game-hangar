@@ -218,7 +218,7 @@ Each `Scope(db)` gives a different `s.db`. `newCredentialRepository()` returns a
 
 ## What to avoid
 
-- Calling package `New*` from `**IdentityScope`** — breaks “swap via container only.”
+- Calling package `New`* from `**IdentityScope`** — breaks “swap via container only.”
 - `**ProviderRepository()`** return type: use `repository.IProviderRepository`, not `*repository.IProviderRepository`.
 
 ---

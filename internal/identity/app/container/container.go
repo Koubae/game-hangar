@@ -22,7 +22,7 @@ type IdentityAuthContainer interface {
 
 type IdentityAccountContainer interface {
 	AccountRepository() accountRepo.IAccountRepository
-	AccountAuthService(db database.DBTX) *accountSrv.AccountAuthService
+	AccountAuthService(db database.Connector) *accountSrv.AccountAuthService
 }
 
 type IdentityContainer interface {
@@ -218,20 +218,21 @@ func (c *AppContainer) CredentialService(
 }
 
 func (c *AppContainer) AccountAuthService(
-	db database.DBTX,
+	db database.Connector,
 ) *accountSrv.AccountAuthService {
 	if db == nil {
 		db = c.connector
 	}
 
 	providerSrv := c.ProviderService(db)
-	credentialSrv := c.CredentialService(db)
 	repository := c.AccountRepository()
 
 	return c.accountAuthServiceFactory(
 		db,
 		repository,
 		providerSrv,
-		credentialSrv,
+		func(db database.DBTX) *authSrv.CredentialService {
+			return c.CredentialService(db)
+		},
 	)
 }
