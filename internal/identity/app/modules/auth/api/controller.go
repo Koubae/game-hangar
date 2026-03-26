@@ -39,19 +39,45 @@ func (c *AuthController) RegisterByUsername(
 		return
 	}
 
-	// ctx := r.Context()
+	ctx := r.Context()
 	logger := c.container.Logger()
 	logger.Info(
 		"RegisterByUsername called",
 		zap.String("username", payload.Username),
 	)
 
-	// TODO: Remove this
+	// TODO: Remove this ---------
 	providerRepo := c.container.ProviderRepository()
 	logger.Info(
 		"provider repo",
-		zap.String("repo", fmt.Sprintf("%+v", *providerRepo)),
+		zap.String("repo", fmt.Sprintf("%+v", providerRepo)),
 	)
+
+	credRepo := c.container.CredentialRepository()
+	logger.Info(
+		"cre repo",
+		zap.String("credRepo", fmt.Sprintf("%v", credRepo)),
+	)
+
+	providerID := 1
+	credential := "account_test_1"
+	cred, err := credRepo.GetCredentialByProvider(
+		ctx,
+		c.container.DB(),
+		int64(providerID),
+		credential,
+	)
+	if err != nil {
+		logger.Warn(
+			"error while gett cred",
+			zap.String("cred", credential),
+			zap.Error(err),
+		)
+	} else {
+		logger.Info("succcess cred",
+			zap.String("cred", cred.Credential), zap.String("accID", cred.AccountID.String()))
+	}
+	// TODO: -----------------------------
 
 	service := accountService.AccountService{}
 	account, err := service.CreateAccount(payload)

@@ -13,14 +13,15 @@ import (
 
 type IdentityAuthContainer interface {
 	// ProviderService(db database.DBTX) authRepository.IProviderRepository
-	ProviderRepository() *repository.IProviderRepository
+	ProviderRepository() repository.IProviderRepository
+	CredentialRepository() repository.ICredentialRepository
 }
 
 type IdentityContainer interface {
 	di.Container
 	IdentityAuthContainer
 
-	WithDB() Scope
+	WithDB(db database.DBTX) Scope
 	DB() *postgres.ConnectorPostgres
 
 	// Repositories
@@ -33,6 +34,9 @@ type AppContainer struct {
 
 	// Repositories
 	providerRepository repository.IProviderRepository
+
+	credentialRepository        repository.ICredentialRepository
+	credentialRepositoryFactory func() repository.ICredentialRepository
 }
 
 func NewAppContainer(
@@ -56,10 +60,15 @@ func NewAppContainer(
 	providerRepository := repository.NewProviderRepository()
 	providerRepository.LoadProviders(context.TODO(), connector)
 
+	credentialRepositoryFactory := func() repository.ICredentialRepository {
+		return repository.NewCredentialRepository()
+	}
+
 	return &AppContainer{
-		logger:             logger,
-		connector:          connector,
-		providerRepository: providerRepository,
+		logger:                      logger,
+		connector:                   connector,
+		providerRepository:          providerRepository,
+		credentialRepositoryFactory: credentialRepositoryFactory,
 	}, nil
 }
 
@@ -102,4 +111,12 @@ func (c *AppContainer) DB() *postgres.ConnectorPostgres {
 
 func (c *AppContainer) ProviderRepository() repository.IProviderRepository {
 	return c.providerRepository
+}
+
+func (c *AppContainer) CredentialRepository() repository.ICredentialRepository {
+	if c.credentialRepository == nil {
+		c.credentialRepository = c.credentialRepositoryFactory()
+	}
+
+	return c.credentialRepository
 }

@@ -57,7 +57,7 @@ func (p *NewAccountCredential) Validate() error {
 
 type CredentialRepository struct{}
 
-func NewCredentialRepository() *CredentialRepository {
+func NewCredentialRepository() ICredentialRepository {
 	r := &CredentialRepository{}
 	return r
 }
