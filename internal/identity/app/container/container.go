@@ -2,6 +2,7 @@ package container
 
 import (
 	accountRepo "github.com/koubae/game-hangar/internal/identity/app/modules/account/repository"
+	accountSrv "github.com/koubae/game-hangar/internal/identity/app/modules/account/service"
 	authRepo "github.com/koubae/game-hangar/internal/identity/app/modules/auth/repository"
 	authSrv "github.com/koubae/game-hangar/internal/identity/app/modules/auth/service"
 	"github.com/koubae/game-hangar/pkg/common"
@@ -21,6 +22,7 @@ type IdentityAuthContainer interface {
 
 type IdentityAccountContainer interface {
 	AccountRepository() accountRepo.IAccountRepository
+	AccountAuthService(db database.DBTX) *accountSrv.AccountAuthService
 }
 
 type IdentityContainer interface {
@@ -47,8 +49,9 @@ type AppContainer struct {
 	accountRepositoryFactory accountRepo.AccountRepositoryFactory
 
 	// NOTE: Services
-	providerServiceFactory   authSrv.ProviderServiceFactory
-	credentialServiceFactory authSrv.CredentialServiceFactory
+	providerServiceFactory    authSrv.ProviderServiceFactory
+	credentialServiceFactory  authSrv.CredentialServiceFactory
+	accountAuthServiceFactory accountSrv.AccountAuthServiceFactory
 }
 
 type AppDependencies struct {
@@ -60,6 +63,7 @@ type AppDependencies struct {
 	AccountRepositoryFactory    accountRepo.AccountRepositoryFactory
 	ProviderServiceFactory      authSrv.ProviderServiceFactory
 	CredentialServiceFactory    authSrv.CredentialServiceFactory
+	AccountAuthServiceFactory   accountSrv.AccountAuthServiceFactory
 }
 
 func NewAppContainer(
@@ -87,6 +91,7 @@ func NewAppContainer(
 		accountRepositoryFactory:    dependencies.AccountRepositoryFactory,
 		providerServiceFactory:      dependencies.ProviderServiceFactory,
 		credentialServiceFactory:    dependencies.CredentialServiceFactory,
+		accountAuthServiceFactory:   dependencies.AccountAuthServiceFactory,
 	}, nil
 }
 
@@ -115,6 +120,7 @@ func createProductionAppDependencies(appPrefix string,
 	// NOTE: Services
 	providerServiceFactory := authSrv.NewProviderService
 	credentialServiceFactory := authSrv.NewCredentialService
+	accountAuthServiceFactory := accountSrv.NewAccountAuthService
 
 	return &AppDependencies{
 		Logger:    logger,
@@ -124,8 +130,9 @@ func createProductionAppDependencies(appPrefix string,
 		CredentialRepositoryFactory: credentialRepositoryFactory,
 		AccountRepositoryFactory:    accountRepositoryFactory,
 
-		ProviderServiceFactory:   providerServiceFactory,
-		CredentialServiceFactory: credentialServiceFactory,
+		ProviderServiceFactory:    providerServiceFactory,
+		CredentialServiceFactory:  credentialServiceFactory,
+		AccountAuthServiceFactory: accountAuthServiceFactory,
 	}, nil
 }
 
@@ -208,4 +215,23 @@ func (c *AppContainer) CredentialService(
 		db = c.connector
 	}
 	return c.credentialServiceFactory(db, c.CredentialRepository())
+}
+
+func (c *AppContainer) AccountAuthService(
+	db database.DBTX,
+) *accountSrv.AccountAuthService {
+	if db == nil {
+		db = c.connector
+	}
+
+	providerSrv := c.ProviderService(db)
+	credentialSrv := c.CredentialService(db)
+	repository := c.AccountRepository()
+
+	return c.accountAuthServiceFactory(
+		db,
+		repository,
+		providerSrv,
+		credentialSrv,
+	)
 }

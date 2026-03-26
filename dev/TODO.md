@@ -29,9 +29,14 @@ Identity
       0. Does Provider exists? 
       1. Cred exists?
       2. Create Account (transaction) -> get id 
-      3. Create Credential (transaction) -> get id 
+      3. Create Credential (transaction) -> get id
 
-    * Auth type: username (JWT Access-Token)
+* AuthService 
+  1. Hash passwords & Secrets 
+  2. Create JWT Token 
+  3. Auth type: username (JWT Access-Token)
+
+* AuthRegister Controller 
 
 ### Auth API Endpoints
 

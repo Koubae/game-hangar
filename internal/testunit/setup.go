@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	identityContainer "github.com/koubae/game-hangar/internal/identity/app/container"
+	accountSrv "github.com/koubae/game-hangar/internal/identity/app/modules/account/service"
 	authSrv "github.com/koubae/game-hangar/internal/identity/app/modules/auth/service"
-
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/stretchr/testify/require"
 )
@@ -27,6 +27,7 @@ func NewTestIdentityAppContainer(t *testing.T) *identityContainer.AppContainer {
 	// NOTE: Services
 	providerServiceFactory := authSrv.NewProviderService
 	credentialServiceFactory := authSrv.NewCredentialService
+	accountAuthServiceFactory := accountSrv.NewAccountAuthService
 
 	dependencies := &identityContainer.AppDependencies{
 		Logger:    logger,
@@ -36,8 +37,9 @@ func NewTestIdentityAppContainer(t *testing.T) *identityContainer.AppContainer {
 		CredentialRepositoryFactory: credentialRepositoryFactory,
 		AccountRepositoryFactory:    accountRepositoryFactory,
 
-		ProviderServiceFactory:   providerServiceFactory,
-		CredentialServiceFactory: credentialServiceFactory,
+		ProviderServiceFactory:    providerServiceFactory,
+		CredentialServiceFactory:  credentialServiceFactory,
+		AccountAuthServiceFactory: accountAuthServiceFactory,
 	}
 
 	container, err := identityContainer.NewAppContainer(
