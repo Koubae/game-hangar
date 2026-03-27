@@ -15,7 +15,7 @@ Identity
 
 * Container Dependency Injector Provider  ✅ 
 
-* Create AccountAuth (service)
+* Create AccountAuth (service) ✅
   * Dependencies: 
     - AccountRepository
     - CredentialService 
