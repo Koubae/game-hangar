@@ -1,0 +1,143 @@
+TODO (Game Hangar)
+==================
+
+
+Identity
+========
+
+* CredRepo: Get Cred by Provider (repo) ✅
+* CredRepo: Create Credential  (repo) ✅ 
+* CredService: Create Username Creadential ✅ 
+* CredService: Get Credential by provider ✅
+
+* Create Account (repo) ✅
+* ~Create Account (service)~ ❌ ->  Create smaller and dedicated services for common Account features instead 
+
+* Container Dependency Injector Provider  ✅ 
+
+* Create AccountAuth (service) ✅
+  * Dependencies: 
+    - AccountRepository
+    - CredentialService 
+    - ProviderService 
+    - AuthService 
+      1. Hash passwords & Secrets 
+      2. Create JWT Token 
+  * Register by username
+    * Service 
+      0. Does Provider exists? 
+      1. Cred exists?
+      2. Create Account (transaction) -> get id 
+      3. Create Credential (transaction) -> get id
+
+* AuthService 
+  1. Hash passwords & Secrets 
+  2. Create JWT Token 
+  3. Auth type: username (JWT Access-Token)
+
+* AuthRegister Controller
+   * API endpoint + handler/controller
+
+### Auth API Endpoints
+
+```bash
+POST /v1/auth/register/username
+POST /v1/auth/register/email
+
+# 
+POST /v1/auth/login/username
+POST /v1/auth/login/email
+# 3rd party -- providers
+POST /v1/auth/login/steam
+POST /v1/auth/login/playstation
+POST /v1/auth/login/device
+POST /v1/auth/login/guest
+
+POST /v1/auth/refresh
+```
+
+### Account API Endpoints
+
+
+```bash
+### Account Management - Backoffice
+# List Accounts
+GET     /v1/accounts
+# Create Account
+POST    /v1/accounts
+# Get Account
+GET     /v1/accounts/{account_id}
+# Update Account
+PATCH   /v1/accounts/{account_id}
+# Delete Account
+DELETE   /v1/accounts/{account_id}
+
+# Moderation | Account status
+POST /v1/accounts/{account_id}/suspend
+POST /v1/accounts/{account_id}/restore
+POST /v1/accounts/{account_id}/ban
+POST /v1/accounts/{account_id}/unban
+
+
+# Account Management - (as User)
+# Get My Account
+GET   /v1/accounts/me
+# Update My Account
+PATCH /v1/accounts/me
+# disable account  -- soft delete
+POST /v1/accounts/me/deactivate
+
+# Manage Devices - (as User)
+GET /v1/accounts/me/devices
+GET /v1/accounts/me/devices/{device_id}
+DELETE /v1/accounts/me/devices/{device_id}
+
+### Link / Unlink Identities
+## TODO: Check this was only brain stormed a bit with GPT. but need real thought process before implementing.
+GET    /v1/accounts/me/identities
+POST   /v1/accounts/me/identities/steam
+POST   /v1/accounts/me/identities/playstation
+POST   /v1/accounts/me/identities/email
+POST   /v1/accounts/me/identities/username
+POST   /v1/accounts/me/identities/device
+
+DELETE /v1/accounts/me/identities/steam
+DELETE /v1/accounts/me/identities/playstation
+DELETE /v1/accounts/me/identities/email
+DELETE /v1/accounts/me/identities/username
+DELETE /v1/accounts/me/identities/device
+```
+
+
+
+### Create account curl
+
+
+```bash
+curl --location 'http://localhost:10000/api/v1/auth/register/username' \
+--header 'Content-Type: application/json' \
+--data '{
+  "source":   "global",
+  "username": "user-1",
+  "password": "test"
+}'
+
+curl --location 'http://localhost:10000/api/v1/auth/register/username' \
+--header 'Content-Type: application/json' \
+--data '{
+  "source":   "global",
+  "username": "account_test_1",
+  "password": "test"
+}'
+
+
+
+curl --location 'http://localhost:10000/api/v1/auth/register/username' \
+--header 'Content-Type: application/json' \
+--data '{
+  "source":   "game-1",
+  "username": "user-1",
+  "password": "test"
+}'
+```
+

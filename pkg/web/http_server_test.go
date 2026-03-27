@@ -11,11 +11,18 @@ import (
 	"time"
 
 	"github.com/koubae/game-hangar/pkg/common"
+	"github.com/koubae/game-hangar/pkg/di"
 	"github.com/rs/cors"
 	"go.uber.org/zap"
 )
 
-func testRouter(_ common.Logger, _ *common.Config, routerRegister RouterRegisterFunc) *http.Handler {
+const AppPrefix = "TESTING_"
+
+func testRouter(
+	_ di.Container,
+	_ *common.Config,
+	routerRegister RouterRegisterFunc,
+) *http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc(
 		"/", func(w http.ResponseWriter, r *http.Request) {
@@ -44,12 +51,23 @@ func testRouterRegister(mux *http.ServeMux) {
 }
 
 func TestAppInitialization(t *testing.T) {
-	app := NewHTTPApp("IDENTITY_", testRouter, testRouterRegister)
+	loggerTmp := common.CreateLogger(common.LogLevelDPanic, "")
+	config := common.NewConfig(loggerTmp, ".env.testing", AppPrefix)
+	logger := common.CreateLogger(config.LogLevel, config.LogFilePath)
+
+	container := &MockContainer{logger: logger}
+	app := NewHTTPApp(
+		AppPrefix,
+		container,
+		config,
+		testRouter,
+		testRouterRegister,
+	)
 
 	if app.Config == nil {
 		t.Fatal("Config should not be nil")
 	}
-	if app.Logger == nil {
+	if app.Container.Logger() == nil {
 		t.Fatal("Logger should not be nil")
 	}
 	if app.Server == nil {
@@ -67,7 +85,18 @@ func TestAppInitialization(t *testing.T) {
 }
 
 func TestAppStartStop(t *testing.T) {
-	app := NewHTTPApp("", testRouter, testRouterRegister)
+	loggerTmp := common.CreateLogger(common.LogLevelDPanic, "")
+	config := common.NewConfig(loggerTmp, ".env.testing", AppPrefix)
+	logger := common.CreateLogger(config.LogLevel, config.LogFilePath)
+
+	container := &MockContainer{logger: logger}
+	app := NewHTTPApp(
+		AppPrefix,
+		container,
+		config,
+		testRouter,
+		testRouterRegister,
+	)
 
 	// Use a random port to avoid conflicts
 	app.Config.Port = 0
@@ -150,7 +179,19 @@ func (m *MockLogger) Fatal(msg string, fields ...zap.Field) {
 }
 
 func TestAppStopError(t *testing.T) {
-	app := NewHTTPApp("", testRouter, testRouterRegister)
+	loggerTmp := common.CreateLogger(common.LogLevelDPanic, "")
+	config := common.NewConfig(loggerTmp, ".env.testing", AppPrefix)
+	logger := common.CreateLogger(config.LogLevel, config.LogFilePath)
+
+	container := &MockContainer{logger: logger}
+	app := NewHTTPApp(
+		AppPrefix,
+		container,
+		config,
+		testRouter,
+		testRouterRegister,
+	)
+
 	expectedErr := errors.New("shutdown error")
 	app.Server = &MockServer{
 		ShutdownFunc: func(ctx context.Context) error {
@@ -165,11 +206,21 @@ func TestAppStopError(t *testing.T) {
 }
 
 func TestAppStartError(t *testing.T) {
-	app := NewHTTPApp("", testRouter, testRouterRegister)
-	expectedErr := errors.New("listen and serve error")
+	loggerTmp := common.CreateLogger(common.LogLevelDPanic, "")
 
+	config := common.NewConfig(loggerTmp, ".env.testing", AppPrefix)
 	mockLogger := &MockLogger{}
-	app.Logger = mockLogger
+
+	container := &MockContainer{logger: mockLogger}
+	app := NewHTTPApp(
+		AppPrefix,
+		container,
+		config,
+		testRouter,
+		testRouterRegister,
+	)
+
+	expectedErr := errors.New("listen and serve error")
 
 	app.Server = &MockServer{
 		ListenAndServeFunc: func() error {
@@ -196,7 +247,11 @@ func TestAppStartError(t *testing.T) {
 	}
 
 	if mockLogger.FatalMsg != "Server failed to start" {
-		t.Errorf("expected fatal msg %q, got %q", "Server failed to start", mockLogger.FatalMsg)
+		t.Errorf(
+			"expected fatal msg %q, got %q",
+			"Server failed to start",
+			mockLogger.FatalMsg,
+		)
 	}
 
 	found := false

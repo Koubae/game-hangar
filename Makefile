@@ -1,11 +1,18 @@
 .PHONY: run build stop tests
 
+
+quickstart: init postgres-up migrate-identity-up
+	@echo "Quickstart completed successfully"
+
+
 # ============================
 # 	Run
 # ============================
 # //////////////////////
 # 	local
 # //////////////////////
+
+# -- identity
 run-identity-local:
 	@air -c .air.identity.toml
 
@@ -59,6 +66,9 @@ test-all:
 test-unit:
 	go test -v -short $(COVERAGE_PKGS) -cover
 
+test-integration:
+	go test -v ./tests/integration/... -cover
+
 # TODO: Check whether there is a better way to do this. This was AI generated and seems a mess
 # Intention here is:
 #	1) Ignore certain folders (COVERAGE_PKGS should list ONLY the actual go module that are testable)
@@ -89,3 +99,45 @@ endif
 # ============================
 # 	Scripts
 # ============================
+# //////////////////////
+# 	Ping-DB 
+# //////////////////////
+ping-db:
+	@go run ./cmd/ping-db/main.go
+
+
+# //////////////////////
+# 	Migrations
+# //////////////////////
+migrate-identity-up:
+	@go run ./migrations/identity/migrate_identity.go -action up -limit 0
+migrate-identity-down:
+	@go run ./migrations/identity/migrate_identity.go -action down -limit 0
+migrate-identity-status:
+	@go run ./migrations/identity/migrate_identity.go -action status
+
+migrate-demo-data-up:
+	@go run ./migrations/demo/migrate_demo_data.go -action up -limit 0
+migrate-demo-data-down:
+	@go run ./migrations/demo/migrate_demo_data.go -action down -limit 0
+migrate-demo-data-status:
+	@go run ./migrations/demo/migrate_demo_data.go -action status
+
+# --------------------------------
+# Test DB
+# --------------------------------
+migrate-test-identity-up:
+	@go run ./migrations/identity/migrate_identity.go -action up -limit 0 -env .env.testing -appPrefix TESTING_
+migrate-test-identity-down:
+	@go run ./migrations/identity/migrate_identity.go -action down -limit 0 -env .env.testing -appPrefix TESTING_
+migrate-test-identity-status:
+	@go run ./migrations/identity/migrate_identity.go -action status -env .env.testing -appPrefix TESTING_
+
+migrate-test-demo-data-up:
+	@go run ./migrations/demo/migrate_demo_data.go -action up -limit 0 -env .env.testing -appPrefix TESTING_
+migrate-test-demo-data-down:
+	@go run ./migrations/demo/migrate_demo_data.go -action down -limit 0 -env .env.testing -appPrefix TESTING_
+migrate-test-demo-data-status:
+	@go run ./migrations/demo/migrate_demo_data.go -action status -env .env.testing -appPrefix TESTING_
+
+

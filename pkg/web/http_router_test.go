@@ -9,6 +9,18 @@ import (
 	"go.uber.org/zap"
 )
 
+type MockContainer struct {
+	logger common.Logger
+}
+
+func (m *MockContainer) Logger() common.Logger {
+	return m.logger
+}
+
+func (m *MockContainer) Shutdown() error {
+	return nil
+}
+
 func TestRouterEndpoints(t *testing.T) {
 	logger := &routerMockLogger{}
 	config := &common.Config{
@@ -18,7 +30,7 @@ func TestRouterEndpoints(t *testing.T) {
 	}
 	routerRegister := func(mux *http.ServeMux) {}
 
-	handlerPtr := Router(logger, config, routerRegister)
+	handlerPtr := Router(&MockContainer{logger: logger}, config, routerRegister)
 	handler := *handlerPtr
 
 	tests := []struct {

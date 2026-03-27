@@ -2,9 +2,11 @@ package common
 
 import (
 	"fmt"
+	"path/filepath"
 	"slices"
 
 	"github.com/joho/godotenv"
+	vars "github.com/koubae/game-hangar"
 	"go.uber.org/zap"
 )
 
@@ -59,8 +61,10 @@ func GetConfig() *Config {
 	return config
 }
 
-func NewConfig(logger Logger, envPrefix string) *Config {
-	_ = godotenv.Load(".env")
+func NewConfig(logger Logger, envFileName string, envPrefix string) *Config {
+	if err := loadEnvFile(envFileName); err != nil {
+		logger.Panic("failed to load env file", zap.Error(err))
+	}
 
 	appName := GetEnvString(envPrefix+"APP_NAME", "unknown")
 	appVersion := GetEnvString(envPrefix+"APP_VERSION", "0.0.1-dev")
@@ -112,4 +116,11 @@ func NewConfig(logger Logger, envPrefix string) *Config {
 		CORSConfig:                 corsConfig,
 	}
 	return config
+}
+
+func loadEnvFile(envFileName string) error {
+	envPath := filepath.Join(vars.RootDir, envFileName)
+	_ = godotenv.Load(envPath)
+
+	return nil
 }

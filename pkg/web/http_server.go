@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/koubae/game-hangar/pkg/common"
+	"github.com/koubae/game-hangar/pkg/di"
 	"go.uber.org/zap"
 )
 
@@ -20,9 +21,9 @@ type Server interface {
 }
 
 type HTTPApp struct {
-	Config *common.Config
-	Logger common.Logger
-	Server Server
+	Config    *common.Config
+	Server    Server
+	Container di.Container
 }
 
 type httpServerWrapper struct {
@@ -33,13 +34,8 @@ func (s *httpServerWrapper) Handler() http.Handler {
 	return s.Server.Handler
 }
 
-func NewHTTPApp(appPrefix string, router RouterFunc, routerRegister RouterRegisterFunc) *HTTPApp {
-	loggerTmp := common.CreateLogger(common.LogLevelInfo, "")
-	config := common.NewConfig(loggerTmp, appPrefix)
-
-	logger := common.CreateLogger(config.LogLevel, config.LogFilePath)
-
-	routerHandler := router(logger, config, routerRegister)
+func NewHTTPApp(appPrefix string, container di.Container, config *common.Config, router RouterFunc, routerRegister RouterRegisterFunc) *HTTPApp {
+	routerHandler := router(container, config, routerRegister)
 	srv := &http.Server{
 		Addr:           config.GetAppURL(),
 		ReadTimeout:    time.Duration(config.ServerReadTimeout) * time.Second,
@@ -50,27 +46,20 @@ func NewHTTPApp(appPrefix string, router RouterFunc, routerRegister RouterRegist
 	}
 
 	return &HTTPApp{
-		Config: config,
-		Logger: logger,
-		Server: &httpServerWrapper{srv},
+		Config:    config,
+		Server:    &httpServerWrapper{srv},
+		Container: container,
 	}
 }
 
 func (a *HTTPApp) Start(ctx context.Context) {
-	loggerTmp := common.CreateLogger(common.LogLevelInfo, "")
-	defer func() {
-		if z, ok := a.Logger.(*common.AppLogger); ok {
-			z.LogCloser(loggerTmp, z.Logger)
-		}
-	}()
-
 	go func() {
 		if err := a.Server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			a.Logger.Fatal("Server failed to start", zap.Error(err))
+			a.Container.Logger().Fatal("Server failed to start", zap.Error(err))
 		}
 	}()
 
-	a.Logger.Info(
+	a.Container.Logger().Info(
 		"Server started",
 		zap.String("addr", a.Config.GetAppURL()),
 		zap.String("app", a.Config.GetFullName()),
@@ -89,22 +78,29 @@ func (a *HTTPApp) Start(ctx context.Context) {
 }
 
 func (a *HTTPApp) Stop() error {
+	defer func() {
+		a.Container.Logger().Info("Server has shutdown, cleaning up resources ...")
+
+		if a.Container != nil {
+			if err := a.Container.Shutdown(); err != nil {
+				a.Container.Logger().Error("Container Shutdown Failed", zap.Error(err))
+			}
+		}
+
+		a.Container.Logger().Info("Resource cleanup completed, terminating process...")
+	}()
+
 	serverShutdownGraceTimeout := time.Duration(a.Config.ServerShutdownGraceTimeout) * time.Second
-	a.Logger.Info(
+	a.Container.Logger().Info(
 		"Shutdown signal received, Shutting down server gracefully... ",
 		zap.Duration("shutdown_gracefull_timeout", serverShutdownGraceTimeout),
 	)
 	ctx, cancel := context.WithTimeout(context.Background(), serverShutdownGraceTimeout)
 	defer cancel()
 	if err := a.Server.Shutdown(ctx); err != nil {
-		a.Logger.Error("Server Shutdown Failed", zap.Error(err))
+		a.Container.Logger().Error("Server Shutdown Failed", zap.Error(err))
 		return err
 	}
 
-	a.Logger.Info("Server has shutdown, cleaning up resources ...")
-
-	// TODO: clean up resources here...
-
-	a.Logger.Info("Resource cleanup completed, terminating process...")
 	return nil
 }

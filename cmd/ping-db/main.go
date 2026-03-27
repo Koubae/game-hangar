@@ -10,7 +10,7 @@ const AppPrefix = "IDENTITY_"
 
 // Tests Database connection
 func main() {
-	config := common.NewConfig(common.CreateLogger(common.LogLevelInfo, ""), AppPrefix)
+	config := common.NewConfig(common.CreateLogger(common.LogLevelInfo, ""), ".env", AppPrefix)
 	logger := common.CreateLogger(config.LogLevel, config.LogFilePath)
 
 	logger.Info("ping-db script initialized... ")
@@ -19,7 +19,7 @@ func main() {
 	if err != nil {
 		logger.Fatal("failed to load database configuration", zap.Error(err))
 	}
-	dbPool, err := postgres.NewConnector(dbConfig)
+	dbPool, err := postgres.InitConnector(dbConfig)
 	if err != nil {
 		logger.Fatal("failed to connect to database", zap.Error(err))
 	} else if dbPool == nil {

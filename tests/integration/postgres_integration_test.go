@@ -1,11 +1,11 @@
-package tests
+package integration
 
 import (
 	"context"
 	"testing"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/joho/godotenv"
+	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/database/postgres"
 )
 
@@ -15,7 +15,11 @@ func setupTest(t *testing.T) *postgres.ConnectorPostgres {
 		t.Skip("skipping integration test in short mode")
 	}
 
-	_ = godotenv.Load("../.env.testing")
+	_ = common.NewConfig(
+		common.CreateLogger(common.LogLevelDPanic, ""),
+		".env.testing",
+		AppPrefix,
+	)
 
 	config, err := postgres.LoadConfig(AppPrefix)
 	if err != nil {
@@ -52,7 +56,7 @@ func TestIntegration_SelectQuery(t *testing.T) {
 	connector := setupTest(t)
 
 	// In integration tests, we can cast to *pgxpool.Pool to access its methods
-	// The Pool field in ConnectorPostgres is a poolInterface
+	// The Pool field in ConnectorPostgres is a PoolInterface
 
 	type queryable interface {
 		QueryRow(ctx context.Context, sql string, args ...any) pgx.Row

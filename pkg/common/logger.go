@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	vars "github.com/koubae/game-hangar"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -18,13 +19,20 @@ import (
 type LogLevel string
 
 const (
-	LogLevelDebug LogLevel = "debug"
-	LogLevelInfo  LogLevel = "info"
-	LogLevelWarn  LogLevel = "warn"
-	LogLevelError LogLevel = "error"
+	LogLevelDebug  LogLevel = "debug"
+	LogLevelInfo   LogLevel = "info"
+	LogLevelWarn   LogLevel = "warn"
+	LogLevelError  LogLevel = "error"
+	LogLevelDPanic LogLevel = "dpanic"
 )
 
-var LogLevels = [4]LogLevel{LogLevelDebug, LogLevelInfo, LogLevelWarn, LogLevelError}
+var LogLevels = [5]LogLevel{
+	LogLevelDebug,
+	LogLevelInfo,
+	LogLevelWarn,
+	LogLevelError,
+	LogLevelDPanic,
+}
 
 type Logger interface {
 	Debug(msg string, fields ...zap.Field)
@@ -63,8 +71,8 @@ func (l *AppLogger) Panic(msg string, fields ...zap.Field) {
 	l.Logger.Panic(msg, fields...)
 }
 
-func (l *AppLogger) logCloser(loggerTmp *AppLogger) {
-	err := l.Logger.Sync()
+func (l *AppLogger) LogCloser(loggerTmp Logger, z *zap.Logger) {
+	err := z.Sync()
 	if err == nil {
 		return
 	}
@@ -84,18 +92,38 @@ func (l *AppLogger) logCloser(loggerTmp *AppLogger) {
 	}
 }
 
-func (l *AppLogger) LogCloser(loggerTmp Logger, z *zap.Logger) {
-	err := z.Sync()
-	if err == nil {
-		return
-	}
-	if _, ok := errors.AsType[*fs.PathError](err); !ok {
-		loggerTmp.Error(
-			"Error while shutting down logger",
-			zap.String("type", fmt.Sprintf("%T", err)),
+func (l *AppLogger) TimeIt(level string, name string) func() {
+	lvl, err := zapcore.ParseLevel(level)
+	if err != nil {
+		l.Warn(
+			"bad log level passed to TimeIt, defaults to info",
+			zap.String("bad-level", level),
 			zap.Error(err),
 		)
+		lvl = zapcore.InfoLevel
 	}
+
+	start := time.Now()
+
+	return func() {
+		end := time.Now()
+		elapsed := end.Sub(start)
+
+		l.Log(lvl, name+" operation finished",
+			zap.Time("start", start.UTC()),
+			zap.Time("end", end.UTC()),
+			zap.String("elapsed_s", fmt.Sprintf("%.6f", elapsed.Seconds())),
+		)
+	}
+}
+
+var logger *AppLogger
+
+func GetLogger() *AppLogger {
+	if logger == nil {
+		panic("Logger not initialized")
+	}
+	return logger
 }
 
 func CreateLogger(logLevel LogLevel, filePath string) *AppLogger {
@@ -118,8 +146,12 @@ func CreateLogger(logLevel LogLevel, filePath string) *AppLogger {
 		zapLevel = zapcore.WarnLevel
 	case "error":
 		zapLevel = zapcore.ErrorLevel
+	case "dpanic":
+		zapLevel = zapcore.DPanicLevel
 	default:
-		log.Fatal("Logger level invalid, must be one of: DEBUG, INFO, WARN, or ERROR")
+		log.Fatal(
+			"Logger level invalid, must be one of: DEBUG, INFO, WARN, or ERROR",
+		)
 	}
 	level := zap.NewAtomicLevelAt(zapLevel)
 
@@ -139,34 +171,38 @@ func CreateLogger(logLevel LogLevel, filePath string) *AppLogger {
 		zapcore.NewCore(fileEncoder, fileWriter, level),
 	)
 
-	logger := zap.New(core, zap.AddStacktrace(zapcore.ErrorLevel))
-
-	appLogger := &AppLogger{
-		Logger: logger,
+	_zapLogger := zap.New(core, zap.AddStacktrace(zapcore.ErrorLevel))
+	logger = &AppLogger{
+		Logger: _zapLogger,
 	}
-	return appLogger
+	return logger
 }
 
 func utcTimeEncoder(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
 	enc.AppendString(t.UTC().Format("2006-01-02T15:04:05.000Z"))
 }
 
+// filepath: logs/app.log
+// filePathAbs: <root-dir>/logs/app.log i.e. => /home/user/project/logs/app.log
+// filePathDir: /home/user/project/logs
 func createFileLoggerWriter(filePath string) *lumberjack.Logger {
 	logger := zap.L()
-	dir := filepath.Dir(filePath)
 
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		if err := os.MkdirAll(dir, 0o755); err != nil {
+	filePathAbs := filepath.Join(vars.RootDir, filePath)
+	filePathDir := filepath.Dir(filePathAbs)
+
+	if _, err := os.Stat(filePathDir); os.IsNotExist(err) {
+		if err := os.MkdirAll(filePathDir, 0o755); err != nil {
 			logger.Panic(
 				"failed to create log directory",
-				zap.String("dir", dir),
+				zap.String("dir", filePathDir),
 				zap.Error(err),
 			)
 		}
 	}
 
 	return &lumberjack.Logger{
-		Filename:   filePath,
+		Filename:   filePathAbs,
 		MaxSize:    10, // megabytes
 		MaxBackups: 3,
 		MaxAge:     7, // days
