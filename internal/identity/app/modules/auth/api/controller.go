@@ -63,17 +63,10 @@ func (c *AuthController) RegisterByUsername(
 
 	// TODO: -----------------------------
 
-	// service := accountService.AccountService{}
-	// account, err := service.CreateAccount(payload)
-	// if err != nil {
-	// 	web.WriteBusinessErrorResponse(w, err)
-	// 	return
-	// }
-	//
 	response := dto.DTOAccount{
-		ID:       *accountID,
-		CredID:   *credID,
-		Username: payload.Username,
+		AccountID: *accountID,
+		CredID:    *credID,
+		Username:  payload.Username,
 	}
 	web.WriteJSONResponse(w, http.StatusCreated, response)
 }
