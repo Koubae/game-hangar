@@ -112,6 +112,13 @@ func createProductionAppDependencies(appPrefix string,
 		zap.String("db", connector.String()),
 	)
 
+	return LoadAppDependenciesWithDefaFactories(logger, connector)
+}
+
+func LoadAppDependenciesWithDefaFactories(
+	logger common.Logger,
+	connector *postgres.ConnectorPostgres,
+) (*AppDependencies, error) {
 	// NOTE: Repositories
 	providerRepositoryFactory := authRepo.NewProviderRepository
 	credentialRepositoryFactory := authRepo.NewCredentialRepository

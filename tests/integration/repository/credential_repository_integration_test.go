@@ -77,7 +77,7 @@ func createTestAccount(
 }
 
 func TestCredentialRepository_GetCredentialByProvider(t *testing.T) {
-	ctx, connector, tearDown := integration.DBWithCleanup(t)
+	ctx, connector, tearDown := integration.DBWithCleanup(t, true)
 	defer tearDown(integration.ResetDB)
 
 	testData := createTestAccount(t, ctx, connector)
@@ -147,7 +147,7 @@ func TestCredentialRepository_GetCredentialByProvider(t *testing.T) {
 }
 
 func TestCredentialRepository_CreateAccountCredential(t *testing.T) {
-	ctx, connector, tearDown := integration.DBWithCleanup(t)
+	ctx, connector, tearDown := integration.DBWithCleanup(t, true)
 	defer tearDown(integration.ResetDB)
 
 	testData := createTestAccount(t, ctx, connector)

@@ -6,8 +6,11 @@ import (
 	"strings"
 	"testing"
 
+	identityContainer "github.com/koubae/game-hangar/internal/identity/app/container"
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/database/postgres"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
 const AppPrefix = "TESTING_"
@@ -17,13 +20,61 @@ type (
 	DBTearDownTasks func(tasks ...DBTearDownFN)
 )
 
-func DBWithCleanup(
+func SetupTestIntegrationIdentity(
 	t *testing.T,
+) (context.Context, *identityContainer.AppContainer, DBTearDownTasks) {
+	MarkTestSlow(t)
+
+	_, logger := LoadNewConfig()
+
+	ctx, connector, tearDown := DBWithCleanup(t, false)
+
+	dependencies, err := identityContainer.LoadAppDependenciesWithDefaFactories(
+		logger,
+		connector,
+	)
+	require.NoError(t, err)
+
+	container, err := identityContainer.NewAppContainer(
+		AppPrefix,
+		logger,
+		dependencies,
+	)
+	require.NoError(t, err)
+
+	return ctx, container, func(tasks ...DBTearDownFN) {
+		t.Helper()
+
+		t.Cleanup(func() {
+			container.Logger().
+				Info("Server has shutdown, cleaning up resources ...")
+
+			if container != nil {
+				if err := container.Shutdown(); err != nil {
+					container.Logger().
+						Error("Container Shutdown Failed", zap.Error(err))
+				}
+			}
+
+			container.Logger().
+				Info("Resource cleanup completed, terminating process...")
+		})
+
+		tearDown(tasks...)
+	}
+}
+
+func DBWithCleanup(
+	t *testing.T, loadConfig bool,
 ) (context.Context, *postgres.ConnectorPostgres, DBTearDownTasks) {
-	t.Helper()
+	MarkTestSlow(t)
+
+	if loadConfig {
+		_, _ = LoadNewConfig()
+	}
 
 	ctx := context.Background()
-	connector := IntegrationTestConnector(t)
+	connector := integrationTestConnector(t)
 
 	return ctx, connector, func(tasks ...DBTearDownFN) {
 		t.Helper()
@@ -45,18 +96,7 @@ func DBWithCleanup(
 	}
 }
 
-func IntegrationTestConnector(t *testing.T) *postgres.ConnectorPostgres {
-	t.Helper()
-	if testing.Short() {
-		t.Skip("skipping integration test in short mode")
-	}
-
-	_ = common.NewConfig(
-		common.CreateLogger(common.LogLevelDPanic, ""),
-		".env.testing",
-		AppPrefix,
-	)
-
+func integrationTestConnector(t *testing.T) *postgres.ConnectorPostgres {
 	config, err := postgres.LoadConfig(AppPrefix)
 	if err != nil {
 		t.Fatalf("Failed to load config: %v", err)
@@ -82,4 +122,19 @@ func ResetDB(ctx context.Context, connector *postgres.ConnectorPostgres) error {
 	}
 
 	return nil
+}
+
+func LoadNewConfig() (*common.Config, common.Logger) {
+	loggerTmp := common.CreateLogger(common.LogLevelInfo, "")
+	config := common.NewConfig(loggerTmp, ".env.testing", AppPrefix)
+	logger := common.CreateLogger(config.LogLevel, config.LogFilePath)
+
+	return config, logger
+}
+
+func MarkTestSlow(t *testing.T) {
+	t.Helper()
+	if testing.Short() {
+		t.Skip("skipping integration test in short mode")
+	}
 }

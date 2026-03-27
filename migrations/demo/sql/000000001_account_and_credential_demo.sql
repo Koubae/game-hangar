@@ -32,6 +32,15 @@ VALUES
     (16, 'global', 'facebook',   'Facebook',            'social')
 ;
 
+INSERT INTO provider (id, source, type, display_name, category, disabled)
+VALUES
+    -- Managed
+    (17,  'global-disabled', 'username',   'Username',            'managed', true),
+    (18,  'global-disabled', 'email',      'Email',               'managed', true),
+    (19,  'global-disabled', 'device',     'Device',              'managed', true)
+;
+
+
 SELECT * FROM provider;
 
 

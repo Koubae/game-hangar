@@ -13,7 +13,7 @@ import (
 )
 
 func TestAccountRepository_CreateAccount(t *testing.T) {
-	ctx, connector, tearDown := integration.DBWithCleanup(t)
+	ctx, connector, tearDown := integration.DBWithCleanup(t, true)
 	defer tearDown(integration.ResetDB)
 
 	testID := uuid.NewString()[:8]
@@ -67,7 +67,7 @@ func TestAccountRepository_CreateAccount(t *testing.T) {
 }
 
 func TestAccountRepository_GetAccount(t *testing.T) {
-	ctx, connector, tearDown := integration.DBWithCleanup(t)
+	ctx, connector, tearDown := integration.DBWithCleanup(t, true)
 	defer tearDown(integration.ResetDB)
 
 	testID := uuid.NewString()[:8]
@@ -119,7 +119,7 @@ func TestAccountRepository_GetAccount(t *testing.T) {
 			model, err := repo.GetAccount(ctx, connector, tt.accountID)
 			if tt.errReturned != nil {
 				assert.Error(t, err)
-				assert.ErrorIs(t, tt.errReturned, err)
+				assert.ErrorIs(t, err, tt.errReturned)
 				assert.Nil(t, model)
 			} else {
 				assert.NoError(t, err)

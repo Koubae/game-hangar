@@ -12,7 +12,7 @@ import (
 )
 
 func TestProviderRepository_GetProvider(t *testing.T) {
-	_, connector, tearDown := integration.DBWithCleanup(t)
+	_, connector, tearDown := integration.DBWithCleanup(t, true)
 	defer tearDown()
 
 	tests := []struct {
@@ -153,7 +153,7 @@ func TestProviderRepository_GetProvider(t *testing.T) {
 }
 
 func TestProviderRepository_GetProviderFoundWhenCacheMiss(t *testing.T) {
-	_, connector, tearDown := integration.DBWithCleanup(t)
+	_, connector, tearDown := integration.DBWithCleanup(t, true)
 	defer tearDown()
 
 	source := "global"
@@ -184,7 +184,7 @@ func TestProviderRepository_GetProviderFoundWhenCacheMiss(t *testing.T) {
 }
 
 func TestProviderRepository_GetProviderNotFound(t *testing.T) {
-	_, connector, tearDown := integration.DBWithCleanup(t)
+	_, connector, tearDown := integration.DBWithCleanup(t, true)
 	defer tearDown()
 
 	tests := []struct {
