@@ -9,6 +9,7 @@ import (
 	identityContainer "github.com/koubae/game-hangar/internal/identity/app/container"
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/database/postgres"
+	"github.com/koubae/game-hangar/tests/testobj"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
@@ -119,6 +120,17 @@ func ResetDB(ctx context.Context, connector *postgres.ConnectorPostgres) error {
 	query := `TRUNCATE TABLE ` + tables + ` RESTART IDENTITY CASCADE`
 	if _, err := connector.SQL(ctx, query); err != nil {
 		return fmt.Errorf("truncate test tables: %w", err)
+	}
+
+	// NOTE: Re-Create Demo Data TODO: Let's improve this???
+	if _, err := connector.SQL(ctx, testobj.SQLAccountDemoData); err != nil {
+		return fmt.Errorf("error re-create account demo data, error: %w", err)
+	}
+	if _, err := connector.SQL(ctx, testobj.SQLCredentialsDemoData); err != nil {
+		return fmt.Errorf(
+			"error re-create credentials demo data, error: %w",
+			err,
+		)
 	}
 
 	return nil
