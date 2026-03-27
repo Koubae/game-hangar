@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -32,10 +33,21 @@ func (c *AuthController) RegisterByUsername(
 		web.WriteBusinessErrorResponse(
 			w, &common.BusinessError{
 				HTTPCode: http.StatusBadRequest,
-				Message:  fmt.Sprintf("invalid json: %v", err),
+				Message:  fmt.Sprintf("invalid json: %v", err.Error()),
 			},
 		)
 		return
+	}
+
+	if err := payload.Validate(); err != nil {
+		web.WriteBusinessErrorResponse(
+			w, &common.BusinessError{
+				HTTPCode: http.StatusBadRequest,
+				Message:  fmt.Sprintf("invalid payload: %s", err.Error()),
+			},
+		)
+		return
+
 	}
 
 	ctx := r.Context()
@@ -46,11 +58,22 @@ func (c *AuthController) RegisterByUsername(
 		zap.String("username", payload.Username),
 	)
 
-	// TODO: Remove this ---------
+	secret, err := c.container.AuthService().HashSecret(payload.Password)
+	if err != nil {
+		logger.Error(
+			"error while hasing secret during registration by username",
+			zap.Error(err),
+		)
+		web.WriteBusinessErrorResponse(
+			w, &common.BusinessError{
+				HTTPCode: http.StatusInternalServerError,
+				Message:  "unexpected error occurred",
+			},
+		)
+		return
+	}
 
-	secret := payload.Password // TODO: HASHHHHHHHHH
 	accountAuthSrv := c.container.AccountAuthService(nil)
-
 	accountID, credID, err := accountAuthSrv.RegisterByUsername(
 		ctx,
 		payload.Source,
@@ -58,7 +81,25 @@ func (c *AuthController) RegisterByUsername(
 		secret,
 	)
 	if err != nil {
+		responseError := &common.BusinessError{
+			HTTPCode: http.StatusBadRequest,
+			Message: fmt.Sprintf(
+				"could not create account, error: %s",
+				err.Error(),
+			),
+		}
+		if errors.Is(err, &common.ErrServerError{}) {
+			responseError = &common.BusinessError{
+				HTTPCode: http.StatusInternalServerError,
+				Message:  "unexpected error occurred",
+			}
+		}
+		// TODO: fix errors
 		logger.Error("error while registring account", zap.Error(err))
+		// TODO: we need to idddentify whether is a client error or server error
+
+		web.WriteBusinessErrorResponse(w, responseError)
+		return
 	}
 
 	// TODO: -----------------------------

@@ -8,7 +8,7 @@ import (
 )
 
 type CreateAccountDTO struct {
-	Source   string `json:"source"`
+	Source   string `json:"source"   binding:"required"`
 	Username string `json:"username" binding:"required"`
 	Password string `json:"password" binding:"required"`
 }

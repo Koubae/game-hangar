@@ -93,7 +93,7 @@ func (s *AccountAuthService) RegisterByUsername(
 		return nil, nil, ErrRegistrationCredExists
 	} else if err != nil {
 		if !errors.Is(err, database.ErrNotFound) {
-			return nil, nil, err
+			return nil, nil, &common.ErrServerError{Err: err}
 		}
 	}
 
@@ -101,7 +101,9 @@ func (s *AccountAuthService) RegisterByUsername(
 		IsoLevel: pgx.ReadCommitted,
 	})
 	if err != nil {
-		return nil, nil, &database.ErrOpenTransaction{Err: err}
+		return nil, nil, &common.ErrServerError{
+			Err: &database.ErrOpenTransaction{Err: err},
+		}
 	}
 	defer func() {
 		if rbErr := tx.Rollback(ctx); rbErr != nil &&
@@ -118,8 +120,7 @@ func (s *AccountAuthService) RegisterByUsername(
 	id, err := s.repository.CreateAccount(ctx, tx, repository.NewAccount{
 		Username: credential,
 		Email:    nil,
-	},
-	)
+	})
 	if err != nil {
 		if errors.Is(
 			err,
@@ -131,8 +132,13 @@ func (s *AccountAuthService) RegisterByUsername(
 			return nil, nil, err
 		}
 
+		if errors.Is(err, &database.ErrDuplicate{}) {
+			logger.Debug(n+"duplicate account creation", zap.Error(err))
+			return nil, nil, err
+		}
+
 		logger.Error(n+"error while creating account", zap.Error(err))
-		return nil, nil, ErrAccountCreation
+		return nil, nil, &common.ErrServerError{Err: ErrAccountCreation}
 	}
 
 	accountID, _ := uuid.Parse(*id)
@@ -144,13 +150,14 @@ func (s *AccountAuthService) RegisterByUsername(
 		secret,
 	)
 	if err != nil {
+
 		logger.Error(
 			n+"error while creating credential, rolling back account",
 			zap.String("accountID", *id),
 			zap.Error(err),
 		)
-
 		return nil, nil, err
+
 	}
 
 	if err = tx.Commit(ctx); err != nil {
