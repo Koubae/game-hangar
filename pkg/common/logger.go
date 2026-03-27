@@ -171,7 +171,10 @@ func CreateLogger(logLevel LogLevel, filePath string) *AppLogger {
 		zapcore.NewCore(fileEncoder, fileWriter, level),
 	)
 
-	_zapLogger := zap.New(core, zap.AddStacktrace(zapcore.ErrorLevel))
+	_zapLogger := zap.New(
+		core,
+		zap.AddStacktrace(zapcore.DPanicLevel),
+	) // TODO: Make this configurable!!!
 	logger = &AppLogger{
 		Logger: _zapLogger,
 	}
