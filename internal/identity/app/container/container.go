@@ -16,6 +16,7 @@ type IdentityAuthContainer interface {
 	ProviderRepository() authRepo.IProviderRepository
 	CredentialRepository() authRepo.ICredentialRepository
 
+	AuthService() *authSrv.AuthService
 	ProviderService(db database.DBTX) *authSrv.ProviderService
 	CredentialService(db database.DBTX) *authSrv.CredentialService
 }
@@ -49,6 +50,8 @@ type AppContainer struct {
 	accountRepositoryFactory accountRepo.AccountRepositoryFactory
 
 	// NOTE: Services
+	authService               *authSrv.AuthService
+	authServiceFactory        authSrv.AuthServiceFactory
 	providerServiceFactory    authSrv.ProviderServiceFactory
 	credentialServiceFactory  authSrv.CredentialServiceFactory
 	accountAuthServiceFactory accountSrv.AccountAuthServiceFactory
@@ -61,6 +64,7 @@ type AppDependencies struct {
 	ProviderRepositoryFactory   authRepo.ProviderRepositoryFactory
 	CredentialRepositoryFactory authRepo.CredentialRepositoryFactory
 	AccountRepositoryFactory    accountRepo.AccountRepositoryFactory
+	AuthServiceFactory          authSrv.AuthServiceFactory
 	ProviderServiceFactory      authSrv.ProviderServiceFactory
 	CredentialServiceFactory    authSrv.CredentialServiceFactory
 	AccountAuthServiceFactory   accountSrv.AccountAuthServiceFactory
@@ -89,6 +93,7 @@ func NewAppContainer(
 		providerRepositoryFactory:   dependencies.ProviderRepositoryFactory,
 		credentialRepositoryFactory: dependencies.CredentialRepositoryFactory,
 		accountRepositoryFactory:    dependencies.AccountRepositoryFactory,
+		authServiceFactory:          dependencies.AuthServiceFactory,
 		providerServiceFactory:      dependencies.ProviderServiceFactory,
 		credentialServiceFactory:    dependencies.CredentialServiceFactory,
 		accountAuthServiceFactory:   dependencies.AccountAuthServiceFactory,
@@ -125,6 +130,7 @@ func LoadAppDependenciesWithDefaFactories(
 	accountRepositoryFactory := accountRepo.NewAccountRepository
 
 	// NOTE: Services
+	authServiceFactory := authSrv.NewAuthService
 	providerServiceFactory := authSrv.NewProviderService
 	credentialServiceFactory := authSrv.NewCredentialService
 	accountAuthServiceFactory := accountSrv.NewAccountAuthService
@@ -137,6 +143,7 @@ func LoadAppDependenciesWithDefaFactories(
 		CredentialRepositoryFactory: credentialRepositoryFactory,
 		AccountRepositoryFactory:    accountRepositoryFactory,
 
+		AuthServiceFactory:        authServiceFactory,
 		ProviderServiceFactory:    providerServiceFactory,
 		CredentialServiceFactory:  credentialServiceFactory,
 		AccountAuthServiceFactory: accountAuthServiceFactory,
@@ -204,6 +211,13 @@ func (c *AppContainer) AccountRepository() accountRepo.IAccountRepository {
 	}
 
 	return c.accountRepository
+}
+
+func (c *AppContainer) AuthService() *authSrv.AuthService {
+	if c.authService == nil {
+		c.authService = c.authServiceFactory()
+	}
+	return c.authService
 }
 
 func (c *AppContainer) ProviderService(
