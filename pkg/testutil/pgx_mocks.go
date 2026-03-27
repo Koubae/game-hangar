@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -38,7 +39,11 @@ func (m *MockDBPool) Close() {
 	m.Called()
 }
 
-func (m *MockDBPool) Query(ctx context.Context, query string, args ...any) (pgx.Rows, error) {
+func (m *MockDBPool) Query(
+	ctx context.Context,
+	query string,
+	args ...any,
+) (pgx.Rows, error) {
 	callArgs := m.Called(append([]any{ctx, query}, args...)...)
 
 	var rows pgx.Rows
@@ -49,7 +54,11 @@ func (m *MockDBPool) Query(ctx context.Context, query string, args ...any) (pgx.
 	return rows, callArgs.Error(1)
 }
 
-func (m *MockDBPool) QueryRow(ctx context.Context, query string, args ...any) pgx.Row {
+func (m *MockDBPool) QueryRow(
+	ctx context.Context,
+	query string,
+	args ...any,
+) pgx.Row {
 	callArgs := m.Called(append([]any{ctx, query}, args...)...)
 
 	if v := callArgs.Get(0); v != nil {
@@ -59,7 +68,11 @@ func (m *MockDBPool) QueryRow(ctx context.Context, query string, args ...any) pg
 	return nil
 }
 
-func (m *MockDBPool) Exec(ctx context.Context, query string, args ...any) (pgconn.CommandTag, error) {
+func (m *MockDBPool) Exec(
+	ctx context.Context,
+	query string,
+	args ...any,
+) (pgconn.CommandTag, error) {
 	callArgs := m.Called(append([]any{ctx, query}, args...)...)
 
 	var tag pgconn.CommandTag
@@ -70,7 +83,10 @@ func (m *MockDBPool) Exec(ctx context.Context, query string, args ...any) (pgcon
 	return tag, callArgs.Error(1)
 }
 
-func (m *MockDBPool) BeginTx(ctx context.Context, txOptions pgx.TxOptions) (pgx.Tx, error) {
+func (m *MockDBPool) BeginTx(
+	ctx context.Context,
+	txOptions pgx.TxOptions,
+) (pgx.Tx, error) {
 	callArgs := m.Called(ctx, txOptions)
 
 	var tx pgx.Tx
@@ -174,3 +190,96 @@ func (m *MockRow) MockScan(argsN int, err error, values ...any) {
 		}
 	}).Return(err)
 }
+
+var DefaultStubPgxTx pgx.Tx = &stubPgxTx{}
+
+type stubPgxTx struct{}
+
+func (*stubPgxTx) Begin(ctx context.Context) (pgx.Tx, error) {
+	return DefaultStubPgxTx, nil
+}
+func (*stubPgxTx) Commit(ctx context.Context) error   { return nil }
+func (*stubPgxTx) Rollback(ctx context.Context) error { return nil }
+func (*stubPgxTx) CopyFrom(
+	ctx context.Context,
+	tableName pgx.Identifier,
+	columnNames []string,
+	rowSrc pgx.CopyFromSource,
+) (int64, error) {
+	return 0, nil
+}
+
+func (*stubPgxTx) SendBatch(
+	ctx context.Context,
+	b *pgx.Batch,
+) pgx.BatchResults {
+	return stubBatchResults{}
+}
+
+func (*stubPgxTx) LargeObjects() pgx.LargeObjects {
+	return pgx.LargeObjects{}
+}
+
+func (*stubPgxTx) Prepare(
+	ctx context.Context,
+	name, sql string,
+) (*pgconn.StatementDescription, error) {
+	return nil, errors.New("StubPgxTx: Prepare not supported")
+}
+
+func (*stubPgxTx) Exec(
+	ctx context.Context,
+	sql string,
+	arguments ...any,
+) (pgconn.CommandTag, error) {
+	return pgconn.CommandTag{}, nil
+}
+
+func (*stubPgxTx) Query(
+	ctx context.Context,
+	sql string,
+	args ...any,
+) (pgx.Rows, error) {
+	return stubRows{}, nil
+}
+
+func (*stubPgxTx) QueryRow(
+	ctx context.Context,
+	sql string,
+	args ...any,
+) pgx.Row {
+	return stubRow{}
+}
+
+func (*stubPgxTx) Conn() *pgx.Conn {
+	return nil
+}
+
+// --- helpers ---
+type stubRows struct{}
+
+func (stubRows) Close()     {}
+func (stubRows) Err() error { return nil }
+
+func (stubRows) CommandTag() pgconn.CommandTag                { return pgconn.CommandTag{} }
+func (stubRows) FieldDescriptions() []pgconn.FieldDescription { return nil }
+func (stubRows) Next() bool                                   { return false }
+func (stubRows) Scan(dest ...any) error {
+	return errors.New("stubRows: Scan after Next==false")
+}
+
+func (stubRows) Values() ([]any, error) { return nil, errors.New("stubRows: Values") }
+func (stubRows) RawValues() [][]byte    { return nil }
+func (stubRows) Conn() *pgx.Conn        { return nil }
+
+type stubRow struct{}
+
+func (stubRow) Scan(dest ...any) error { return pgx.ErrNoRows }
+
+type stubBatchResults struct{}
+
+func (stubBatchResults) Exec() (pgconn.CommandTag, error) { return pgconn.CommandTag{}, nil }
+
+func (stubBatchResults) Query() (pgx.Rows, error) { return stubRows{}, nil }
+func (stubBatchResults) QueryRow() pgx.Row        { return stubRow{} }
+func (stubBatchResults) Close() error             { return nil }

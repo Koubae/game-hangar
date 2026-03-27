@@ -18,6 +18,9 @@ var ErrDBGeneric = errors.New("mock-db-error")
 
 func MockDBConnector() *postgres.ConnectorPostgres {
 	mockPool := new(testutil.MockDBPool)
+
+	mockPool.On("BeginTx", mock.Anything, mock.Anything).
+		Return(testutil.DefaultStubPgxTx, nil)
 	connector := postgres.ConnectorPostgres{Pool: mockPool}
 	return &connector
 }
@@ -94,7 +97,9 @@ func (m *MockAccountRepository) CreateAccount(
 	params accountRepo.NewAccount,
 ) (*string, error) {
 	args := m.Called(ctx, db, params)
-	return args.Get(0).(*string), args.Error(1)
+
+	id, _ := args.Get(0).(*string)
+	return id, args.Error(1)
 }
 
 func (m *MockAccountRepository) GetAccount(
