@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"fmt"
 	"net/http"
 	"runtime/debug"
 	"time"
@@ -25,6 +26,7 @@ func (lrw *loggingResponseWriter) WriteHeader(statusCode int) {
 	lrw.wroteHeader = true
 	lrw.ResponseWriter.WriteHeader(statusCode)
 }
+
 func (lrw *loggingResponseWriter) Write(b []byte) (int, error) {
 	if !lrw.wroteHeader {
 		lrw.WriteHeader(http.StatusOK)
@@ -76,17 +78,24 @@ func RecoveryMiddleware(logger common.Logger, next http.Handler) http.Handler {
 			defer func() {
 				if rec := recover(); rec != nil {
 					lrw.status = http.StatusInternalServerError
-					http.Error(lrw, "Unexpected Server error", http.StatusInternalServerError)
+					http.Error(
+						lrw,
+						"Unexpected Server error",
+						http.StatusInternalServerError,
+					)
 
 					logger.Error(
-						"unhandled exception occurred: panic recovered in http handler",
+						fmt.Sprintf(
+							"unhandled exception occurred: panic recovered in http handler, panic: %s",
+							panicToString(rec),
+						),
 						zap.Any("panic", rec),
 						zap.String("method", r.Method),
 						zap.String("path", r.URL.Path),
 						zap.String("query", r.URL.RawQuery),
 						zap.String("remote_addr", r.RemoteAddr),
 						zap.String("user_agent", r.UserAgent()),
-						zap.ByteString("stack", debug.Stack()),
+						zap.String("stack", string(debug.Stack())),
 					)
 				}
 			}()
@@ -94,4 +103,17 @@ func RecoveryMiddleware(logger common.Logger, next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 		},
 	)
+}
+
+func panicToString(r any) string {
+	switch v := r.(type) {
+	case nil:
+		return ""
+	case error:
+		return v.Error()
+	case string:
+		return v
+	default:
+		return fmt.Sprintf("%v", v)
+	}
 }
