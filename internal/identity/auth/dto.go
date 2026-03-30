@@ -12,3 +12,9 @@ type DTOProvider struct {
 	Created     time.Time `json:"created"`
 	Updated     time.Time `json:"updated"`
 }
+
+type DTOAccountLoggedIn struct {
+	AccountID    string `json:"account_id"    binding:"required"`
+	Username     string `json:"username"      binding:"required"`
+	LoggedCredID int64  `json:"credential_id" binding:"required"`
+}

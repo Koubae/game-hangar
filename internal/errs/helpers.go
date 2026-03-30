@@ -29,3 +29,10 @@ func AppErrToClientResponseWithLog(err error, msg string, logger common.Logger) 
 	logger.L(lvl, msg, zap.Error(err))
 	return responseError
 }
+
+func DTOSchemaValidation(dto any) *AppError {
+	if err := common.DTOSchemaValidation(dto); err != nil {
+		return Wrap(InvalidPayload, err)
+	}
+	return nil
+}

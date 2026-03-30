@@ -8,6 +8,7 @@ import (
 
 	"github.com/koubae/game-hangar/internal/errs"
 	"github.com/koubae/game-hangar/internal/identity/account"
+	"github.com/koubae/game-hangar/internal/identity/auth"
 	"github.com/koubae/game-hangar/internal/identity/container"
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/web"
@@ -28,7 +29,7 @@ func (c *AuthController) RegisterByUsername(
 	w http.ResponseWriter,
 	r *http.Request,
 ) {
-	var payload account.CreateAccountDTO
+	var payload account.DTOCreateAccount
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		web.WriteBusinessErrorResponse(
 			w, &common.ClientResponseError{
@@ -81,10 +82,10 @@ func (c *AuthController) RegisterByUsername(
 		return
 	}
 
-	response := account.DTOAccount{
-		AccountID: *accountID,
-		CredID:    *credID,
-		Username:  payload.Username,
+	response := auth.DTOAccountLoggedIn{
+		AccountID:    *accountID,
+		Username:     payload.Username,
+		LoggedCredID: *credID,
 	}
 	web.WriteJSONResponse(w, http.StatusCreated, response)
 }
