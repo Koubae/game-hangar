@@ -8,7 +8,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/koubae/game-hangar/internal/errs"
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth"
-	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/repository"
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/database"
 	"go.uber.org/zap"
@@ -16,19 +15,19 @@ import (
 
 type CredentialService struct {
 	db         database.DBTX
-	repository repository.ICredentialRepository
+	repository auth.ICredentialRepository
 }
 
 type CredentialServiceProvider func(db database.DBTX) *CredentialService
 
 type CredentialServiceFactory func(
 	d database.DBTX,
-	r repository.ICredentialRepository,
+	r auth.ICredentialRepository,
 ) *CredentialService
 
 func NewCredentialService(
 	d database.DBTX,
-	r repository.ICredentialRepository,
+	r auth.ICredentialRepository,
 ) *CredentialService {
 	return &CredentialService{
 		db:         d,
@@ -59,7 +58,7 @@ func (s *CredentialService) CreateCredentialTypeUsername(
 	}
 
 	verifiedAt := time.Now().UTC()
-	params := repository.NewAccountCredential{
+	params := auth.NewAccountCredential{
 		Credential: credential,
 		AccountID:  accountID,
 		ProviderID: provider.ID,

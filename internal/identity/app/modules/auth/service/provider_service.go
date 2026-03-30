@@ -7,7 +7,6 @@ import (
 
 	"github.com/koubae/game-hangar/internal/errs"
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth"
-	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/repository"
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/database"
 	"go.uber.org/zap"
@@ -15,14 +14,14 @@ import (
 
 type ProviderService struct {
 	db         database.DBTX
-	repository repository.IProviderRepository
+	repository auth.IProviderRepository
 }
 
-type ProviderServiceFactory func(d database.DBTX, r repository.IProviderRepository) *ProviderService
+type ProviderServiceFactory func(d database.DBTX, r auth.IProviderRepository) *ProviderService
 
 func NewProviderService(
 	d database.DBTX,
-	r repository.IProviderRepository,
+	r auth.IProviderRepository,
 ) *ProviderService {
 	return &ProviderService{
 		db:         d,

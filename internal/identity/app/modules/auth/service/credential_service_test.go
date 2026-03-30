@@ -9,7 +9,6 @@ import (
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth"
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/service"
 
-	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/repository"
 	"github.com/koubae/game-hangar/internal/testunit"
 	"github.com/koubae/game-hangar/pkg/testutil"
 	"github.com/stretchr/testify/assert"
@@ -153,11 +152,11 @@ func TestCredentialService_CreateCredentialTypeUsername(t *testing.T) {
 						"CreateAccountCredential",
 						mock.Anything,
 						connector,
-						mock.AnythingOfType("repository.NewAccountCredential"),
+						mock.AnythingOfType("auth.NewAccountCredential"),
 					).
 					Run(
 						func(args mock.Arguments) {
-							params := args.Get(2).(repository.NewAccountCredential)
+							params := args.Get(2).(auth.NewAccountCredential)
 							assert.Equal(t, "password", params.SecretType)
 							assert.True(
 								t,
@@ -183,11 +182,11 @@ func TestCredentialService_CreateCredentialTypeUsername(t *testing.T) {
 						"CreateAccountCredential",
 						mock.Anything,
 						connector,
-						mock.AnythingOfType("repository.NewAccountCredential"),
+						mock.AnythingOfType("auth.NewAccountCredential"),
 					).
 					Run(
 						func(args mock.Arguments) {
-							params := args.Get(2).(repository.NewAccountCredential)
+							params := args.Get(2).(auth.NewAccountCredential)
 							assert.Equal(t, "password", params.SecretType)
 							assert.True(
 								t,
@@ -213,11 +212,11 @@ func TestCredentialService_CreateCredentialTypeUsername(t *testing.T) {
 						"CreateAccountCredential",
 						mock.Anything,
 						connector,
-						mock.AnythingOfType("repository.NewAccountCredential"),
+						mock.AnythingOfType("auth.NewAccountCredential"),
 					).
 					Run(
 						func(args mock.Arguments) {
-							params := args.Get(2).(repository.NewAccountCredential)
+							params := args.Get(2).(auth.NewAccountCredential)
 							assert.Equal(t, "password", params.SecretType)
 							assert.True(
 								t,

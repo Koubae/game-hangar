@@ -7,7 +7,6 @@ import (
 	accountModel "github.com/koubae/game-hangar/internal/identity/app/modules/account/model"
 	accountRepo "github.com/koubae/game-hangar/internal/identity/app/modules/account/repository"
 	authModel "github.com/koubae/game-hangar/internal/identity/app/modules/auth"
-	authRepo "github.com/koubae/game-hangar/internal/identity/app/modules/auth/repository"
 	"github.com/koubae/game-hangar/pkg/database"
 	"github.com/koubae/game-hangar/pkg/database/postgres"
 	"github.com/koubae/game-hangar/pkg/testutil"
@@ -29,7 +28,7 @@ type MockProviderRepository struct {
 	mock.Mock
 }
 
-func NewMockProviderRepository() authRepo.IProviderRepository {
+func NewMockProviderRepository() authModel.IProviderRepository {
 	return new(MockProviderRepository)
 }
 
@@ -56,7 +55,7 @@ type MockCredentialRepository struct {
 	mock.Mock
 }
 
-func NewMockCredentialRepository() authRepo.ICredentialRepository {
+func NewMockCredentialRepository() authModel.ICredentialRepository {
 	return new(MockCredentialRepository)
 }
 
@@ -75,7 +74,7 @@ func (m *MockCredentialRepository) GetCredentialByProvider(
 func (m *MockCredentialRepository) CreateAccountCredential(
 	ctx context.Context,
 	db database.DBTX,
-	params authRepo.NewAccountCredential,
+	params authModel.NewAccountCredential,
 ) (int64, error) {
 	args := m.Called(ctx, db, params)
 

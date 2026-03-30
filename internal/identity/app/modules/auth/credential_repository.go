@@ -1,4 +1,4 @@
-package repository
+package auth
 
 import (
 	"context"
@@ -7,7 +7,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/koubae/game-hangar/internal/errs"
-	"github.com/koubae/game-hangar/internal/identity/app/modules/auth"
 	"github.com/koubae/game-hangar/pkg/database"
 )
 
@@ -22,7 +21,7 @@ type ICredentialRepository interface {
 		db database.DBTX,
 		providerID int64,
 		credential string,
-	) (*auth.AccountCredential, error)
+	) (*AccountCredential, error)
 }
 
 type CredentialRepositoryFactory func() ICredentialRepository
@@ -111,7 +110,7 @@ func (r *CredentialRepository) GetCredentialByProvider(
 	db database.DBTX,
 	providerID int64,
 	credential string,
-) (*auth.AccountCredential, error) {
+) (*AccountCredential, error) {
 	const query = `
 	SELECT 
 			id, 
@@ -130,7 +129,7 @@ func (r *CredentialRepository) GetCredentialByProvider(
 	WHERE provider_id = $1 AND credential = $2  
  	`
 
-	var m auth.AccountCredential
+	var m AccountCredential
 	if err := db.SelectOne(ctx, query, providerID, credential).Scan(
 		&m.ID,
 		&m.Credential,

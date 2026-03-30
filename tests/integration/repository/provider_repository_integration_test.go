@@ -6,7 +6,6 @@ import (
 
 	"github.com/koubae/game-hangar/internal/errs"
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth"
-	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/repository"
 	"github.com/koubae/game-hangar/tests/integration"
 	"github.com/stretchr/testify/assert"
 )
@@ -123,7 +122,7 @@ func TestProviderRepository_GetProvider(t *testing.T) {
 		},
 	}
 
-	providerRepository := repository.NewProviderRepository()
+	providerRepository := auth.NewProviderRepository()
 	providerRepository.LoadProviders(context.Background(), connector)
 	for _, tt := range tests {
 		t.Run(
@@ -164,7 +163,7 @@ func TestProviderRepository_GetProviderFoundWhenCacheMiss(t *testing.T) {
 
 	source := "global"
 	_type := "username"
-	providerRepository := repository.NewProviderRepository()
+	providerRepository := auth.NewProviderRepository()
 	provider, err := providerRepository.GetProvider(context.Background(), connector, source, _type)
 	if err != nil {
 		t.Fatalf("Failed to get provider: %v", err)
@@ -219,7 +218,7 @@ func TestProviderRepository_GetProviderNotFound(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(
 			tt.id, func(t *testing.T) {
-				providerRepository := repository.NewProviderRepository()
+				providerRepository := auth.NewProviderRepository()
 				providerRepository.LoadProviders(context.Background(), connector)
 
 				_model, err := providerRepository.GetProvider(context.Background(), connector, tt.source, tt._type)
