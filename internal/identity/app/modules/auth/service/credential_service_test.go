@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
+	"github.com/koubae/game-hangar/internal/errs"
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/model"
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/service"
 
@@ -45,12 +46,14 @@ func TestCredentialService_GetCredentialByProvider(t *testing.T) {
 						providerID,
 						username,
 					).
-					Return(&model.AccountCredential{
-						ID:         1,
-						Credential: username,
-						AccountID:  testutil.AccountIDTest01,
-						ProviderID: 1,
-					}, nil).
+					Return(
+						&model.AccountCredential{
+							ID:         1,
+							Credential: username,
+							AccountID:  testutil.AccountIDTest01,
+							ProviderID: 1,
+						}, nil,
+					).
 					Once()
 			},
 			expected:      &username,
@@ -69,11 +72,11 @@ func TestCredentialService_GetCredentialByProvider(t *testing.T) {
 						providerID,
 						username,
 					).
-					Return(nil, database.ErrNotFound).
+					Return(nil, errs.ResourceNotFound).
 					Once()
 			},
 			expected:      nil,
-			errorReturned: database.ErrNotFound,
+			errorReturned: errs.ResourceNotFound,
 		},
 		{
 			id:         "on-db-error",
@@ -98,29 +101,29 @@ func TestCredentialService_GetCredentialByProvider(t *testing.T) {
 
 	ctx := context.Background()
 	for _, tt := range tests {
-		t.Run(tt.id, func(t *testing.T) {
-			t.Parallel()
+		t.Run(
+			tt.id, func(t *testing.T) {
+				repo := container.CredentialRepository().(*testunit.MockCredentialRepository)
+				tt.setupMock(repo)
 
-			repo := container.CredentialRepository().(*testunit.MockCredentialRepository)
-			tt.setupMock(repo)
+				_service := service.NewCredentialService(connector, repo)
 
-			service := service.NewCredentialService(connector, repo)
+				result, err := _service.GetCredentialByProvider(
+					ctx,
+					tt.provider,
+					tt.credential,
+				)
 
-			result, err := service.GetCredentialByProvider(
-				ctx,
-				tt.provider,
-				tt.credential,
-			)
-
-			if tt.errorReturned != nil {
-				assert.Error(t, err)
-				assert.ErrorIs(t, err, tt.errorReturned)
-				assert.Nil(t, result)
-			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, *tt.expected, result.Credential)
-			}
-		})
+				if tt.errorReturned != nil {
+					assert.Error(t, err)
+					assert.ErrorIs(t, err, tt.errorReturned)
+					assert.Nil(t, result)
+				} else {
+					assert.NoError(t, err)
+					assert.Equal(t, *tt.expected, result.Credential)
+				}
+			},
+		)
 	}
 }
 
@@ -147,20 +150,23 @@ func TestCredentialService_CreateCredentialTypeUsername(t *testing.T) {
 			provider:   testunit.ProviderUsername,
 			setupMock: func(repo *testunit.MockCredentialRepository) {
 				repo.
-					On("CreateAccountCredential",
+					On(
+						"CreateAccountCredential",
 						mock.Anything,
 						connector,
 						mock.AnythingOfType("repository.NewAccountCredential"),
 					).
-					Run(func(args mock.Arguments) {
-						params := args.Get(2).(repository.NewAccountCredential)
-						assert.Equal(t, "password", params.SecretType)
-						assert.True(
-							t,
-							params.Verified,
-							"CreateCredentialTypeUsername should set verified to true",
-						)
-					}).
+					Run(
+						func(args mock.Arguments) {
+							params := args.Get(2).(repository.NewAccountCredential)
+							assert.Equal(t, "password", params.SecretType)
+							assert.True(
+								t,
+								params.Verified,
+								"CreateCredentialTypeUsername should set verified to true",
+							)
+						},
+					).
 					Return(int64(9999), nil).
 					Once()
 			},
@@ -174,20 +180,23 @@ func TestCredentialService_CreateCredentialTypeUsername(t *testing.T) {
 			provider:   testunit.ProviderUsername,
 			setupMock: func(repo *testunit.MockCredentialRepository) {
 				repo.
-					On("CreateAccountCredential",
+					On(
+						"CreateAccountCredential",
 						mock.Anything,
 						connector,
 						mock.AnythingOfType("repository.NewAccountCredential"),
 					).
-					Run(func(args mock.Arguments) {
-						params := args.Get(2).(repository.NewAccountCredential)
-						assert.Equal(t, "password", params.SecretType)
-						assert.True(
-							t,
-							params.Verified,
-							"CreateCredentialTypeUsername should set verified to true",
-						)
-					}).
+					Run(
+						func(args mock.Arguments) {
+							params := args.Get(2).(repository.NewAccountCredential)
+							assert.Equal(t, "password", params.SecretType)
+							assert.True(
+								t,
+								params.Verified,
+								"CreateCredentialTypeUsername should set verified to true",
+							)
+						},
+					).
 					Return(int64(0), &database.ErrDuplicate{}).
 					Once()
 			},
@@ -201,20 +210,23 @@ func TestCredentialService_CreateCredentialTypeUsername(t *testing.T) {
 			provider:   testunit.ProviderUsername,
 			setupMock: func(repo *testunit.MockCredentialRepository) {
 				repo.
-					On("CreateAccountCredential",
+					On(
+						"CreateAccountCredential",
 						mock.Anything,
 						connector,
 						mock.AnythingOfType("repository.NewAccountCredential"),
 					).
-					Run(func(args mock.Arguments) {
-						params := args.Get(2).(repository.NewAccountCredential)
-						assert.Equal(t, "password", params.SecretType)
-						assert.True(
-							t,
-							params.Verified,
-							"CreateCredentialTypeUsername should set verified to true",
-						)
-					}).
+					Run(
+						func(args mock.Arguments) {
+							params := args.Get(2).(repository.NewAccountCredential)
+							assert.Equal(t, "password", params.SecretType)
+							assert.True(
+								t,
+								params.Verified,
+								"CreateCredentialTypeUsername should set verified to true",
+							)
+						},
+					).
 					Return(int64(0), testunit.ErrDBGeneric).
 					Once()
 			},
@@ -237,30 +249,32 @@ func TestCredentialService_CreateCredentialTypeUsername(t *testing.T) {
 
 	ctx := context.Background()
 	for _, tt := range tests {
-		t.Run(tt.id, func(t *testing.T) {
-			t.Parallel()
+		t.Run(
+			tt.id, func(t *testing.T) {
+				t.Parallel()
 
-			repo := new(testunit.MockCredentialRepository)
-			tt.setupMock(repo)
+				repo := new(testunit.MockCredentialRepository)
+				tt.setupMock(repo)
 
-			service := service.NewCredentialService(connector, repo)
+				service := service.NewCredentialService(connector, repo)
 
-			result, err := service.CreateCredentialTypeUsername(
-				ctx,
-				tt.credential,
-				tt.accountID,
-				tt.provider,
-				"secret-hash-sha256",
-			)
+				result, err := service.CreateCredentialTypeUsername(
+					ctx,
+					tt.credential,
+					tt.accountID,
+					tt.provider,
+					"secret-hash-sha256",
+				)
 
-			if tt.errorReturned != nil {
-				assert.Error(t, err)
-				assert.ErrorIs(t, err, tt.errorReturned)
-				assert.Equal(t, int64(0), result)
-			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, tt.expected, result)
-			}
-		})
+				if tt.errorReturned != nil {
+					assert.Error(t, err)
+					assert.ErrorIs(t, err, tt.errorReturned)
+					assert.Equal(t, int64(0), result)
+				} else {
+					assert.NoError(t, err)
+					assert.Equal(t, tt.expected, result)
+				}
+			},
+		)
 	}
 }

@@ -3,10 +3,10 @@ package repository
 import (
 	"context"
 	"errors"
-	"fmt"
 	"sync"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/koubae/game-hangar/internal/errs"
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/model"
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/database"
@@ -150,9 +150,15 @@ func (r *ProviderRepository) getProvider(
 		&m.Updated,
 	); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, database.ErrNotFound
+			return nil, &errs.AppError{
+				Err: errors.Join(errs.ResourceNotFound, pgx.ErrNoRows),
+				Msg: "provider not found",
+			}
 		}
-		return nil, fmt.Errorf("error while getProvider, error: %w", err)
+		return nil, &errs.AppError{
+			Err: errors.Join(errs.DBError, err),
+			Msg: "unknown error while getProvider",
+		}
 	}
 
 	return &m, nil

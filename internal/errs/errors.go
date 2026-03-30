@@ -9,6 +9,7 @@ import (
 var (
 	Unmapped = errors.New("unmapped error")
 
+	DBError           = errors.New("database error")
 	ResourceNotFound  = errors.New("resource not found")
 	ResourceDuplicate = errors.New("resource already exists")
 )
@@ -28,6 +29,8 @@ func (e *AppError) Error() string {
 	if strings.TrimSpace(e.Msg) == "" {
 		return e.Err.Error()
 	}
+
+	// TODO : check how eror msg looks like
 	return fmt.Sprintf("%s, error: %s", e.Msg, e.Err.Error())
 }
 
