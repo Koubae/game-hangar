@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/koubae/game-hangar/internal/errs"
-	accountRepo "github.com/koubae/game-hangar/internal/identity/app/modules/account/repository"
+	accountRepo "github.com/koubae/game-hangar/internal/identity/app/modules/account"
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth"
 	"github.com/koubae/game-hangar/internal/testunit"
 	"github.com/koubae/game-hangar/pkg/testutil"

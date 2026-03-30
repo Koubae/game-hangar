@@ -5,7 +5,6 @@ import (
 	"errors"
 
 	accountModel "github.com/koubae/game-hangar/internal/identity/app/modules/account"
-	accountRepo "github.com/koubae/game-hangar/internal/identity/app/modules/account/repository"
 	authModel "github.com/koubae/game-hangar/internal/identity/app/modules/auth"
 	"github.com/koubae/game-hangar/pkg/database"
 	"github.com/koubae/game-hangar/pkg/database/postgres"
@@ -86,14 +85,14 @@ type MockAccountRepository struct {
 	mock.Mock
 }
 
-func NewMockAccountRepository() accountRepo.IAccountRepository {
+func NewMockAccountRepository() accountModel.IAccountRepository {
 	return new(MockAccountRepository)
 }
 
 func (m *MockAccountRepository) CreateAccount(
 	ctx context.Context,
 	db database.DBTX,
-	params accountRepo.NewAccount,
+	params accountModel.NewAccount,
 ) (*string, error) {
 	args := m.Called(ctx, db, params)
 

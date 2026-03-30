@@ -6,7 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/koubae/game-hangar/internal/errs"
-	"github.com/koubae/game-hangar/internal/identity/app/modules/account/repository"
+	"github.com/koubae/game-hangar/internal/identity/app/modules/account"
 	"github.com/koubae/game-hangar/tests/integration"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -21,12 +21,12 @@ func TestAccountRepository_CreateAccount(t *testing.T) {
 	email1 := fmt.Sprintf("%s@integration.test", username1)
 	tests := []struct {
 		id          string
-		params      repository.NewAccount
+		params      account.NewAccount
 		errReturned error
 	}{
 		{
 			id: "account-created",
-			params: repository.NewAccount{
+			params: account.NewAccount{
 				Username: username1,
 				Email:    &email1,
 			},
@@ -34,7 +34,7 @@ func TestAccountRepository_CreateAccount(t *testing.T) {
 		},
 		{
 			id: "err-duplicate-account",
-			params: repository.NewAccount{
+			params: account.NewAccount{
 				Username: username1,
 				Email:    &email1,
 			},
@@ -42,7 +42,7 @@ func TestAccountRepository_CreateAccount(t *testing.T) {
 		},
 		{
 			id: "account-created-email-can-be-null",
-			params: repository.NewAccount{
+			params: account.NewAccount{
 				Username: "account-integration-02" + "-" + testID,
 				Email:    nil,
 			},
@@ -50,7 +50,7 @@ func TestAccountRepository_CreateAccount(t *testing.T) {
 		},
 	}
 
-	repo := repository.NewAccountRepository()
+	repo := account.NewAccountRepository()
 	for _, tt := range tests {
 		t.Run(
 			tt.id, func(t *testing.T) {
@@ -76,12 +76,12 @@ func TestAccountRepository_GetAccount(t *testing.T) {
 	username1 := "account-integration-01" + "-" + testID
 	email1 := fmt.Sprintf("%s@integration.test", username1)
 
-	repo := repository.NewAccountRepository()
+	repo := account.NewAccountRepository()
 
 	id1, err := repo.CreateAccount(
 		ctx,
 		connector,
-		repository.NewAccount{Username: username1, Email: &email1},
+		account.NewAccount{Username: username1, Email: &email1},
 	)
 	if err != nil {
 		require.NoError(t, err)

@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/koubae/game-hangar/internal/errs"
-	"github.com/koubae/game-hangar/internal/identity/app/modules/account/repository"
+	"github.com/koubae/game-hangar/internal/identity/app/modules/account"
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/database"
 	"go.uber.org/zap"
@@ -16,7 +16,7 @@ import (
 
 type AccountAuthService struct {
 	db         database.Connector
-	repository repository.IAccountRepository
+	repository account.IAccountRepository
 
 	providerSrv           *ProviderService
 	credentialSrvProvider CredentialServiceProvider
@@ -24,14 +24,14 @@ type AccountAuthService struct {
 
 type AccountAuthServiceFactory func(
 	d database.Connector,
-	r repository.IAccountRepository,
+	r account.IAccountRepository,
 	providerSrv *ProviderService,
 	credentialSrvProvider CredentialServiceProvider,
 ) *AccountAuthService
 
 func NewAccountAuthService(
 	d database.Connector,
-	r repository.IAccountRepository,
+	r account.IAccountRepository,
 	providerSrv *ProviderService,
 
 	credentialSrvProvider CredentialServiceProvider,
@@ -110,7 +110,7 @@ func (s *AccountAuthService) RegisterByUsername(
 	credServiceTX := s.credentialSrvProvider(tx)
 
 	id, err := s.repository.CreateAccount(
-		ctx, tx, repository.NewAccount{
+		ctx, tx, account.NewAccount{
 			Username: credential,
 			Email:    nil,
 		},

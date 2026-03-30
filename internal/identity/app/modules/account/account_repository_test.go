@@ -1,4 +1,4 @@
-package repository_test
+package account_test
 
 import (
 	"context"
@@ -9,7 +9,6 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/koubae/game-hangar/internal/errs"
 	"github.com/koubae/game-hangar/internal/identity/app/modules/account"
-	"github.com/koubae/game-hangar/internal/identity/app/modules/account/repository"
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/database/postgres"
 	"github.com/koubae/game-hangar/pkg/testutil"
@@ -24,14 +23,14 @@ func TestAccountRepository_CreateAccount(t *testing.T) {
 	mockedDBErr := errors.New("mocked-db-error")
 	tests := []struct {
 		id          string
-		params      *repository.NewAccount
+		params      *account.NewAccount
 		expected    string
 		errThrown   error
 		errReturned error
 	}{
 		{
 			id: "resource-created",
-			params: &repository.NewAccount{
+			params: &account.NewAccount{
 				Username: "account-01",
 				Email:    &emailTest,
 			},
@@ -41,7 +40,7 @@ func TestAccountRepository_CreateAccount(t *testing.T) {
 		},
 		{
 			id: "on-db-error-duplicate-resource",
-			params: &repository.NewAccount{
+			params: &account.NewAccount{
 				Username: "account-01",
 				Email:    &emailTest,
 			},
@@ -51,7 +50,7 @@ func TestAccountRepository_CreateAccount(t *testing.T) {
 		},
 		{
 			id: "on-db-error-any",
-			params: &repository.NewAccount{
+			params: &account.NewAccount{
 				Username: "account-01",
 				Email:    &emailTest,
 			},
@@ -81,7 +80,7 @@ func TestAccountRepository_CreateAccount(t *testing.T) {
 					Return(mockRow)
 
 				connector := postgres.ConnectorPostgres{Pool: mockPool}
-				repo := repository.NewAccountRepository()
+				repo := account.NewAccountRepository()
 
 				id, err := repo.CreateAccount(ctx, &connector, *params)
 
@@ -105,14 +104,14 @@ func TestAccountRepository_GetAccount(t *testing.T) {
 	tests := []struct {
 		id          string
 		accountID   string
-		expected    *account.Account
+		expected    *Account
 		errThrown   error
 		errReturned error
 	}{
 		{
 			id:        "record-is-found",
 			accountID: "06e1b677-a4fe-42cf-8afd-ceec867d1fa5",
-			expected: &account.Account{
+			expected: &Account{
 				ID:       "06e1b677-a4fe-42cf-8afd-ceec867d1fa5",
 				Username: "account-01",
 				Email:    &emailTest,
@@ -132,7 +131,7 @@ func TestAccountRepository_GetAccount(t *testing.T) {
 		},
 	}
 
-	modelToValues := func(s *account.Account) []any {
+	modelToValues := func(s *Account) []any {
 		if s == nil {
 			return []any{}
 		}
@@ -147,7 +146,7 @@ func TestAccountRepository_GetAccount(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	fieldsCount := reflect.TypeFor[account.Account]().NumField()
+	fieldsCount := reflect.TypeFor[Account]().NumField()
 	for _, tt := range tests {
 		t.Run(
 			tt.id, func(t *testing.T) {
@@ -164,7 +163,7 @@ func TestAccountRepository_GetAccount(t *testing.T) {
 					Return(mockRow)
 
 				connector := postgres.ConnectorPostgres{Pool: mockPool}
-				repo := repository.NewAccountRepository()
+				repo := account.NewAccountRepository()
 
 				_model, err := repo.GetAccount(ctx, &connector, tt.accountID)
 

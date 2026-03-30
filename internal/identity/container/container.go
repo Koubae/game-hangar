@@ -1,7 +1,7 @@
 package container
 
 import (
-	accountRepo "github.com/koubae/game-hangar/internal/identity/app/modules/account/repository"
+	accountRepo "github.com/koubae/game-hangar/internal/identity/app/modules/account"
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth"
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/database"
