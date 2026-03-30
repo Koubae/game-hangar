@@ -7,7 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/koubae/game-hangar/internal/errs"
-	"github.com/koubae/game-hangar/internal/identity/app/modules/auth"
+	auth2 "github.com/koubae/game-hangar/internal/identity/auth"
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/database/postgres"
 	"github.com/koubae/game-hangar/pkg/testutil"
@@ -20,7 +20,7 @@ func TestProviderRepository_GetProvider_CacheHit(t *testing.T) {
 
 	now := time.Now()
 
-	expected := &auth.Provider{
+	expected := &auth2.Provider{
 		ID:          1,
 		Source:      "global",
 		Type:        "stream",
@@ -34,8 +34,8 @@ func TestProviderRepository_GetProvider_CacheHit(t *testing.T) {
 	mockPool := new(testutil.MockDBPool)
 	connector := postgres.ConnectorPostgres{Pool: mockPool}
 
-	repo := &auth.ProviderRepository{
-		ProvidersCache: map[string]map[string]*auth.Provider{
+	repo := &auth2.ProviderRepository{
+		ProvidersCache: map[string]map[string]*auth2.Provider{
 			"global": {"steam": expected},
 		},
 	}
@@ -56,12 +56,12 @@ func TestProviderRepository_GetProvider_CacheMiss(t *testing.T) {
 
 	tests := []struct {
 		id       string
-		expected *auth.Provider
+		expected *auth2.Provider
 		err      error
 	}{
 		{
 			id: "record-is-found",
-			expected: &auth.Provider{
+			expected: &auth2.Provider{
 				ID:          2,
 				Source:      "global",
 				Type:        "email",
@@ -109,8 +109,8 @@ func TestProviderRepository_GetProvider_CacheMiss(t *testing.T) {
 
 				connector := postgres.ConnectorPostgres{Pool: mockPool}
 
-				repo := &auth.ProviderRepository{
-					ProvidersCache: map[string]map[string]*auth.Provider{
+				repo := &auth2.ProviderRepository{
+					ProvidersCache: map[string]map[string]*auth2.Provider{
 						"global": {"email": tt.expected},
 					},
 				}

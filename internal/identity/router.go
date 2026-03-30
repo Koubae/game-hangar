@@ -5,7 +5,7 @@ import (
 	"io"
 	"net/http"
 
-	authRouter "github.com/koubae/game-hangar/internal/identity/app/modules/auth/api"
+	authRouter "github.com/koubae/game-hangar/internal/identity/auth/api"
 	"github.com/koubae/game-hangar/pkg/di"
 	"github.com/koubae/game-hangar/pkg/web"
 )

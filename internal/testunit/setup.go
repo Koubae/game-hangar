@@ -3,7 +3,7 @@ package testunit
 import (
 	"testing"
 
-	"github.com/koubae/game-hangar/internal/identity/app/modules/auth"
+	auth2 "github.com/koubae/game-hangar/internal/identity/auth"
 	identityContainer "github.com/koubae/game-hangar/internal/identity/container"
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/stretchr/testify/require"
@@ -24,10 +24,10 @@ func NewTestIdentityAppContainer(t *testing.T) *identityContainer.AppContainer {
 	accountRepositoryFactory := NewMockAccountRepository
 
 	// NOTE: Services
-	authServiceFactory := auth.NewSecretsService
-	providerServiceFactory := auth.NewProviderService
-	credentialServiceFactory := auth.NewCredentialService
-	accountAuthServiceFactory := auth.NewAccountAuthService
+	authServiceFactory := auth2.NewSecretsService
+	providerServiceFactory := auth2.NewProviderService
+	credentialServiceFactory := auth2.NewCredentialService
+	accountAuthServiceFactory := auth2.NewAccountAuthService
 
 	dependencies := &identityContainer.AppDependencies{
 		Logger:    logger,
