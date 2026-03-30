@@ -2,19 +2,13 @@ package repository
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"net/mail"
 	"strings"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/koubae/game-hangar/internal/errs"
 	"github.com/koubae/game-hangar/internal/identity/app/modules/account/model"
 	"github.com/koubae/game-hangar/pkg/database"
-)
-
-var (
-	ErrUsernameRequired   = errors.New("username is required")
-	ErrInvalidEmailFormat = errors.New("invalid email format or list")
 )
 
 type IAccountRepository interface {
@@ -40,13 +34,13 @@ type NewAccount struct {
 
 func (p *NewAccount) Validate() error {
 	if strings.TrimSpace(p.Username) == "" {
-		return ErrUsernameRequired
+		return &errs.AppError{Err: errs.UsernameRequired, Msg: "username is required"}
 	}
 
 	if p.Email != nil {
 		_, err := mail.ParseAddressList(*p.Email)
 		if err != nil {
-			return ErrInvalidEmailFormat
+			return &errs.AppError{Err: errs.InvalidEmailFormat, Msg: "invalid email format"}
 		}
 	}
 
@@ -84,7 +78,8 @@ func (r *AccountRepository) CreateAccount(
 	`
 
 	var id string
-	err := db.SelectOne( // TODO: rename this. maybe we should keep same naming convention as pgx API'???
+	err := db.SelectOne(
+		// TODO: rename this. maybe we should keep same naming convention as pgx API'???
 		ctx,
 		query,
 		pgx.StrictNamedArgs{
@@ -94,7 +89,7 @@ func (r *AccountRepository) CreateAccount(
 	).
 		Scan(&id)
 	if err != nil {
-		return nil, db.MapDBErrToDomainErr(err)
+		return nil, errs.DBErrToAppErr(db.MapDBErrToDomainErr(err))
 	}
 
 	return &id, nil
@@ -126,13 +121,7 @@ func (r *AccountRepository) GetAccount(
 		&m.Created,
 		&m.Updated,
 	); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, database.ErrNotFound
-		}
-		return nil, fmt.Errorf( // TODO: Is there a way to automatically "inject" the name ?? of file? or even better struct owner?
-			"error while GetAccount, error: %w",
-			err,
-		)
+		return nil, errs.DBErrToAppErr(db.MapDBErrToDomainErr(err))
 	}
 
 	return &m, nil

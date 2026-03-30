@@ -15,6 +15,9 @@ var (
 	ResourceNotFound  = errors.New("resource not found")
 	ResourceDuplicate = errors.New("resource already exists")
 
+	UsernameRequired   = errors.New("username_required")
+	InvalidEmailFormat = errors.New("invalid_email_format")
+
 	AccountCredVerifiedAtRequired     = errors.New("verified_at_required_when_is_verified")
 	AccountCredVerifiedNilWhenIsFalse = errors.New("verified_nil_when_not_verified")
 )

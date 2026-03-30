@@ -130,19 +130,20 @@ func (s *AccountAuthService) RegisterByUsername(
 	if err != nil {
 		if errors.Is(
 			err,
-			repository.ErrUsernameRequired,
+			errs.UsernameRequired,
 		) || errors.Is(
 			err,
-			repository.ErrInvalidEmailFormat,
+			errs.InvalidEmailFormat,
 		) {
 			return nil, nil, err
 		}
 
-		if errors.Is(err, &database.ErrDuplicate{}) {
+		if errors.Is(err, errs.ResourceDuplicate) {
 			logger.Debug(n+"duplicate account creation", zap.Error(err))
 			return nil, nil, err
 		}
 
+		// TODO: should be Apperr!
 		logger.Error(n+"error while creating account", zap.Error(err))
 		return nil, nil, &common.ErrServerError{Err: ErrAccountCreation}
 	}
