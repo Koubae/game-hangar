@@ -6,7 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/koubae/game-hangar/internal/errs"
-	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/model"
+	"github.com/koubae/game-hangar/internal/identity/app/modules/auth"
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/service"
 
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/repository"
@@ -46,7 +46,7 @@ func TestCredentialService_GetCredentialByProvider(t *testing.T) {
 						username,
 					).
 					Return(
-						&model.AccountCredential{
+						&auth.AccountCredential{
 							ID:         1,
 							Credential: username,
 							AccountID:  testutil.AccountIDTest01,
@@ -137,7 +137,7 @@ func TestCredentialService_CreateCredentialTypeUsername(t *testing.T) {
 		id            string
 		credential    string
 		accountID     uuid.UUID
-		provider      *model.Provider
+		provider      *auth.Provider
 		setupMock     func(repo *testunit.MockCredentialRepository)
 		expected      int64
 		errorReturned error

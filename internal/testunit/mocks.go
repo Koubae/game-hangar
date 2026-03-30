@@ -6,7 +6,7 @@ import (
 
 	accountModel "github.com/koubae/game-hangar/internal/identity/app/modules/account/model"
 	accountRepo "github.com/koubae/game-hangar/internal/identity/app/modules/account/repository"
-	authModel "github.com/koubae/game-hangar/internal/identity/app/modules/auth/model"
+	authModel "github.com/koubae/game-hangar/internal/identity/app/modules/auth"
 	authRepo "github.com/koubae/game-hangar/internal/identity/app/modules/auth/repository"
 	"github.com/koubae/game-hangar/pkg/database"
 	"github.com/koubae/game-hangar/pkg/database/postgres"

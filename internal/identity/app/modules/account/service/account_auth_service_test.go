@@ -6,7 +6,7 @@ import (
 
 	"github.com/koubae/game-hangar/internal/errs"
 	accountRepo "github.com/koubae/game-hangar/internal/identity/app/modules/account/repository"
-	authModel "github.com/koubae/game-hangar/internal/identity/app/modules/auth/model"
+	authModel "github.com/koubae/game-hangar/internal/identity/app/modules/auth"
 	"github.com/koubae/game-hangar/internal/testunit"
 	"github.com/koubae/game-hangar/pkg/testutil"
 	"github.com/koubae/game-hangar/tests/testobj"

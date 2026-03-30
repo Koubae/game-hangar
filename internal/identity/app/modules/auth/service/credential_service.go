@@ -7,7 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/koubae/game-hangar/internal/errs"
-	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/model"
+	"github.com/koubae/game-hangar/internal/identity/app/modules/auth"
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/repository"
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/database"
@@ -40,7 +40,7 @@ func (s *CredentialService) CreateCredentialTypeUsername(
 	ctx context.Context,
 	credential string,
 	accountID uuid.UUID,
-	provider *model.Provider,
+	provider *auth.Provider,
 	secret string,
 ) (int64, error) {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
@@ -48,7 +48,7 @@ func (s *CredentialService) CreateCredentialTypeUsername(
 
 	logger := common.GetLogger()
 
-	if model.ProviderType(provider.Type) != model.Username {
+	if auth.ProviderType(provider.Type) != auth.Username {
 		logger.Warn(
 			"[CredentialService] create credential got incorrect provider type",
 			zap.String("providerSource", provider.Source),
@@ -101,7 +101,7 @@ func (s *CredentialService) GetCredentialByProvider(
 	ctx context.Context,
 	providerID int64,
 	credential string,
-) (*model.AccountCredential, error) {
+) (*auth.AccountCredential, error) {
 	return s.getCredentialByProvider(ctx, providerID, credential)
 }
 
@@ -109,7 +109,7 @@ func (s *CredentialService) getCredentialByProvider(
 	ctx context.Context,
 	providerID int64,
 	credential string,
-) (*model.AccountCredential, error) {
+) (*auth.AccountCredential, error) {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 

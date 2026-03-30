@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/koubae/game-hangar/internal/errs"
-	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/model"
+	"github.com/koubae/game-hangar/internal/identity/app/modules/auth"
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/repository"
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/database"
@@ -54,7 +54,7 @@ func (s *ProviderService) GetProvider(
 	ctx context.Context,
 	source string,
 	_type string,
-) (*model.Provider, error) {
+) (*auth.Provider, error) {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
@@ -69,7 +69,7 @@ func (s *ProviderService) GetEnabledProvider(
 	ctx context.Context,
 	source string,
 	_type string,
-) (*model.Provider, error) {
+) (*auth.Provider, error) {
 	logger := common.GetLogger()
 	provider, err := s.GetProvider(
 		ctx,

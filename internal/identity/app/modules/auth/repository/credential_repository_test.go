@@ -8,7 +8,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/koubae/game-hangar/internal/errs"
-	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/model"
+	"github.com/koubae/game-hangar/internal/identity/app/modules/auth"
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/repository"
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/database/postgres"
@@ -26,7 +26,7 @@ func TestCredentialRepository_GetCredentialByProvider(t *testing.T) {
 		id          string
 		provider    int64
 		username    string
-		expected    *model.AccountCredential
+		expected    *auth.AccountCredential
 		errThrown   error
 		errReturned error
 	}{
@@ -34,7 +34,7 @@ func TestCredentialRepository_GetCredentialByProvider(t *testing.T) {
 			id:       "record-is-found",
 			provider: providerID,
 			username: username,
-			expected: &model.AccountCredential{
+			expected: &auth.AccountCredential{
 				ID:         1,
 				Credential: username,
 				AccountID:  testutil.AccountIDTest01,
@@ -59,7 +59,7 @@ func TestCredentialRepository_GetCredentialByProvider(t *testing.T) {
 		},
 	}
 
-	modelToValues := func(s *model.AccountCredential) []any {
+	modelToValues := func(s *auth.AccountCredential) []any {
 		if s == nil {
 			return []any{}
 		}
@@ -77,7 +77,7 @@ func TestCredentialRepository_GetCredentialByProvider(t *testing.T) {
 		}
 	}
 
-	fieldsCount := reflect.TypeFor[model.AccountCredential]().NumField()
+	fieldsCount := reflect.TypeFor[auth.AccountCredential]().NumField()
 	for _, tt := range tests {
 		t.Run(
 			tt.id, func(t *testing.T) {

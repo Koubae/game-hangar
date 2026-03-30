@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/model"
+	"github.com/koubae/game-hangar/internal/identity/app/modules/auth"
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/service"
 	"github.com/koubae/game-hangar/internal/testunit"
 	"github.com/stretchr/testify/assert"
@@ -47,7 +47,7 @@ func TestProviderService_IsProviderEnabled(t *testing.T) {
 						},
 					).
 					Return(
-						&model.Provider{
+						&auth.Provider{
 							Source:   "global",
 							Type:     "steam",
 							Disabled: false,
@@ -82,7 +82,7 @@ func TestProviderService_IsProviderEnabled(t *testing.T) {
 						},
 					).
 					Return(
-						&model.Provider{
+						&auth.Provider{
 							Source:   "global",
 							Type:     "steam",
 							Disabled: true,
@@ -110,7 +110,7 @@ func TestProviderService_IsProviderEnabled(t *testing.T) {
 							)
 						},
 					).
-					Return((*model.Provider)(nil), errors.New("repository failure")).
+					Return((*auth.Provider)(nil), errors.New("repository failure")).
 					Once()
 			},
 			want: false,

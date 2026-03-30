@@ -1,4 +1,4 @@
-package model
+package auth
 
 import (
 	"time"
@@ -9,14 +9,13 @@ import (
 type ProviderType string
 
 const (
-	// Managed
 	Username ProviderType = "username"
 	Email    ProviderType = "email"
 	Device   ProviderType = "device"
-	// Anonymous
+
 	Anonymous ProviderType = "anonymous"
 	Guest     ProviderType = "guest"
-	// Platform
+
 	Steam      ProviderType = "steam"
 	Epic       ProviderType = "epic"
 	PSN        ProviderType = "psn"
@@ -24,7 +23,7 @@ const (
 	Nintendo   ProviderType = "nintendo"
 	GPG        ProviderType = "gpg"        // Google Play Games
 	GameCenter ProviderType = "gamecenter" // Apple Game Center
-	// Social
+
 	Google   ProviderType = "google"
 	Apple    ProviderType = "apple"
 	Discord  ProviderType = "discord"
