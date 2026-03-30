@@ -2,11 +2,11 @@ package api
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
 
+	"github.com/koubae/game-hangar/internal/errs"
 	"github.com/koubae/game-hangar/internal/identity/app/container"
 	"github.com/koubae/game-hangar/internal/identity/app/modules/account/dto"
 	"github.com/koubae/game-hangar/pkg/common"
@@ -31,7 +31,7 @@ func (c *AuthController) RegisterByUsername(
 	var payload dto.CreateAccountDTO
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		web.WriteBusinessErrorResponse(
-			w, &common.BusinessError{
+			w, &common.ClientResponseError{
 				HTTPCode: http.StatusBadRequest,
 				Message:  fmt.Sprintf("invalid json: %v", err.Error()),
 			},
@@ -41,13 +41,12 @@ func (c *AuthController) RegisterByUsername(
 
 	if err := payload.Validate(); err != nil {
 		web.WriteBusinessErrorResponse(
-			w, &common.BusinessError{
+			w, &common.ClientResponseError{
 				HTTPCode: http.StatusBadRequest,
 				Message:  fmt.Sprintf("invalid payload: %s", err.Error()),
 			},
 		)
 		return
-
 	}
 
 	ctx := r.Context()
@@ -60,16 +59,12 @@ func (c *AuthController) RegisterByUsername(
 
 	secret, err := c.container.AuthService().HashSecret(payload.Password)
 	if err != nil {
-		logger.Error(
-			"error while hasing secret during registration by username",
-			zap.Error(err),
+		response := errs.AppErrToClientResponseWithLog(
+			err,
+			"error while hashing secret during registration by username",
+			logger,
 		)
-		web.WriteBusinessErrorResponse(
-			w, &common.BusinessError{
-				HTTPCode: http.StatusInternalServerError,
-				Message:  "unexpected error occurred",
-			},
-		)
+		web.WriteBusinessErrorResponse(w, response)
 		return
 	}
 
@@ -81,28 +76,10 @@ func (c *AuthController) RegisterByUsername(
 		secret,
 	)
 	if err != nil {
-		responseError := &common.BusinessError{
-			HTTPCode: http.StatusBadRequest,
-			Message: fmt.Sprintf(
-				"could not create account, error: %s",
-				err.Error(),
-			),
-		}
-		if errors.Is(err, &common.ErrServerError{}) {
-			responseError = &common.BusinessError{
-				HTTPCode: http.StatusInternalServerError,
-				Message:  "unexpected error occurred",
-			}
-		}
-		// TODO: fix errors
-		logger.Error("error while registring account", zap.Error(err))
-		// TODO: we need to idddentify whether is a client error or server error
-
-		web.WriteBusinessErrorResponse(w, responseError)
+		response := errs.AppErrToClientResponseWithLog(err, "could not create account", logger)
+		web.WriteBusinessErrorResponse(w, response)
 		return
 	}
-
-	// TODO: -----------------------------
 
 	response := dto.DTOAccount{
 		AccountID: *accountID,

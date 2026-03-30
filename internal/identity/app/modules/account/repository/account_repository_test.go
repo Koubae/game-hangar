@@ -7,10 +7,10 @@ import (
 	"testing"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/koubae/game-hangar/internal/errs"
 	"github.com/koubae/game-hangar/internal/identity/app/modules/account/model"
 	"github.com/koubae/game-hangar/internal/identity/app/modules/account/repository"
 	"github.com/koubae/game-hangar/pkg/common"
-	"github.com/koubae/game-hangar/pkg/database"
 	"github.com/koubae/game-hangar/pkg/database/postgres"
 	"github.com/koubae/game-hangar/pkg/testutil"
 	"github.com/stretchr/testify/assert"
@@ -47,7 +47,7 @@ func TestAccountRepository_CreateAccount(t *testing.T) {
 			},
 			expected:    "",
 			errThrown:   testutil.DBMockErrDuplicateKey,
-			errReturned: &database.ErrDuplicate{},
+			errReturned: errs.ResourceDuplicate,
 		},
 		{
 			id: "on-db-error-any",
@@ -63,34 +63,38 @@ func TestAccountRepository_CreateAccount(t *testing.T) {
 
 	ctx := context.Background()
 	for _, tt := range tests {
-		t.Run(tt.id, func(t *testing.T) {
-			common.CreateLogger(common.LogLevelDPanic, "")
-			mockRow := new(testutil.MockRow)
-			mockRow.MockScan(1, tt.errThrown, tt.expected)
+		t.Run(
+			tt.id, func(t *testing.T) {
+				common.CreateLogger(common.LogLevelDPanic, "")
+				mockRow := new(testutil.MockRow)
+				mockRow.MockScan(1, tt.errThrown, tt.expected)
 
-			params := tt.params
+				params := tt.params
 
-			mockPool := new(testutil.MockDBPool)
-			mockPool.On("QueryRow", mock.Anything, mock.Anything, pgx.StrictNamedArgs{
-				"username": params.Username,
-				"email":    params.Email,
-			}).
-				Return(mockRow)
+				mockPool := new(testutil.MockDBPool)
+				mockPool.On(
+					"QueryRow", mock.Anything, mock.Anything, pgx.StrictNamedArgs{
+						"username": params.Username,
+						"email":    params.Email,
+					},
+				).
+					Return(mockRow)
 
-			connector := postgres.ConnectorPostgres{Pool: mockPool}
-			repo := repository.NewAccountRepository()
+				connector := postgres.ConnectorPostgres{Pool: mockPool}
+				repo := repository.NewAccountRepository()
 
-			id, err := repo.CreateAccount(ctx, &connector, *params)
+				id, err := repo.CreateAccount(ctx, &connector, *params)
 
-			if tt.errReturned != nil {
-				assert.Error(t, err)
-				assert.ErrorIs(t, err, tt.errReturned)
-				assert.Nil(t, id)
-			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, &tt.expected, id)
-			}
-		})
+				if tt.errReturned != nil {
+					assert.Error(t, err)
+					assert.ErrorAs(t, err, &tt.errReturned)
+					assert.Nil(t, id)
+				} else {
+					assert.NoError(t, err)
+					assert.Equal(t, &tt.expected, id)
+				}
+			},
+		)
 	}
 }
 
@@ -124,7 +128,7 @@ func TestAccountRepository_GetAccount(t *testing.T) {
 			accountID:   "06e1b677-a4fe-42cf-8afd-ceec867d1fa5",
 			expected:    nil,
 			errThrown:   pgx.ErrNoRows,
-			errReturned: database.ErrNotFound,
+			errReturned: errs.ResourceNotFound,
 		},
 	}
 
@@ -145,33 +149,35 @@ func TestAccountRepository_GetAccount(t *testing.T) {
 	ctx := context.Background()
 	fieldsCount := reflect.TypeFor[model.Account]().NumField()
 	for _, tt := range tests {
-		t.Run(tt.id, func(t *testing.T) {
-			common.CreateLogger(common.LogLevelDPanic, "")
-			mockRow := new(testutil.MockRow)
-			mockRow.MockScan(
-				fieldsCount,
-				tt.errThrown,
-				modelToValues(tt.expected)...,
-			)
+		t.Run(
+			tt.id, func(t *testing.T) {
+				common.CreateLogger(common.LogLevelDPanic, "")
+				mockRow := new(testutil.MockRow)
+				mockRow.MockScan(
+					fieldsCount,
+					tt.errThrown,
+					modelToValues(tt.expected)...,
+				)
 
-			mockPool := new(testutil.MockDBPool)
-			mockPool.On("QueryRow", mock.Anything, mock.Anything, pgx.StrictNamedArgs{"id": tt.accountID}).
-				Return(mockRow)
+				mockPool := new(testutil.MockDBPool)
+				mockPool.On("QueryRow", mock.Anything, mock.Anything, pgx.StrictNamedArgs{"id": tt.accountID}).
+					Return(mockRow)
 
-			connector := postgres.ConnectorPostgres{Pool: mockPool}
-			repo := repository.NewAccountRepository()
+				connector := postgres.ConnectorPostgres{Pool: mockPool}
+				repo := repository.NewAccountRepository()
 
-			model, err := repo.GetAccount(ctx, &connector, tt.accountID)
+				_model, err := repo.GetAccount(ctx, &connector, tt.accountID)
 
-			if tt.errThrown != nil {
-				assert.Error(t, err)
-				assert.ErrorIs(t, err, tt.errReturned)
-			} else {
-				assert.NoError(t, err)
-			}
+				if tt.errThrown != nil {
+					assert.Error(t, err)
+					assert.ErrorAs(t, err, &tt.errReturned)
+				} else {
+					assert.NoError(t, err)
+				}
 
-			assert.Equal(t, tt.expected, model)
-			mockPool.AssertExpectations(t)
-		})
+				assert.Equal(t, tt.expected, _model)
+				mockPool.AssertExpectations(t)
+			},
+		)
 	}
 }

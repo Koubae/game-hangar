@@ -4,12 +4,10 @@ import (
 	"context"
 	"testing"
 
+	"github.com/koubae/game-hangar/internal/errs"
 	accountRepo "github.com/koubae/game-hangar/internal/identity/app/modules/account/repository"
-	accountSrv "github.com/koubae/game-hangar/internal/identity/app/modules/account/service"
 	authModel "github.com/koubae/game-hangar/internal/identity/app/modules/auth/model"
-	authSrv "github.com/koubae/game-hangar/internal/identity/app/modules/auth/service"
 	"github.com/koubae/game-hangar/internal/testunit"
-	"github.com/koubae/game-hangar/pkg/database"
 	"github.com/koubae/game-hangar/pkg/testutil"
 	"github.com/koubae/game-hangar/tests/testobj"
 	"github.com/stretchr/testify/assert"
@@ -45,11 +43,11 @@ func TestAccountAuthService_RegisterByUsernameProviderErr(t *testing.T) {
 						"provider-does-not-exists",
 						"username",
 					).
-					Return(nil, database.ErrNotFound).
+					Return(nil, errs.ResourceNotFound).
 					Once()
 			},
 			expected:    nil,
-			errExpected: authSrv.ErrGetProvider,
+			errExpected: errs.ProviderNotFound,
 		},
 		{
 			id:         "err-on-provider-disabled",
@@ -68,37 +66,39 @@ func TestAccountAuthService_RegisterByUsernameProviderErr(t *testing.T) {
 					Once()
 			},
 			expected:    nil,
-			errExpected: authSrv.ErrProviderIsDisabled,
+			errExpected: errs.ProviderDisabled,
 		},
 	}
 
 	container := testunit.NewTestIdentityAppContainer(t)
 	ctx := context.Background()
 	for _, tt := range tests {
-		t.Run(tt.id, func(t *testing.T) {
-			t.Parallel()
+		t.Run(
+			tt.id, func(t *testing.T) {
+				t.Parallel()
 
-			repo := container.ProviderRepository().(*testunit.MockProviderRepository)
-			tt.setupMock(repo)
+				repo := container.ProviderRepository().(*testunit.MockProviderRepository)
+				tt.setupMock(repo)
 
-			service := container.AccountAuthService(nil)
-			accountID, credID, err := service.RegisterByUsername(
-				ctx,
-				tt.source,
-				tt.credential,
-				testobj.PassHash,
-			)
+				service := container.AccountAuthService(nil)
+				accountID, credID, err := service.RegisterByUsername(
+					ctx,
+					tt.source,
+					tt.credential,
+					testobj.PassHash,
+				)
 
-			if tt.errExpected != nil {
-				assert.Error(t, err)
-				assert.ErrorIs(t, err, tt.errExpected)
-				assert.Nil(t, accountID)
-				assert.Nil(t, credID)
-			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, *tt.expected, expected{accountID: accountID, credID: credID})
-			}
-		})
+				if tt.errExpected != nil {
+					assert.Error(t, err)
+					assert.ErrorIs(t, err, tt.errExpected)
+					assert.Nil(t, accountID)
+					assert.Nil(t, credID)
+				} else {
+					assert.NoError(t, err)
+					assert.Equal(t, *tt.expected, expected{accountID: accountID, credID: credID})
+				}
+			},
+		)
 	}
 }
 
@@ -131,16 +131,18 @@ func TestAccountAuthService_RegisterByUsernameCredentialErr(t *testing.T) {
 						int64(1),
 						"test-cred",
 					).
-					Return(&authModel.AccountCredential{
-						ID:         1,
-						Credential: "test-cred",
-						AccountID:  testutil.AccountIDTest01,
-						ProviderID: 1,
-					}, nil).
+					Return(
+						&authModel.AccountCredential{
+							ID:         1,
+							Credential: "test-cred",
+							AccountID:  testutil.AccountIDTest01,
+							ProviderID: 1,
+						}, nil,
+					).
 					Once()
 			},
 			expected:    nil,
-			errExpected: accountSrv.ErrRegistrationCredExists,
+			errExpected: errs.AccountCredDuplicate,
 		},
 		{
 			id:         "on-err-credential-generic-db-err",
@@ -155,11 +157,11 @@ func TestAccountAuthService_RegisterByUsernameCredentialErr(t *testing.T) {
 						int64(1),
 						"test-cred",
 					).
-					Return(nil, testunit.ErrDBGeneric).
+					Return(nil, errs.DBError).
 					Once()
 			},
 			expected:    nil,
-			errExpected: testunit.ErrDBGeneric,
+			errExpected: errs.DBError,
 		},
 	}
 
@@ -175,30 +177,32 @@ func TestAccountAuthService_RegisterByUsernameCredentialErr(t *testing.T) {
 		Return(&authModel.Provider{ID: 1, Source: "global", Type: "username", Disabled: false}, nil)
 	ctx := context.Background()
 	for _, tt := range tests {
-		t.Run(tt.id, func(t *testing.T) {
-			t.Parallel()
+		t.Run(
+			tt.id, func(t *testing.T) {
+				t.Parallel()
 
-			repo := container.CredentialRepository().(*testunit.MockCredentialRepository)
-			tt.setupMock(repo)
+				repo := container.CredentialRepository().(*testunit.MockCredentialRepository)
+				tt.setupMock(repo)
 
-			service := container.AccountAuthService(nil)
-			accountID, credID, err := service.RegisterByUsername(
-				ctx,
-				tt.source,
-				tt.credential,
-				testobj.PassHash,
-			)
+				service := container.AccountAuthService(nil)
+				accountID, credID, err := service.RegisterByUsername(
+					ctx,
+					tt.source,
+					tt.credential,
+					testobj.PassHash,
+				)
 
-			if tt.errExpected != nil {
-				assert.Error(t, err)
-				assert.ErrorIs(t, err, tt.errExpected)
-				assert.Nil(t, accountID)
-				assert.Nil(t, credID)
-			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, *tt.expected, expected{accountID: accountID, credID: credID})
-			}
-		})
+				if tt.errExpected != nil {
+					assert.Error(t, err)
+					assert.ErrorIs(t, err, tt.errExpected)
+					assert.Nil(t, accountID)
+					assert.Nil(t, credID)
+				} else {
+					assert.NoError(t, err)
+					assert.Equal(t, *tt.expected, expected{accountID: accountID, credID: credID})
+				}
+			},
+		)
 	}
 }
 
@@ -238,14 +242,13 @@ func TestAccountAuthService_RegisterByUsernameAccountAndCredentialCreation(
 							Email:    nil,
 						},
 					).
-					Return(nil, testunit.ErrDBGeneric).
+					Return(nil, errs.DBError).
 					Once()
 			},
 			setupMockCred: nil,
 			expected:      nil,
-			errExpected:   accountSrv.ErrAccountCreation,
+			errExpected:   errs.DBError,
 		},
-
 		{
 			id:         "account-credential-created",
 			source:     "global",
@@ -308,11 +311,11 @@ func TestAccountAuthService_RegisterByUsernameAccountAndCredentialCreation(
 						mock.Anything,
 						mock.Anything,
 					).
-					Return(nil, testunit.ErrDBGeneric).
+					Return(nil, errs.DBError).
 					Once()
 			},
 			expected:    nil,
-			errExpected: testunit.ErrDBGeneric,
+			errExpected: errs.DBError,
 		},
 		{
 			id:         "account-credential-created",
@@ -370,35 +373,37 @@ func TestAccountAuthService_RegisterByUsernameAccountAndCredentialCreation(
 		int64(1),
 		"test-cred",
 	).
-		Return(nil, database.ErrNotFound)
+		Return(nil, errs.ResourceNotFound)
 
 	ctx := context.Background()
 	for _, tt := range tests {
-		t.Run(tt.id, func(t *testing.T) {
-			repo := container.AccountRepository().(*testunit.MockAccountRepository)
-			tt.setupMock(repo)
+		t.Run(
+			tt.id, func(t *testing.T) {
+				repo := container.AccountRepository().(*testunit.MockAccountRepository)
+				tt.setupMock(repo)
 
-			if tt.setupMockCred != nil {
-				tt.setupMockCred(credentialRepo)
-			}
+				if tt.setupMockCred != nil {
+					tt.setupMockCred(credentialRepo)
+				}
 
-			service := container.AccountAuthService(nil)
-			accountID, credID, err := service.RegisterByUsername(
-				ctx,
-				tt.source,
-				tt.credential,
-				testobj.PassHash,
-			)
+				service := container.AccountAuthService(nil)
+				accountID, credID, err := service.RegisterByUsername(
+					ctx,
+					tt.source,
+					tt.credential,
+					testobj.PassHash,
+				)
 
-			if tt.errExpected != nil {
-				assert.Error(t, err)
-				assert.ErrorIs(t, err, tt.errExpected)
-				assert.Nil(t, accountID)
-				assert.Nil(t, credID)
-			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, *tt.expected, expected{accountID: accountID, credID: credID})
-			}
-		})
+				if tt.errExpected != nil {
+					assert.Error(t, err)
+					assert.ErrorAs(t, err, &tt.errExpected)
+					assert.Nil(t, accountID)
+					assert.Nil(t, credID)
+				} else {
+					assert.NoError(t, err)
+					assert.Equal(t, *tt.expected, expected{accountID: accountID, credID: credID})
+				}
+			},
+		)
 	}
 }

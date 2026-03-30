@@ -35,20 +35,24 @@ func TestProviderService_IsProviderEnabled(t *testing.T) {
 						"global",
 						"steam",
 					).
-					Run(func(args mock.Arguments) {
-						ctx := args.Get(0).(context.Context)
-						_, hasDeadline := ctx.Deadline()
-						assert.True(
-							t,
-							hasDeadline,
-							"expected context to have deadline",
-						)
-					}).
-					Return(&model.Provider{
-						Source:   "global",
-						Type:     "steam",
-						Disabled: false,
-					}, nil).
+					Run(
+						func(args mock.Arguments) {
+							ctx := args.Get(0).(context.Context)
+							_, hasDeadline := ctx.Deadline()
+							assert.True(
+								t,
+								hasDeadline,
+								"expected context to have deadline",
+							)
+						},
+					).
+					Return(
+						&model.Provider{
+							Source:   "global",
+							Type:     "steam",
+							Disabled: false,
+						}, nil,
+					).
 					Once()
 			},
 			want: true,
@@ -66,20 +70,24 @@ func TestProviderService_IsProviderEnabled(t *testing.T) {
 						"global",
 						"steam",
 					).
-					Run(func(args mock.Arguments) {
-						ctx := args.Get(0).(context.Context)
-						_, hasDeadline := ctx.Deadline()
-						assert.True(
-							t,
-							hasDeadline,
-							"expected context to have deadline",
-						)
-					}).
-					Return(&model.Provider{
-						Source:   "global",
-						Type:     "steam",
-						Disabled: true,
-					}, nil).
+					Run(
+						func(args mock.Arguments) {
+							ctx := args.Get(0).(context.Context)
+							_, hasDeadline := ctx.Deadline()
+							assert.True(
+								t,
+								hasDeadline,
+								"expected context to have deadline",
+							)
+						},
+					).
+					Return(
+						&model.Provider{
+							Source:   "global",
+							Type:     "steam",
+							Disabled: true,
+						}, nil,
+					).
 					Once()
 			},
 			want: false,
@@ -91,15 +99,17 @@ func TestProviderService_IsProviderEnabled(t *testing.T) {
 			setupMock: func(repo *testunit.MockProviderRepository) {
 				repo.
 					On("GetProvider", mock.Anything, mock.Anything, "global", "steam").
-					Run(func(args mock.Arguments) {
-						ctx := args.Get(0).(context.Context)
-						_, hasDeadline := ctx.Deadline()
-						assert.True(
-							t,
-							hasDeadline,
-							"expected context to have deadline",
-						)
-					}).
+					Run(
+						func(args mock.Arguments) {
+							ctx := args.Get(0).(context.Context)
+							_, hasDeadline := ctx.Deadline()
+							assert.True(
+								t,
+								hasDeadline,
+								"expected context to have deadline",
+							)
+						},
+					).
 					Return((*model.Provider)(nil), errors.New("repository failure")).
 					Once()
 			},
@@ -110,22 +120,22 @@ func TestProviderService_IsProviderEnabled(t *testing.T) {
 	container := testunit.NewTestIdentityAppContainer(t)
 	connector := container.DB()
 	for _, tt := range tests {
-		t.Run(tt.id, func(t *testing.T) {
-			t.Parallel()
+		t.Run(
+			tt.id, func(t *testing.T) {
+				repo := container.ProviderRepository().(*testunit.MockProviderRepository)
+				tt.setupMock(repo)
 
-			repo := container.ProviderRepository().(*testunit.MockProviderRepository)
-			tt.setupMock(repo)
+				svc := service.NewProviderService(connector, repo)
 
-			svc := service.NewProviderService(connector, repo)
+				got := svc.IsProviderEnabled(
+					context.Background(),
+					tt.source,
+					tt._type,
+				)
 
-			got := svc.IsProviderEnabled(
-				context.Background(),
-				tt.source,
-				tt._type,
-			)
-
-			assert.Equal(t, tt.want, got)
-			repo.AssertExpectations(t)
-		})
+				assert.Equal(t, tt.want, got)
+				repo.AssertExpectations(t)
+			},
+		)
 	}
 }

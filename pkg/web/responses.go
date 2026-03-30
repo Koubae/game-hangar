@@ -41,7 +41,7 @@ func WriteBusinessErrorResponse(w http.ResponseWriter, err error) {
 	var code int
 	var message string
 
-	if businessError, ok := errors.AsType[*common.BusinessError](err); ok {
+	if businessError, ok := errors.AsType[*common.ClientResponseError](err); ok {
 		code = businessError.HTTPCode
 		message = businessError.Message
 	} else {

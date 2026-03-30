@@ -1,6 +1,9 @@
 package service
 
-import "golang.org/x/crypto/bcrypt"
+import (
+	"github.com/koubae/game-hangar/internal/errs"
+	"golang.org/x/crypto/bcrypt"
+)
 
 type AuthService struct{}
 
@@ -14,7 +17,7 @@ func NewAuthService() *AuthService {
 func (s *AuthService) HashSecret(secret string) (string, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(secret), bcrypt.DefaultCost)
 	if err != nil {
-		return "", err
+		return "", errs.Wrap(errs.AuthSecretHash, err)
 	}
 
 	return string(hash), nil

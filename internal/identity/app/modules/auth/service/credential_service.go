@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/koubae/game-hangar/internal/errs"
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/model"
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/repository"
 	"github.com/koubae/game-hangar/pkg/common"
@@ -54,7 +55,7 @@ func (s *CredentialService) CreateCredentialTypeUsername(
 			zap.String("providerType", provider.Type),
 			zap.String("providerName", provider.DisplayName),
 		)
-		return 0, ErrCreateCredentialIncorrectProviderType
+		return 0, errs.AccountCredCreateIncorrectProviderType
 	}
 
 	verifiedAt := time.Now().UTC()
@@ -70,7 +71,7 @@ func (s *CredentialService) CreateCredentialTypeUsername(
 
 	id, err := s.repository.CreateAccountCredential(ctx, s.db, params)
 	if err != nil {
-		if !errors.Is(err, &database.ErrDuplicate{}) {
+		if !errors.Is(err, errs.ResourceDuplicate) {
 			logger.Error(
 				"[CredentialService] unexpected error while creating new credential",
 				zap.Error(err),
@@ -121,7 +122,7 @@ func (s *CredentialService) getCredentialByProvider(
 		credential,
 	)
 	if err != nil {
-		if !errors.Is(err, database.ErrNotFound) {
+		if !errors.Is(err, errs.ResourceNotFound) {
 			logger.Error(
 				"[CredentialService] error while getting credential by provider",
 				zap.Int64("providerID", providerID),

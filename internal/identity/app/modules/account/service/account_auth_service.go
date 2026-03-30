@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/koubae/game-hangar/internal/errs"
 	"github.com/koubae/game-hangar/internal/identity/app/modules/account/repository"
 	authModel "github.com/koubae/game-hangar/internal/identity/app/modules/auth/model"
 	authSrv "github.com/koubae/game-hangar/internal/identity/app/modules/auth/service"
@@ -45,28 +46,21 @@ func NewAccountAuthService(
 	}
 }
 
-var (
-	ErrRegistrationCredExists = errors.New(
-		"registration error: credential already exists",
-	)
-	ErrAccountCreation = errors.New("unexpected error while creating account")
-)
-
 func (s *AccountAuthService) RegisterByUsername(
 	ctx context.Context,
 	source string,
 	credential string,
 	secret string,
 ) (*string, *int64, error) {
-	n := "[AccountAuthService.RegisterByUsername]"
+	n := "[AccountAuthService.RegisterByUsername] "
 
 	logger := common.GetLogger()
 	defer logger.TimeIt("info", n)()
 	logger.Info(
-		n+" started ...",
+		n+"started ...",
 		zap.String("source", source),
 		zap.String("credential", credential),
-	) // TODO: This should be debug + we should mesure stats?
+	)
 
 	ctx, cancel := context.WithTimeout(ctx, 8*time.Second)
 	defer cancel()
@@ -86,59 +80,51 @@ func (s *AccountAuthService) RegisterByUsername(
 		credential,
 	)
 	if cred != nil {
-		logger.Warn(n+"attempt to create account using existing credentials",
+		logger.Warn(
+			n+"attempt to create account using existing credentials",
 			zap.String("source", source),
 			zap.String("credential", credential),
 		)
-		return nil, nil, ErrRegistrationCredExists
+		return nil, nil, errs.AccountCredDuplicate
 	} else if err != nil {
-		if !errors.Is(err, database.ErrNotFound) {
-			return nil, nil, &common.ErrServerError{Err: err}
+		if !errors.Is(err, errs.ResourceNotFound) {
+			return nil, nil, err
 		}
 	}
 
-	tx, err := s.db.Transaction(ctx, pgx.TxOptions{
-		IsoLevel: pgx.ReadCommitted,
-	})
+	tx, err := s.db.Transaction(
+		ctx, pgx.TxOptions{
+			IsoLevel: pgx.ReadCommitted,
+		},
+	)
 	if err != nil {
-		return nil, nil, &common.ErrServerError{
-			Err: &database.ErrOpenTransaction{Err: err},
-		}
+		return nil, nil, err
 	}
 	defer func() {
 		if rbErr := tx.Rollback(ctx); rbErr != nil &&
 			!errors.Is(rbErr, pgx.ErrTxClosed) {
-			logger.Error(n+" error on TX Rollback", zap.Error(rbErr))
+			logger.Error(n+"error on TX Rollback", zap.Error(rbErr))
 		}
 	}()
 
 	// NOTE: TRANSACTION BEGIN
 	// WARN: All below operation are within a transaction
-
 	credServiceTX := s.credentialSrvProvider(tx)
 
-	id, err := s.repository.CreateAccount(ctx, tx, repository.NewAccount{
-		Username: credential,
-		Email:    nil,
-	})
+	id, err := s.repository.CreateAccount(
+		ctx, tx, repository.NewAccount{
+			Username: credential,
+			Email:    nil,
+		},
+	)
 	if err != nil {
-		if errors.Is(
-			err,
-			repository.ErrUsernameRequired,
-		) || errors.Is(
-			err,
-			repository.ErrInvalidEmailFormat,
-		) {
-			return nil, nil, err
+		lvl := "error"
+		if errs.IsAny(err, errs.UsernameRequired, errs.InvalidEmailFormat, errs.ResourceDuplicate) {
+			lvl = "debug"
 		}
 
-		if errors.Is(err, &database.ErrDuplicate{}) {
-			logger.Debug(n+"duplicate account creation", zap.Error(err))
-			return nil, nil, err
-		}
-
-		logger.Error(n+"error while creating account", zap.Error(err))
-		return nil, nil, &common.ErrServerError{Err: ErrAccountCreation}
+		logger.L(lvl, n+"could not create account, rolling back account", zap.Error(err))
+		return nil, nil, err
 	}
 
 	accountID, _ := uuid.Parse(*id)
@@ -150,9 +136,13 @@ func (s *AccountAuthService) RegisterByUsername(
 		secret,
 	)
 	if err != nil {
+		lvl := "error"
+		if errs.IsAny(err, errs.AccountCredCreateIncorrectProviderType, errs.ResourceDuplicate) {
+			lvl = "debug"
+		}
 
-		logger.Error(
-			n+"error while creating credential, rolling back account",
+		logger.L(
+			lvl, n+"error while creating credential, rolling back account",
 			zap.String("accountID", *id),
 			zap.Error(err),
 		)
@@ -162,7 +152,7 @@ func (s *AccountAuthService) RegisterByUsername(
 
 	if err = tx.Commit(ctx); err != nil {
 		logger.Error(
-			n+" error on commit",
+			n+"error on commit",
 			zap.Bool(
 				"isRollbackError",
 				errors.Is(err, pgx.ErrTxCommitRollback),
@@ -172,7 +162,8 @@ func (s *AccountAuthService) RegisterByUsername(
 		return nil, nil, err
 	}
 
-	logger.Info("created new account using username credentials",
+	logger.Info(
+		"created new account using username credentials",
 		zap.String("accountID", *id),
 		zap.Int64("credentialID", credID),
 		zap.String("source", source),
