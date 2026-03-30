@@ -7,7 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/koubae/game-hangar/internal/errs"
-	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/repository"
+	"github.com/koubae/game-hangar/internal/identity/auth"
 	"github.com/koubae/game-hangar/pkg/database/postgres"
 	"github.com/koubae/game-hangar/tests/integration"
 	"github.com/stretchr/testify/assert"
@@ -119,7 +119,7 @@ func TestCredentialRepository_GetCredentialByProvider(t *testing.T) {
 		},
 	}
 
-	repo := repository.NewCredentialRepository()
+	repo := auth.NewCredentialRepository()
 	for _, tt := range tests {
 		t.Run(
 			tt.id, func(t *testing.T) {
@@ -159,12 +159,12 @@ func TestCredentialRepository_CreateAccountCredential(t *testing.T) {
 	testData := createTestAccount(t, ctx, connector)
 	tests := []struct {
 		id          string
-		params      repository.NewAccountCredential
+		params      auth.NewAccountCredential
 		errReturned error
 	}{
 		{
 			id: "credential-created",
-			params: repository.NewAccountCredential{
+			params: auth.NewAccountCredential{
 				Credential: testData.username2,
 				AccountID:  testData.accountID2UUID,
 				ProviderID: 1,
@@ -174,7 +174,7 @@ func TestCredentialRepository_CreateAccountCredential(t *testing.T) {
 		},
 		{
 			id: "err-duplicate-credential",
-			params: repository.NewAccountCredential{
+			params: auth.NewAccountCredential{
 				Credential: testData.username2,
 				AccountID:  testData.accountID2UUID,
 				ProviderID: 1,
@@ -184,7 +184,7 @@ func TestCredentialRepository_CreateAccountCredential(t *testing.T) {
 		},
 	}
 
-	repo := repository.NewCredentialRepository()
+	repo := auth.NewCredentialRepository()
 	for _, tt := range tests {
 		t.Run(
 			tt.id, func(t *testing.T) {

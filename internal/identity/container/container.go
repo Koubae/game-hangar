@@ -1,10 +1,8 @@
 package container
 
 import (
-	accountRepo "github.com/koubae/game-hangar/internal/identity/app/modules/account/repository"
-	accountSrv "github.com/koubae/game-hangar/internal/identity/app/modules/account/service"
-	authRepo "github.com/koubae/game-hangar/internal/identity/app/modules/auth/repository"
-	authSrv "github.com/koubae/game-hangar/internal/identity/app/modules/auth/service"
+	accountRepo "github.com/koubae/game-hangar/internal/identity/account"
+	auth2 "github.com/koubae/game-hangar/internal/identity/auth"
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/database"
 	"github.com/koubae/game-hangar/pkg/database/postgres"
@@ -13,17 +11,17 @@ import (
 )
 
 type IdentityAuthContainer interface {
-	ProviderRepository() authRepo.IProviderRepository
-	CredentialRepository() authRepo.ICredentialRepository
+	ProviderRepository() auth2.IProviderRepository
+	CredentialRepository() auth2.ICredentialRepository
 
-	AuthService() *authSrv.AuthService
-	ProviderService(db database.DBTX) *authSrv.ProviderService
-	CredentialService(db database.DBTX) *authSrv.CredentialService
+	AuthService() *auth2.SecretsService
+	ProviderService(db database.DBTX) *auth2.ProviderService
+	CredentialService(db database.DBTX) *auth2.CredentialService
 }
 
 type IdentityAccountContainer interface {
 	AccountRepository() accountRepo.IAccountRepository
-	AccountAuthService(db database.Connector) *accountSrv.AccountAuthService
+	AccountAuthService(db database.Connector) *auth2.AccountAuthService
 }
 
 type IdentityContainer interface {
@@ -40,34 +38,34 @@ type AppContainer struct {
 	connector *postgres.ConnectorPostgres
 
 	// NOTE: Repositories
-	providerRepository        authRepo.IProviderRepository
-	providerRepositoryFactory authRepo.ProviderRepositoryFactory
+	providerRepository        auth2.IProviderRepository
+	providerRepositoryFactory auth2.ProviderRepositoryFactory
 
-	credentialRepository        authRepo.ICredentialRepository
-	credentialRepositoryFactory authRepo.CredentialRepositoryFactory
+	credentialRepository        auth2.ICredentialRepository
+	credentialRepositoryFactory auth2.CredentialRepositoryFactory
 
 	accountRepository        accountRepo.IAccountRepository
 	accountRepositoryFactory accountRepo.AccountRepositoryFactory
 
 	// NOTE: Services
-	authService               *authSrv.AuthService
-	authServiceFactory        authSrv.AuthServiceFactory
-	providerServiceFactory    authSrv.ProviderServiceFactory
-	credentialServiceFactory  authSrv.CredentialServiceFactory
-	accountAuthServiceFactory accountSrv.AccountAuthServiceFactory
+	authService               *auth2.SecretsService
+	authServiceFactory        auth2.SecretsServiceFactory
+	providerServiceFactory    auth2.ProviderServiceFactory
+	credentialServiceFactory  auth2.CredentialServiceFactory
+	accountAuthServiceFactory auth2.AccountAuthServiceFactory
 }
 
 type AppDependencies struct {
 	Logger    common.Logger
 	Connector *postgres.ConnectorPostgres
 
-	ProviderRepositoryFactory   authRepo.ProviderRepositoryFactory
-	CredentialRepositoryFactory authRepo.CredentialRepositoryFactory
+	ProviderRepositoryFactory   auth2.ProviderRepositoryFactory
+	CredentialRepositoryFactory auth2.CredentialRepositoryFactory
 	AccountRepositoryFactory    accountRepo.AccountRepositoryFactory
-	AuthServiceFactory          authSrv.AuthServiceFactory
-	ProviderServiceFactory      authSrv.ProviderServiceFactory
-	CredentialServiceFactory    authSrv.CredentialServiceFactory
-	AccountAuthServiceFactory   accountSrv.AccountAuthServiceFactory
+	AuthServiceFactory          auth2.SecretsServiceFactory
+	ProviderServiceFactory      auth2.ProviderServiceFactory
+	CredentialServiceFactory    auth2.CredentialServiceFactory
+	AccountAuthServiceFactory   auth2.AccountAuthServiceFactory
 }
 
 func NewAppContainer(
@@ -100,7 +98,8 @@ func NewAppContainer(
 	}, nil
 }
 
-func createProductionAppDependencies(appPrefix string,
+func createProductionAppDependencies(
+	appPrefix string,
 	logger common.Logger,
 ) (*AppDependencies, error) {
 	dbConfig, err := postgres.LoadConfig(appPrefix)
@@ -125,15 +124,15 @@ func LoadAppDependenciesWithDefaFactories(
 	connector *postgres.ConnectorPostgres,
 ) (*AppDependencies, error) {
 	// NOTE: Repositories
-	providerRepositoryFactory := authRepo.NewProviderRepository
-	credentialRepositoryFactory := authRepo.NewCredentialRepository
+	providerRepositoryFactory := auth2.NewProviderRepository
+	credentialRepositoryFactory := auth2.NewCredentialRepository
 	accountRepositoryFactory := accountRepo.NewAccountRepository
 
 	// NOTE: Services
-	authServiceFactory := authSrv.NewAuthService
-	providerServiceFactory := authSrv.NewProviderService
-	credentialServiceFactory := authSrv.NewCredentialService
-	accountAuthServiceFactory := accountSrv.NewAccountAuthService
+	authServiceFactory := auth2.NewSecretsService
+	providerServiceFactory := auth2.NewProviderService
+	credentialServiceFactory := auth2.NewCredentialService
+	accountAuthServiceFactory := auth2.NewAccountAuthService
 
 	return &AppDependencies{
 		Logger:    logger,
@@ -193,11 +192,11 @@ func (c *AppContainer) DB() *postgres.ConnectorPostgres {
 // 	Dependencies Provider's Factories
 // ------------------------------------------
 
-func (c *AppContainer) ProviderRepository() authRepo.IProviderRepository {
+func (c *AppContainer) ProviderRepository() auth2.IProviderRepository {
 	return c.providerRepository
 }
 
-func (c *AppContainer) CredentialRepository() authRepo.ICredentialRepository {
+func (c *AppContainer) CredentialRepository() auth2.ICredentialRepository {
 	if c.credentialRepository == nil {
 		c.credentialRepository = c.credentialRepositoryFactory()
 	}
@@ -213,7 +212,7 @@ func (c *AppContainer) AccountRepository() accountRepo.IAccountRepository {
 	return c.accountRepository
 }
 
-func (c *AppContainer) AuthService() *authSrv.AuthService {
+func (c *AppContainer) AuthService() *auth2.SecretsService {
 	if c.authService == nil {
 		c.authService = c.authServiceFactory()
 	}
@@ -222,7 +221,7 @@ func (c *AppContainer) AuthService() *authSrv.AuthService {
 
 func (c *AppContainer) ProviderService(
 	db database.DBTX,
-) *authSrv.ProviderService {
+) *auth2.ProviderService {
 	if db == nil {
 		db = c.connector
 	}
@@ -231,7 +230,7 @@ func (c *AppContainer) ProviderService(
 
 func (c *AppContainer) CredentialService(
 	db database.DBTX,
-) *authSrv.CredentialService {
+) *auth2.CredentialService {
 	if db == nil {
 		db = c.connector
 	}
@@ -240,7 +239,7 @@ func (c *AppContainer) CredentialService(
 
 func (c *AppContainer) AccountAuthService(
 	db database.Connector,
-) *accountSrv.AccountAuthService {
+) *auth2.AccountAuthService {
 	if db == nil {
 		db = c.connector
 	}
@@ -252,7 +251,7 @@ func (c *AppContainer) AccountAuthService(
 		db,
 		repository,
 		providerSrv,
-		func(db database.DBTX) *authSrv.CredentialService {
+		func(db database.DBTX) *auth2.CredentialService {
 			return c.CredentialService(db)
 		},
 	)

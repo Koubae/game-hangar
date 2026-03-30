@@ -4,10 +4,8 @@ import (
 	"context"
 	"errors"
 
-	accountModel "github.com/koubae/game-hangar/internal/identity/app/modules/account/model"
-	accountRepo "github.com/koubae/game-hangar/internal/identity/app/modules/account/repository"
-	authModel "github.com/koubae/game-hangar/internal/identity/app/modules/auth/model"
-	authRepo "github.com/koubae/game-hangar/internal/identity/app/modules/auth/repository"
+	"github.com/koubae/game-hangar/internal/identity/account"
+	"github.com/koubae/game-hangar/internal/identity/auth"
 	"github.com/koubae/game-hangar/pkg/database"
 	"github.com/koubae/game-hangar/pkg/database/postgres"
 	"github.com/koubae/game-hangar/pkg/testutil"
@@ -29,7 +27,7 @@ type MockProviderRepository struct {
 	mock.Mock
 }
 
-func NewMockProviderRepository() authRepo.IProviderRepository {
+func NewMockProviderRepository() auth.IProviderRepository {
 	return new(MockProviderRepository)
 }
 
@@ -45,10 +43,10 @@ func (m *MockProviderRepository) GetProvider(
 	db database.DBTX,
 	source string,
 	_type string,
-) (*authModel.Provider, error) {
+) (*auth.Provider, error) {
 	args := m.Called(ctx, db, source, _type)
 
-	provider, _ := args.Get(0).(*authModel.Provider)
+	provider, _ := args.Get(0).(*auth.Provider)
 	return provider, args.Error(1)
 }
 
@@ -56,7 +54,7 @@ type MockCredentialRepository struct {
 	mock.Mock
 }
 
-func NewMockCredentialRepository() authRepo.ICredentialRepository {
+func NewMockCredentialRepository() auth.ICredentialRepository {
 	return new(MockCredentialRepository)
 }
 
@@ -65,17 +63,17 @@ func (m *MockCredentialRepository) GetCredentialByProvider(
 	db database.DBTX,
 	providerID int64,
 	credential string,
-) (*authModel.AccountCredential, error) {
+) (*auth.AccountCredential, error) {
 	args := m.Called(ctx, db, providerID, credential)
 
-	model, _ := args.Get(0).(*authModel.AccountCredential)
+	model, _ := args.Get(0).(*auth.AccountCredential)
 	return model, args.Error(1)
 }
 
 func (m *MockCredentialRepository) CreateAccountCredential(
 	ctx context.Context,
 	db database.DBTX,
-	params authRepo.NewAccountCredential,
+	params auth.NewAccountCredential,
 ) (int64, error) {
 	args := m.Called(ctx, db, params)
 
@@ -87,14 +85,14 @@ type MockAccountRepository struct {
 	mock.Mock
 }
 
-func NewMockAccountRepository() accountRepo.IAccountRepository {
+func NewMockAccountRepository() account.IAccountRepository {
 	return new(MockAccountRepository)
 }
 
 func (m *MockAccountRepository) CreateAccount(
 	ctx context.Context,
 	db database.DBTX,
-	params accountRepo.NewAccount,
+	params account.NewAccount,
 ) (*string, error) {
 	args := m.Called(ctx, db, params)
 
@@ -106,7 +104,7 @@ func (m *MockAccountRepository) GetAccount(
 	ctx context.Context,
 	db database.DBTX,
 	id string,
-) (*accountModel.Account, error) {
+) (*account.Account, error) {
 	args := m.Called(ctx, db, id)
-	return args.Get(0).(*accountModel.Account), args.Error(1)
+	return args.Get(0).(*account.Account), args.Error(1)
 }

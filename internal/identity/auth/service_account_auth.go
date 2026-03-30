@@ -1,4 +1,4 @@
-package service
+package auth
 
 import (
 	"context"
@@ -8,9 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/koubae/game-hangar/internal/errs"
-	"github.com/koubae/game-hangar/internal/identity/app/modules/account/repository"
-	authModel "github.com/koubae/game-hangar/internal/identity/app/modules/auth/model"
-	authSrv "github.com/koubae/game-hangar/internal/identity/app/modules/auth/service"
+	"github.com/koubae/game-hangar/internal/identity/account"
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/database"
 	"go.uber.org/zap"
@@ -18,25 +16,25 @@ import (
 
 type AccountAuthService struct {
 	db         database.Connector
-	repository repository.IAccountRepository
+	repository account.IAccountRepository
 
-	providerSrv           *authSrv.ProviderService
-	credentialSrvProvider authSrv.CredentialServiceProvider
+	providerSrv           *ProviderService
+	credentialSrvProvider CredentialServiceProvider
 }
 
 type AccountAuthServiceFactory func(
 	d database.Connector,
-	r repository.IAccountRepository,
-	providerSrv *authSrv.ProviderService,
-	credentialSrvProvider authSrv.CredentialServiceProvider,
+	r account.IAccountRepository,
+	providerSrv *ProviderService,
+	credentialSrvProvider CredentialServiceProvider,
 ) *AccountAuthService
 
 func NewAccountAuthService(
 	d database.Connector,
-	r repository.IAccountRepository,
-	providerSrv *authSrv.ProviderService,
+	r account.IAccountRepository,
+	providerSrv *ProviderService,
 
-	credentialSrvProvider authSrv.CredentialServiceProvider,
+	credentialSrvProvider CredentialServiceProvider,
 ) *AccountAuthService {
 	return &AccountAuthService{
 		db:                    d,
@@ -68,7 +66,7 @@ func (s *AccountAuthService) RegisterByUsername(
 	provider, err := s.providerSrv.GetEnabledProvider(
 		ctx,
 		source,
-		string(authModel.Username),
+		string(Username),
 	)
 	if err != nil {
 		return nil, nil, err
@@ -112,7 +110,7 @@ func (s *AccountAuthService) RegisterByUsername(
 	credServiceTX := s.credentialSrvProvider(tx)
 
 	id, err := s.repository.CreateAccount(
-		ctx, tx, repository.NewAccount{
+		ctx, tx, account.NewAccount{
 			Username: credential,
 			Email:    nil,
 		},

@@ -1,4 +1,4 @@
-package repository
+package auth
 
 import (
 	"context"
@@ -6,7 +6,6 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/koubae/game-hangar/internal/errs"
-	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/model"
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/database"
 	"go.uber.org/zap"
@@ -19,19 +18,19 @@ type IProviderRepository interface {
 		db database.DBTX,
 		source string,
 		_type string,
-	) (*model.Provider, error)
+	) (*Provider, error)
 }
 
 type ProviderRepositoryFactory func() IProviderRepository
 
 type ProviderRepository struct {
 	mu             sync.RWMutex
-	ProvidersCache map[string]map[string]*model.Provider
+	ProvidersCache map[string]map[string]*Provider
 }
 
 func NewProviderRepository() IProviderRepository {
 	r := &ProviderRepository{
-		ProvidersCache: make(map[string]map[string]*model.Provider),
+		ProvidersCache: make(map[string]map[string]*Provider),
 	}
 	return r
 }
@@ -54,7 +53,7 @@ func (r *ProviderRepository) LoadProviders(
 
 	r.mu.Lock()
 	for rows.Next() {
-		var p model.Provider
+		var p Provider
 		if err := rows.Scan(
 			&p.ID,
 			&p.Source,
@@ -82,7 +81,7 @@ func (r *ProviderRepository) GetProvider(
 	db database.DBTX,
 	source string,
 	_type string,
-) (*model.Provider, error) {
+) (*Provider, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -116,7 +115,7 @@ func (r *ProviderRepository) getProvider(
 	db database.DBTX,
 	source string,
 	_type string,
-) (*model.Provider, error) {
+) (*Provider, error) {
 	const query = `
 		SELECT id, source, type, display_name, category, disabled, created, updated 
 			FROM provider
@@ -124,7 +123,7 @@ func (r *ProviderRepository) getProvider(
 
 	`
 
-	var m model.Provider
+	var m Provider
 	if err := db.SelectOne(ctx, query, pgx.StrictNamedArgs{"source": source, "type": _type}).Scan(
 		&m.ID,
 		&m.Source,
@@ -142,9 +141,9 @@ func (r *ProviderRepository) getProvider(
 }
 
 // addProviderInCache should be called within the r.mu.Lock
-func (r *ProviderRepository) addProviderInCache(p *model.Provider) {
+func (r *ProviderRepository) addProviderInCache(p *Provider) {
 	if _, ok := r.ProvidersCache[p.Source]; !ok {
-		r.ProvidersCache[p.Source] = make(map[string]*model.Provider)
+		r.ProvidersCache[p.Source] = make(map[string]*Provider)
 	}
 
 	r.ProvidersCache[p.Source][p.Type] = p

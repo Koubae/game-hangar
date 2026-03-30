@@ -32,6 +32,12 @@ var (
 		DefaultCode: 503,
 	}
 
+	InvalidPayload = &AppError{
+		Err:         ClientErr,
+		Msg:         "invalid payload",
+		DefaultCode: 400,
+	}
+
 	ResourceNotFound = &AppError{
 		Err:         ClientErr,
 		Msg:         "resource not found",

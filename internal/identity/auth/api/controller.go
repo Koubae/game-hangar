@@ -7,8 +7,9 @@ import (
 	"net/http"
 
 	"github.com/koubae/game-hangar/internal/errs"
-	"github.com/koubae/game-hangar/internal/identity/app/container"
-	"github.com/koubae/game-hangar/internal/identity/app/modules/account/dto"
+	"github.com/koubae/game-hangar/internal/identity/account"
+	"github.com/koubae/game-hangar/internal/identity/auth"
+	"github.com/koubae/game-hangar/internal/identity/container"
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/web"
 	"go.uber.org/zap"
@@ -28,7 +29,7 @@ func (c *AuthController) RegisterByUsername(
 	w http.ResponseWriter,
 	r *http.Request,
 ) {
-	var payload dto.CreateAccountDTO
+	var payload account.DTOCreateAccount
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		web.WriteBusinessErrorResponse(
 			w, &common.ClientResponseError{
@@ -40,12 +41,8 @@ func (c *AuthController) RegisterByUsername(
 	}
 
 	if err := payload.Validate(); err != nil {
-		web.WriteBusinessErrorResponse(
-			w, &common.ClientResponseError{
-				HTTPCode: http.StatusBadRequest,
-				Message:  fmt.Sprintf("invalid payload: %s", err.Error()),
-			},
-		)
+		response := errs.AppErrToClientResponse(err, "payload validation error")
+		web.WriteBusinessErrorResponse(w, response)
 		return
 	}
 
@@ -81,10 +78,10 @@ func (c *AuthController) RegisterByUsername(
 		return
 	}
 
-	response := dto.DTOAccount{
-		AccountID: *accountID,
-		CredID:    *credID,
-		Username:  payload.Username,
+	response := auth.DTOAccountLoggedIn{
+		AccountID:    *accountID,
+		Username:     payload.Username,
+		LoggedCredID: *credID,
 	}
 	web.WriteJSONResponse(w, http.StatusCreated, response)
 }

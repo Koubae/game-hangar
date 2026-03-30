@@ -1,4 +1,4 @@
-package service
+package auth
 
 import (
 	"context"
@@ -6,8 +6,6 @@ import (
 	"time"
 
 	"github.com/koubae/game-hangar/internal/errs"
-	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/model"
-	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/repository"
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/database"
 	"go.uber.org/zap"
@@ -15,14 +13,14 @@ import (
 
 type ProviderService struct {
 	db         database.DBTX
-	repository repository.IProviderRepository
+	repository IProviderRepository
 }
 
-type ProviderServiceFactory func(d database.DBTX, r repository.IProviderRepository) *ProviderService
+type ProviderServiceFactory func(d database.DBTX, r IProviderRepository) *ProviderService
 
 func NewProviderService(
 	d database.DBTX,
-	r repository.IProviderRepository,
+	r IProviderRepository,
 ) *ProviderService {
 	return &ProviderService{
 		db:         d,
@@ -54,7 +52,7 @@ func (s *ProviderService) GetProvider(
 	ctx context.Context,
 	source string,
 	_type string,
-) (*model.Provider, error) {
+) (*Provider, error) {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
@@ -69,7 +67,7 @@ func (s *ProviderService) GetEnabledProvider(
 	ctx context.Context,
 	source string,
 	_type string,
-) (*model.Provider, error) {
+) (*Provider, error) {
 	logger := common.GetLogger()
 	provider, err := s.GetProvider(
 		ctx,

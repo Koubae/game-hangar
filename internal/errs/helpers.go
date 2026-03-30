@@ -29,3 +29,29 @@ func AppErrToClientResponseWithLog(err error, msg string, logger common.Logger) 
 	logger.L(lvl, msg, zap.Error(err))
 	return responseError
 }
+
+func AppErrToClientResponse(err error, msg string) *common.ClientResponseError {
+	var responseError *common.ClientResponseError
+
+	appErr := AsAppError(err)
+	if appErr.IsServerErr() {
+		responseError = &common.ClientResponseError{
+			HTTPCode: appErr.GetDefaultCode(),
+			Message:  "unexpected error occurred",
+		}
+	} else {
+		responseError = &common.ClientResponseError{
+			HTTPCode: appErr.GetDefaultCode(),
+			Message:  fmt.Sprintf("%s, error: %s", msg, err.Error()),
+		}
+	}
+
+	return responseError
+}
+
+func DTOSchemaValidation(dto any) *AppError {
+	if err := common.DTOSchemaValidation(dto); err != nil {
+		return Wrap(InvalidPayload, err)
+	}
+	return nil
+}

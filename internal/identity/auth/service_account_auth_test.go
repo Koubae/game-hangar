@@ -1,12 +1,12 @@
-package service_test
+package auth_test
 
 import (
 	"context"
 	"testing"
 
 	"github.com/koubae/game-hangar/internal/errs"
-	accountRepo "github.com/koubae/game-hangar/internal/identity/app/modules/account/repository"
-	authModel "github.com/koubae/game-hangar/internal/identity/app/modules/auth/model"
+	accountRepo "github.com/koubae/game-hangar/internal/identity/account"
+	"github.com/koubae/game-hangar/internal/identity/auth"
 	"github.com/koubae/game-hangar/internal/testunit"
 	"github.com/koubae/game-hangar/pkg/testutil"
 	"github.com/koubae/game-hangar/tests/testobj"
@@ -62,7 +62,7 @@ func TestAccountAuthService_RegisterByUsernameProviderErr(t *testing.T) {
 						"global",
 						"username",
 					).
-					Return(&authModel.Provider{ID: 1, Source: "global", Type: "username", Disabled: true}, nil).
+					Return(&auth.Provider{ID: 1, Source: "global", Type: "username", Disabled: true}, nil).
 					Once()
 			},
 			expected:    nil,
@@ -132,7 +132,7 @@ func TestAccountAuthService_RegisterByUsernameCredentialErr(t *testing.T) {
 						"test-cred",
 					).
 					Return(
-						&authModel.AccountCredential{
+						&auth.AccountCredential{
 							ID:         1,
 							Credential: "test-cred",
 							AccountID:  testutil.AccountIDTest01,
@@ -174,7 +174,7 @@ func TestAccountAuthService_RegisterByUsernameCredentialErr(t *testing.T) {
 		"global",
 		"username",
 	).
-		Return(&authModel.Provider{ID: 1, Source: "global", Type: "username", Disabled: false}, nil)
+		Return(&auth.Provider{ID: 1, Source: "global", Type: "username", Disabled: false}, nil)
 	ctx := context.Background()
 	for _, tt := range tests {
 		t.Run(
@@ -363,7 +363,7 @@ func TestAccountAuthService_RegisterByUsernameAccountAndCredentialCreation(
 		"global",
 		"username",
 	).
-		Return(&authModel.Provider{ID: 1, Source: "global", Type: "username", Disabled: false}, nil)
+		Return(&auth.Provider{ID: 1, Source: "global", Type: "username", Disabled: false}, nil)
 
 	credentialRepo := container.CredentialRepository().(*testunit.MockCredentialRepository)
 	credentialRepo.On(

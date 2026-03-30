@@ -1,7 +1,7 @@
 package testunit
 
 import (
-	authModels "github.com/koubae/game-hangar/internal/identity/app/modules/auth/model"
+	authModels "github.com/koubae/game-hangar/internal/identity/auth"
 	"github.com/koubae/game-hangar/pkg/testutil"
 )
 
