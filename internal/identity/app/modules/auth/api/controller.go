@@ -31,7 +31,7 @@ func (c *AuthController) RegisterByUsername(
 	var payload dto.CreateAccountDTO
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		web.WriteBusinessErrorResponse(
-			w, &common.BusinessError{
+			w, &common.ClientResponseError{
 				HTTPCode: http.StatusBadRequest,
 				Message:  fmt.Sprintf("invalid json: %v", err.Error()),
 			},
@@ -41,13 +41,12 @@ func (c *AuthController) RegisterByUsername(
 
 	if err := payload.Validate(); err != nil {
 		web.WriteBusinessErrorResponse(
-			w, &common.BusinessError{
+			w, &common.ClientResponseError{
 				HTTPCode: http.StatusBadRequest,
 				Message:  fmt.Sprintf("invalid payload: %s", err.Error()),
 			},
 		)
 		return
-
 	}
 
 	ctx := r.Context()
@@ -65,7 +64,7 @@ func (c *AuthController) RegisterByUsername(
 			zap.Error(err),
 		)
 		web.WriteBusinessErrorResponse(
-			w, &common.BusinessError{
+			w, &common.ClientResponseError{
 				HTTPCode: http.StatusInternalServerError,
 				Message:  "unexpected error occurred",
 			},
@@ -81,18 +80,18 @@ func (c *AuthController) RegisterByUsername(
 		secret,
 	)
 	if err != nil {
-		var responseError *common.BusinessError
+		var responseError *common.ClientResponseError
 		var lvl string
 		appErr := errs.AsAppError(err)
 		if appErr.IsServerErr() {
 			lvl = "error"
-			responseError = &common.BusinessError{
+			responseError = &common.ClientResponseError{
 				HTTPCode: http.StatusInternalServerError,
 				Message:  "unexpected error occurred",
 			}
 		} else {
 			lvl = "info"
-			responseError = &common.BusinessError{
+			responseError = &common.ClientResponseError{
 				HTTPCode: http.StatusBadRequest,
 				Message: fmt.Sprintf(
 					"could not create account, error: %s",
