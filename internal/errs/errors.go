@@ -15,8 +15,14 @@ var (
 	ResourceNotFound  = errors.New("resource not found")
 	ResourceDuplicate = errors.New("resource already exists")
 
-	UsernameRequired   = errors.New("username_required")
-	InvalidEmailFormat = errors.New("invalid_email_format")
+	ProviderNotFound = &AppError{
+		Err: errors.New("provider_not_found"),
+		Msg: "provider not found",
+	}
+	ProviderDisabled = &AppError{
+		Err: errors.New("provider_disabled"),
+		Msg: "provider is disabled",
+	}
 
 	AccountCredVerifiedAtRequired     = errors.New("verified_at_required_when_is_verified")
 	AccountCredVerifiedNilWhenIsFalse = errors.New("verified_nil_when_not_verified")
@@ -25,14 +31,17 @@ var (
 		Err: errors.New("incorrect_provider_type"),
 		Msg: "incorrect provider type",
 	}
-
-	ProviderNotFound = &AppError{
-		Err: errors.New("provider_not_found"),
-		Msg: "provider not found",
+	AccountCredDuplicate = &AppError{
+		Err: fmt.Errorf("duplicate credential: %w", ResourceDuplicate),
+		Msg: "credential already exists",
 	}
-	ProviderDisabled = &AppError{
-		Err: errors.New("provider_disabled"),
-		Msg: "provider is disabled",
+
+	UsernameRequired   = errors.New("username_required")
+	InvalidEmailFormat = errors.New("invalid_email_format")
+
+	AccountCreationFailed = &AppError{
+		Err: errors.New("account_creation_failed"),
+		Msg: "unexpected error while creating account",
 	}
 )
 

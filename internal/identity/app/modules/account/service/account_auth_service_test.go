@@ -6,7 +6,6 @@ import (
 
 	"github.com/koubae/game-hangar/internal/errs"
 	accountRepo "github.com/koubae/game-hangar/internal/identity/app/modules/account/repository"
-	accountSrv "github.com/koubae/game-hangar/internal/identity/app/modules/account/service"
 	authModel "github.com/koubae/game-hangar/internal/identity/app/modules/auth/model"
 	"github.com/koubae/game-hangar/internal/testunit"
 	"github.com/koubae/game-hangar/pkg/testutil"
@@ -143,7 +142,7 @@ func TestAccountAuthService_RegisterByUsernameCredentialErr(t *testing.T) {
 					Once()
 			},
 			expected:    nil,
-			errExpected: accountSrv.ErrRegistrationCredExists,
+			errExpected: errs.AccountCredDuplicate,
 		},
 		{
 			id:         "on-err-credential-generic-db-err",
@@ -248,7 +247,7 @@ func TestAccountAuthService_RegisterByUsernameAccountAndCredentialCreation(
 			},
 			setupMockCred: nil,
 			expected:      nil,
-			errExpected:   accountSrv.ErrAccountCreation,
+			errExpected:   errs.AccountCreationFailed,
 		},
 
 		{

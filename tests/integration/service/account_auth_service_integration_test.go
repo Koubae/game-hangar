@@ -9,8 +9,6 @@ import (
 	"github.com/koubae/game-hangar/tests/testobj"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	accountSrv "github.com/koubae/game-hangar/internal/identity/app/modules/account/service"
 )
 
 func TestAccountAuthService_RegisterByUsername(t *testing.T) {
@@ -41,7 +39,7 @@ func TestAccountAuthService_RegisterByUsername(t *testing.T) {
 			id:          "on-err-credential-exists",
 			source:      testobj.ProviderSourceDefault,
 			username:    testobj.CredentialAccount01,
-			errExpected: accountSrv.ErrRegistrationCredExists,
+			errExpected: errs.AccountCredDuplicate,
 		},
 
 		{

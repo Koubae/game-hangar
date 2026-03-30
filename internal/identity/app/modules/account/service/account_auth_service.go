@@ -46,13 +46,6 @@ func NewAccountAuthService(
 	}
 }
 
-var (
-	ErrRegistrationCredExists = errors.New(
-		"registration error: credential already exists",
-	)
-	ErrAccountCreation = errors.New("unexpected error while creating account")
-)
-
 func (s *AccountAuthService) RegisterByUsername(
 	ctx context.Context,
 	source string,
@@ -92,7 +85,7 @@ func (s *AccountAuthService) RegisterByUsername(
 			zap.String("source", source),
 			zap.String("credential", credential),
 		)
-		return nil, nil, ErrRegistrationCredExists
+		return nil, nil, errs.AccountCredDuplicate
 	} else if err != nil {
 		if !errors.Is(err, errs.ResourceNotFound) {
 			return nil, nil, &common.ErrServerError{Err: err}
@@ -145,7 +138,7 @@ func (s *AccountAuthService) RegisterByUsername(
 
 		// TODO: should be Apperr!
 		logger.Error(n+"error while creating account", zap.Error(err))
-		return nil, nil, &common.ErrServerError{Err: ErrAccountCreation}
+		return nil, nil, &common.ErrServerError{Err: errs.AccountCreationFailed}
 	}
 
 	accountID, _ := uuid.Parse(*id)
