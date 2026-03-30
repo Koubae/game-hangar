@@ -125,7 +125,7 @@ func (l *AppLogger) TimeIt(level string, name string) func() {
 		elapsed := end.Sub(start)
 
 		l.Log(
-			lvl, name+" operation finished",
+			lvl, name+"operation finished",
 			zap.Time("start", start.UTC()),
 			zap.Time("end", end.UTC()),
 			zap.String("elapsed_s", fmt.Sprintf("%.6f", elapsed.Seconds())),

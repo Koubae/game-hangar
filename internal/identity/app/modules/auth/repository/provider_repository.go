@@ -47,7 +47,7 @@ func (r *ProviderRepository) LoadProviders(
 
 	rows, err := db.SelectMany(ctx, query)
 	if err != nil {
-		logger.Error("failed to load providers", zap.Error(err))
+		logger.DPanic("failed to load providers", zap.Error(err))
 		return
 	}
 	defer rows.Close()
@@ -69,25 +69,12 @@ func (r *ProviderRepository) LoadProviders(
 			continue
 		}
 
-		r.addProviderInCache(p.Source, p.Type, &p)
+		r.addProviderInCache(&p)
 
 	}
 	r.mu.Unlock()
 
 	logger.Info("providers loaded", zap.Int("count", len(r.ProvidersCache)))
-}
-
-// addProviderInCache should be called within the r.mu.Lock
-func (r *ProviderRepository) addProviderInCache(
-	source string,
-	_type string,
-	p *model.Provider,
-) {
-	if _, ok := r.ProvidersCache[source]; !ok {
-		r.ProvidersCache[source] = make(map[string]*model.Provider)
-	}
-
-	r.ProvidersCache[source][p.Type] = p
 }
 
 func (r *ProviderRepository) GetProvider(
@@ -120,7 +107,7 @@ func (r *ProviderRepository) GetProvider(
 		return nil, err
 	}
 
-	r.addProviderInCache(source, _type, m)
+	r.addProviderInCache(m)
 	return m, nil
 }
 
@@ -152,4 +139,13 @@ func (r *ProviderRepository) getProvider(
 	}
 
 	return &m, nil
+}
+
+// addProviderInCache should be called within the r.mu.Lock
+func (r *ProviderRepository) addProviderInCache(p *model.Provider) {
+	if _, ok := r.ProvidersCache[p.Source]; !ok {
+		r.ProvidersCache[p.Source] = make(map[string]*model.Provider)
+	}
+
+	r.ProvidersCache[p.Source][p.Type] = p
 }

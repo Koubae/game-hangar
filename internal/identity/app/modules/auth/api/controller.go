@@ -106,8 +106,6 @@ func (c *AuthController) RegisterByUsername(
 		return
 	}
 
-	// TODO: -----------------------------
-
 	response := dto.DTOAccount{
 		AccountID: *accountID,
 		CredID:    *credID,

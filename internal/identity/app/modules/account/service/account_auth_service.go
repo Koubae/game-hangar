@@ -52,12 +52,12 @@ func (s *AccountAuthService) RegisterByUsername(
 	credential string,
 	secret string,
 ) (*string, *int64, error) {
-	n := "[AccountAuthService.RegisterByUsername]"
+	n := "[AccountAuthService.RegisterByUsername] "
 
 	logger := common.GetLogger()
 	defer logger.TimeIt("info", n)()
 	logger.Info(
-		n+" started ...",
+		n+"started ...",
 		zap.String("source", source),
 		zap.String("credential", credential),
 	)
@@ -103,7 +103,7 @@ func (s *AccountAuthService) RegisterByUsername(
 	defer func() {
 		if rbErr := tx.Rollback(ctx); rbErr != nil &&
 			!errors.Is(rbErr, pgx.ErrTxClosed) {
-			logger.Error(n+" error on TX Rollback", zap.Error(rbErr))
+			logger.Error(n+"error on TX Rollback", zap.Error(rbErr))
 		}
 	}()
 
@@ -123,7 +123,7 @@ func (s *AccountAuthService) RegisterByUsername(
 			lvl = "debug"
 		}
 
-		logger.L(lvl, n+"could not create account", zap.Error(err))
+		logger.L(lvl, n+"could not create account, rolling back account", zap.Error(err))
 		return nil, nil, err
 	}
 
@@ -136,9 +136,13 @@ func (s *AccountAuthService) RegisterByUsername(
 		secret,
 	)
 	if err != nil {
+		lvl := "error"
+		if errs.IsAny(err, errs.AccountCredCreateIncorrectProviderType, errs.ResourceDuplicate) {
+			lvl = "debug"
+		}
 
-		logger.Error(
-			n+"error while creating credential, rolling back account",
+		logger.L(
+			lvl, n+"error while creating credential, rolling back account",
 			zap.String("accountID", *id),
 			zap.Error(err),
 		)
@@ -148,7 +152,7 @@ func (s *AccountAuthService) RegisterByUsername(
 
 	if err = tx.Commit(ctx); err != nil {
 		logger.Error(
-			n+" error on commit",
+			n+"error on commit",
 			zap.Bool(
 				"isRollbackError",
 				errors.Is(err, pgx.ErrTxCommitRollback),
