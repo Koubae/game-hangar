@@ -2,7 +2,6 @@ package api
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -84,7 +83,8 @@ func (c *AuthController) RegisterByUsername(
 	if err != nil {
 		var responseError *common.BusinessError
 		var lvl string
-		if errors.Is(err, errs.ServerErr) {
+		appErr := errs.AsAppError(err)
+		if appErr.IsServerErr() {
 			lvl = "error"
 			responseError = &common.BusinessError{
 				HTTPCode: http.StatusInternalServerError,

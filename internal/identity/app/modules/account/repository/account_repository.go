@@ -34,13 +34,13 @@ type NewAccount struct {
 
 func (p *NewAccount) Validate() error {
 	if strings.TrimSpace(p.Username) == "" {
-		return &errs.AppError{Err: errs.UsernameRequired, Msg: "username is required"}
+		return errs.UsernameRequired
 	}
 
 	if p.Email != nil {
 		_, err := mail.ParseAddressList(*p.Email)
 		if err != nil {
-			return &errs.AppError{Err: errs.InvalidEmailFormat, Msg: "invalid email format"}
+			return errs.InvalidEmailFormat
 		}
 	}
 

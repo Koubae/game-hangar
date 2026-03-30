@@ -39,16 +39,10 @@ type NewAccountCredential struct {
 
 func (p *NewAccountCredential) Validate() error {
 	if p.Verified && p.VerifiedAt == nil {
-		return &errs.AppError{
-			Err: errs.AccountCredVerifiedAtRequired,
-			Msg: "verified_at is required when verified is true",
-		}
+		return errs.AccountCredVerifiedAtRequired
 	}
 	if !p.Verified && p.VerifiedAt != nil {
-		return &errs.AppError{
-			Err: errs.AccountCredVerifiedNilWhenIsFalse,
-			Msg: "verified_at must be nil when verified is false",
-		}
+		return errs.AccountCredVerifiedNilWhenIsFalse
 	}
 	return nil
 }

@@ -247,9 +247,8 @@ func TestAccountAuthService_RegisterByUsernameAccountAndCredentialCreation(
 			},
 			setupMockCred: nil,
 			expected:      nil,
-			errExpected:   errs.AccountCreationFailed,
+			errExpected:   errs.DBError,
 		},
-
 		{
 			id:         "account-credential-created",
 			source:     "global",

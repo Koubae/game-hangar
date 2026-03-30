@@ -2,54 +2,79 @@ package errs
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 
 	"github.com/koubae/game-hangar/pkg/database"
 )
 
 var (
-	ServerErr = errors.New("server error")
-	ClientErr = errors.New("client error")
+	ServerErr = &AppError{
+		Err: errors.New("server error"),
+		Msg: "unexpected error",
+	}
+	ClientErr = &AppError{
+		Err: errors.New("client error"),
+		Msg: "client error",
+	}
 
-	Unmapped = errors.New("unmapped error")
+	Unmapped = &AppError{
+		Err: ServerErr,
+		Msg: "unmapped error",
+	}
 
-	DBError           = errors.New("database error")
-	ResourceNotFound  = errors.New("resource not found")
-	ResourceDuplicate = errors.New("resource already exists")
+	DBError = &AppError{
+		Err: ServerErr,
+		Msg: "database error",
+	}
+
+	ResourceNotFound = &AppError{
+		Err: ClientErr,
+		Msg: "resource not found",
+	}
+	ResourceDuplicate = &AppError{
+		Err: ClientErr,
+		Msg: "resource already exists",
+	}
 
 	AuthSecretHash = &AppError{
-		Err: errors.New("auth_secret_hash_error"),
+		Err: ServerErr,
 		Msg: "secret hash error",
 	}
 
 	ProviderNotFound = &AppError{
-		Err: errors.New("provider_not_found"),
+		Err: ClientErr,
 		Msg: "provider not found",
 	}
 	ProviderDisabled = &AppError{
-		Err: errors.New("provider_disabled"),
+		Err: ClientErr,
 		Msg: "provider is disabled",
 	}
 
-	AccountCredVerifiedAtRequired     = errors.New("verified_at_required_when_is_verified")
-	AccountCredVerifiedNilWhenIsFalse = errors.New("verified_nil_when_not_verified")
+	AccountCredVerifiedAtRequired = &AppError{
+		Err: ClientErr,
+		Msg: "verified_at is required when verified is true",
+	}
+	AccountCredVerifiedNilWhenIsFalse = &AppError{
+		Err: ClientErr,
+		Msg: "verified_at must be nil when verified is false",
+	}
 
 	AccountCredCreateIncorrectProviderType = &AppError{
-		Err: errors.New("incorrect_provider_type"),
+		Err: ClientErr,
 		Msg: "incorrect provider type",
 	}
 	AccountCredDuplicate = &AppError{
-		Err: fmt.Errorf("duplicate credential: %w", ResourceDuplicate),
+		Err: ClientErr,
 		Msg: "credential already exists",
 	}
 
-	UsernameRequired   = errors.New("username_required")
-	InvalidEmailFormat = errors.New("invalid_email_format")
-
-	AccountCreationFailed = &AppError{
-		Err: errors.New("account_creation_failed"),
-		Msg: "unexpected error while creating account",
+	UsernameRequired = &AppError{
+		Err: ClientErr,
+		Msg: "username is required",
+	}
+	InvalidEmailFormat = &AppError{
+		Err: ClientErr,
+		Msg: "invalid email format",
 	}
 )
 
@@ -68,9 +93,7 @@ func (e *AppError) Error() string {
 	if strings.TrimSpace(e.Msg) == "" {
 		return e.Err.Error()
 	}
-
-	// TODO : check how eror msg looks like
-	return fmt.Sprintf("%s, error: %s", e.Msg, e.Err.Error())
+	return e.Msg
 }
 
 func (e *AppError) Unwrap() error {
@@ -78,7 +101,15 @@ func (e *AppError) Unwrap() error {
 }
 
 func (e *AppError) IsUnmapped() bool {
-	return errors.Is(e.Err, Unmapped)
+	return errors.Is(e, Unmapped)
+}
+
+func (e *AppError) IsServerErr() bool {
+	return errors.Is(e, ServerErr)
+}
+
+func (e *AppError) IsClientErr() bool {
+	return errors.Is(e, ClientErr)
 }
 
 // AsAppError converts a given error to an AppError.

@@ -163,3 +163,41 @@ func TestAppError_DBErrToAppErr(t *testing.T) {
 		)
 	}
 }
+
+func TestAppError_IsServerErr_IsClientErr(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		err         error
+		isServerErr bool
+		isClientErr bool
+	}{
+		"is-server-err-1": {
+			err:         errs.ServerErr,
+			isServerErr: true,
+			isClientErr: false,
+		},
+		"is-server-err-2": {
+			err:         errs.Unmapped,
+			isServerErr: true,
+			isClientErr: false,
+		},
+	}
+
+	for id, tt := range tests {
+		t.Run(
+			id, func(t *testing.T) {
+				t.Parallel()
+
+				err := errs.AsAppError(tt.err)
+
+				isServerErr := err.IsServerErr()
+				isClientErr := err.IsClientErr()
+
+				assert.IsType(t, &errs.AppError{}, err)
+				assert.Equal(t, tt.isServerErr, isServerErr)
+				assert.Equal(t, tt.isClientErr, isClientErr)
+			},
+		)
+	}
+}
