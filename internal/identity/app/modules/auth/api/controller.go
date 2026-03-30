@@ -59,16 +59,12 @@ func (c *AuthController) RegisterByUsername(
 
 	secret, err := c.container.AuthService().HashSecret(payload.Password)
 	if err != nil {
-		logger.Error(
+		response := errs.AppErrToClientResponseWithLog(
+			err,
 			"error while hashing secret during registration by username",
-			zap.Error(err),
+			logger,
 		)
-		web.WriteBusinessErrorResponse(
-			w, &common.ClientResponseError{
-				HTTPCode: http.StatusInternalServerError,
-				Message:  "unexpected error occurred",
-			},
-		)
+		web.WriteBusinessErrorResponse(w, response)
 		return
 	}
 
@@ -80,28 +76,8 @@ func (c *AuthController) RegisterByUsername(
 		secret,
 	)
 	if err != nil {
-		var responseError *common.ClientResponseError
-		var lvl string
-		appErr := errs.AsAppError(err)
-		if appErr.IsServerErr() {
-			lvl = "error"
-			responseError = &common.ClientResponseError{
-				HTTPCode: http.StatusInternalServerError,
-				Message:  "unexpected error occurred",
-			}
-		} else {
-			lvl = "info"
-			responseError = &common.ClientResponseError{
-				HTTPCode: http.StatusBadRequest,
-				Message: fmt.Sprintf(
-					"could not create account, error: %s",
-					err.Error(),
-				),
-			}
-		}
-
-		logger.L(lvl, "could not create account", zap.Error(err))
-		web.WriteBusinessErrorResponse(w, responseError)
+		response := errs.AppErrToClientResponseWithLog(err, "could not create account", logger)
+		web.WriteBusinessErrorResponse(w, response)
 		return
 	}
 

@@ -2,6 +2,7 @@ package errs
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/koubae/game-hangar/pkg/database"
@@ -125,8 +126,11 @@ func AsAppError(err error) *AppError {
 	return &AppError{Err: errors.Join(Unmapped, err), Msg: "unknown error"}
 }
 
+// Wrap wraps an error with an AppError.
+// NOTE: Avoid Wrap the same error multiple times as this will "concatenate" the previous Msg
 func Wrap(appErr *AppError, err error) *AppError {
-	return &AppError{Err: errors.Join(appErr, err), Msg: appErr.Msg}
+	msg := fmt.Sprintf("[AppError:%s] wrapped error: %s", appErr.Msg, err.Error())
+	return &AppError{Err: errors.Join(appErr, err), Msg: msg}
 }
 
 func IsAny(err error, targets ...error) bool {
@@ -140,23 +144,18 @@ func IsAny(err error, targets ...error) bool {
 }
 
 func DBErrToAppErr(err error) *AppError {
-	var mappedErr error
-	var message string
+	var mappedErr *AppError
 	switch {
 	case errors.Is(err, database.ErrNotFound):
 		mappedErr = ResourceNotFound
-		message = "resource not found"
 	case errors.Is(err, &database.ErrDuplicate{}):
 		mappedErr = ResourceDuplicate
-		message = "resource already exists"
 	case errors.Is(err, &database.ErrOpenTransaction{}):
 		mappedErr = DBError
-		message = "database error"
 	default:
 		mappedErr = DBError
-		message = "database error"
 	}
 
-	return &AppError{Err: mappedErr, Msg: message}
-
+	mappedErr = Wrap(mappedErr, err)
+	return mappedErr
 }
