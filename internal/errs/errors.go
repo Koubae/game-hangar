@@ -15,6 +15,11 @@ var (
 	ResourceNotFound  = errors.New("resource not found")
 	ResourceDuplicate = errors.New("resource already exists")
 
+	AuthSecretHash = &AppError{
+		Err: errors.New("auth_secret_hash_error"),
+		Msg: "secret hash error",
+	}
+
 	ProviderNotFound = &AppError{
 		Err: errors.New("provider_not_found"),
 		Msg: "provider not found",
@@ -84,6 +89,10 @@ func AsAppError(err error) *AppError {
 		return appErr
 	}
 	return &AppError{Err: errors.Join(Unmapped, err), Msg: "unknown error"}
+}
+
+func Wrap(appErr *AppError, err error) *AppError {
+	return &AppError{Err: errors.Join(appErr, err), Msg: appErr.Msg}
 }
 
 func DBErrToAppErr(err error) *AppError {
