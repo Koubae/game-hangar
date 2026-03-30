@@ -104,14 +104,14 @@ func TestAccountRepository_GetAccount(t *testing.T) {
 	tests := []struct {
 		id          string
 		accountID   string
-		expected    *Account
+		expected    *account.Account
 		errThrown   error
 		errReturned error
 	}{
 		{
 			id:        "record-is-found",
 			accountID: "06e1b677-a4fe-42cf-8afd-ceec867d1fa5",
-			expected: &Account{
+			expected: &account.Account{
 				ID:       "06e1b677-a4fe-42cf-8afd-ceec867d1fa5",
 				Username: "account-01",
 				Email:    &emailTest,
@@ -131,7 +131,7 @@ func TestAccountRepository_GetAccount(t *testing.T) {
 		},
 	}
 
-	modelToValues := func(s *Account) []any {
+	modelToValues := func(s *account.Account) []any {
 		if s == nil {
 			return []any{}
 		}
@@ -146,7 +146,7 @@ func TestAccountRepository_GetAccount(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	fieldsCount := reflect.TypeFor[Account]().NumField()
+	fieldsCount := reflect.TypeFor[account.Account]().NumField()
 	for _, tt := range tests {
 		t.Run(
 			tt.id, func(t *testing.T) {
