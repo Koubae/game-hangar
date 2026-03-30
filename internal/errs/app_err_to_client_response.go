@@ -2,7 +2,6 @@ package errs
 
 import (
 	"fmt"
-	"net/http"
 
 	"github.com/koubae/game-hangar/pkg/common"
 	"go.uber.org/zap"
@@ -16,13 +15,13 @@ func AppErrToClientResponseWithLog(err error, msg string, logger common.Logger) 
 	if appErr.IsServerErr() {
 		lvl = "error"
 		responseError = &common.ClientResponseError{
-			HTTPCode: http.StatusInternalServerError,
+			HTTPCode: appErr.GetDefaultCode(),
 			Message:  "unexpected error occurred",
 		}
 	} else {
 		lvl = "info"
 		responseError = &common.ClientResponseError{
-			HTTPCode: http.StatusBadRequest,
+			HTTPCode: appErr.GetDefaultCode(),
 			Message:  fmt.Sprintf("%s, error: %s", msg, err.Error()),
 		}
 	}

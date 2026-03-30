@@ -10,72 +10,87 @@ import (
 
 var (
 	ServerErr = &AppError{
-		Err: errors.New("server error"),
-		Msg: "unexpected error",
+		Err:         errors.New("server error"),
+		Msg:         "unexpected error",
+		DefaultCode: 500,
 	}
 	ClientErr = &AppError{
-		Err: errors.New("client error"),
-		Msg: "client error",
+		Err:         errors.New("client error"),
+		Msg:         "client error",
+		DefaultCode: 400,
 	}
 
 	Unmapped = &AppError{
-		Err: ServerErr,
-		Msg: "unmapped error",
+		Err:         ServerErr,
+		Msg:         "unmapped error",
+		DefaultCode: 500,
 	}
 
 	DBError = &AppError{
-		Err: ServerErr,
-		Msg: "database error",
+		Err:         ServerErr,
+		Msg:         "database error",
+		DefaultCode: 503,
 	}
 
 	ResourceNotFound = &AppError{
-		Err: ClientErr,
-		Msg: "resource not found",
+		Err:         ClientErr,
+		Msg:         "resource not found",
+		DefaultCode: 404,
 	}
 	ResourceDuplicate = &AppError{
-		Err: ClientErr,
-		Msg: "resource already exists",
+		Err:         ClientErr,
+		Msg:         "resource already exists",
+		DefaultCode: 409,
 	}
 
 	AuthSecretHash = &AppError{
-		Err: ServerErr,
-		Msg: "secret hash error",
+		Err:         ServerErr,
+		Msg:         "secret hash error",
+		DefaultCode: 500,
 	}
 
 	ProviderNotFound = &AppError{
-		Err: ClientErr,
-		Msg: "provider not found",
+		Err:         ClientErr,
+		Msg:         "provider not found",
+		DefaultCode: 404,
 	}
 	ProviderDisabled = &AppError{
-		Err: ClientErr,
-		Msg: "provider is disabled",
+		Err:         ClientErr,
+		Msg:         "provider is disabled",
+		DefaultCode: 403,
 	}
 
 	AccountCredVerifiedAtRequired = &AppError{
-		Err: ClientErr,
-		Msg: "verified_at is required when verified is true",
+		Err:         ClientErr,
+		Msg:         "verified_at is required when verified is true",
+		DefaultCode: 400,
 	}
 	AccountCredVerifiedNilWhenIsFalse = &AppError{
-		Err: ClientErr,
-		Msg: "verified_at must be nil when verified is false",
+		Err:         ClientErr,
+		Msg:         "verified_at must be nil when verified is false",
+		DefaultCode: 400,
 	}
 
 	AccountCredCreateIncorrectProviderType = &AppError{
-		Err: ClientErr,
-		Msg: "incorrect provider type",
+		Err:         ClientErr,
+		Msg:         "incorrect provider type",
+		DefaultCode: 400,
 	}
 	AccountCredDuplicate = &AppError{
-		Err: ClientErr,
-		Msg: "credential already exists",
+		Err:         ClientErr,
+		Msg:         "credential already exists",
+		DefaultCode: 409,
 	}
 
 	UsernameRequired = &AppError{
-		Err: ClientErr,
-		Msg: "username is required",
+		Err:         ClientErr,
+		Msg:         "username is required",
+		DefaultCode: 400,
 	}
 	InvalidEmailFormat = &AppError{
-		Err: ClientErr,
-		Msg: "invalid email format",
+		Err:         ClientErr,
+		Msg:         "invalid email format",
+		DefaultCode: 400,
 	}
 )
 
@@ -88,6 +103,8 @@ type AppError struct {
 	Err error
 	// Optional message to be returned to the outside world.
 	Msg string
+	// DefaultCode represents the default HTTP status code associated with the error for external responses.
+	DefaultCode int
 }
 
 func (e *AppError) Error() string {
@@ -111,6 +128,16 @@ func (e *AppError) IsServerErr() bool {
 
 func (e *AppError) IsClientErr() bool {
 	return errors.Is(e, ClientErr)
+}
+
+func (e *AppError) GetDefaultCode() int {
+	if e.DefaultCode < 200 || e.DefaultCode > 599 {
+		if e.IsClientErr() {
+			return 400
+		}
+		return 500
+	}
+	return e.DefaultCode
 }
 
 // AsAppError converts a given error to an AppError.

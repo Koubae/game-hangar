@@ -201,3 +201,77 @@ func TestAppError_IsServerErr_IsClientErr(t *testing.T) {
 		)
 	}
 }
+
+func TestAppError_GetDefaultCode(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		appErr   *errs.AppError
+		expected int
+	}{
+		"default-when-code-is-500-not-set-nor-client-or-server-err": {
+			appErr:   &errs.AppError{Err: errors.New("unknown-error")},
+			expected: 500,
+		},
+		"default-when-code-is-500-when-is-server-err": {
+			appErr:   &errs.AppError{Err: errs.ServerErr, Msg: "some-server-error"},
+			expected: 500,
+		},
+		"default-when-code-is-400-when-is-client-err": {
+			appErr:   &errs.AppError{Err: errs.ClientErr, Msg: "some-client-error"},
+			expected: 400,
+		},
+
+		"ServerErr": {
+			appErr:   errs.ServerErr,
+			expected: 500,
+		},
+		"ClientErr": {
+			appErr:   errs.ClientErr,
+			expected: 400,
+		},
+		"Unmapped": {
+			appErr:   errs.Unmapped,
+			expected: 500,
+		},
+
+		"DBError": {
+			appErr:   errs.DBError,
+			expected: 500,
+		},
+		"ResourceNotFound": {
+			appErr:   errs.ResourceNotFound,
+			expected: 404,
+		},
+		"ResourceDuplicate": {
+			appErr:   errs.ResourceDuplicate,
+			expected: 409,
+		},
+
+		"AuthSecretHash": {
+			appErr:   errs.AuthSecretHash,
+			expected: 500,
+		},
+		"ProviderNotFound": {
+			appErr:   errs.ProviderNotFound,
+			expected: 404,
+		},
+
+		"ProviderDisabled": {
+			appErr:   errs.ProviderDisabled,
+			expected: 403,
+		},
+	}
+
+	for id, tt := range tests {
+		t.Run(
+			id, func(t *testing.T) {
+				t.Parallel()
+
+				code := tt.appErr.GetDefaultCode()
+				assert.IsType(t, &errs.AppError{}, tt.appErr)
+				assert.Equal(t, tt.expected, code)
+			},
+		)
+	}
+}
