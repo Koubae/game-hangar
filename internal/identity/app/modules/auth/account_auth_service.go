@@ -1,4 +1,4 @@
-package service
+package auth
 
 import (
 	"context"
@@ -9,7 +9,6 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/koubae/game-hangar/internal/errs"
 	"github.com/koubae/game-hangar/internal/identity/app/modules/account/repository"
-	"github.com/koubae/game-hangar/internal/identity/app/modules/auth"
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/database"
 	"go.uber.org/zap"
@@ -19,23 +18,23 @@ type AccountAuthService struct {
 	db         database.Connector
 	repository repository.IAccountRepository
 
-	providerSrv           *auth.ProviderService
-	credentialSrvProvider auth.CredentialServiceProvider
+	providerSrv           *ProviderService
+	credentialSrvProvider CredentialServiceProvider
 }
 
 type AccountAuthServiceFactory func(
 	d database.Connector,
 	r repository.IAccountRepository,
-	providerSrv *auth.ProviderService,
-	credentialSrvProvider auth.CredentialServiceProvider,
+	providerSrv *ProviderService,
+	credentialSrvProvider CredentialServiceProvider,
 ) *AccountAuthService
 
 func NewAccountAuthService(
 	d database.Connector,
 	r repository.IAccountRepository,
-	providerSrv *auth.ProviderService,
+	providerSrv *ProviderService,
 
-	credentialSrvProvider auth.CredentialServiceProvider,
+	credentialSrvProvider CredentialServiceProvider,
 ) *AccountAuthService {
 	return &AccountAuthService{
 		db:                    d,
@@ -67,7 +66,7 @@ func (s *AccountAuthService) RegisterByUsername(
 	provider, err := s.providerSrv.GetEnabledProvider(
 		ctx,
 		source,
-		string(auth.Username),
+		string(Username),
 	)
 	if err != nil {
 		return nil, nil, err

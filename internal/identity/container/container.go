@@ -2,7 +2,6 @@ package container
 
 import (
 	accountRepo "github.com/koubae/game-hangar/internal/identity/app/modules/account/repository"
-	accountSrv "github.com/koubae/game-hangar/internal/identity/app/modules/account/service"
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth"
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/database"
@@ -22,7 +21,7 @@ type IdentityAuthContainer interface {
 
 type IdentityAccountContainer interface {
 	AccountRepository() accountRepo.IAccountRepository
-	AccountAuthService(db database.Connector) *accountSrv.AccountAuthService
+	AccountAuthService(db database.Connector) *auth.AccountAuthService
 }
 
 type IdentityContainer interface {
@@ -53,7 +52,7 @@ type AppContainer struct {
 	authServiceFactory        auth.SecretsServiceFactory
 	providerServiceFactory    auth.ProviderServiceFactory
 	credentialServiceFactory  auth.CredentialServiceFactory
-	accountAuthServiceFactory accountSrv.AccountAuthServiceFactory
+	accountAuthServiceFactory auth.AccountAuthServiceFactory
 }
 
 type AppDependencies struct {
@@ -66,7 +65,7 @@ type AppDependencies struct {
 	AuthServiceFactory          auth.SecretsServiceFactory
 	ProviderServiceFactory      auth.ProviderServiceFactory
 	CredentialServiceFactory    auth.CredentialServiceFactory
-	AccountAuthServiceFactory   accountSrv.AccountAuthServiceFactory
+	AccountAuthServiceFactory   auth.AccountAuthServiceFactory
 }
 
 func NewAppContainer(
@@ -133,7 +132,7 @@ func LoadAppDependenciesWithDefaFactories(
 	authServiceFactory := auth.NewSecretsService
 	providerServiceFactory := auth.NewProviderService
 	credentialServiceFactory := auth.NewCredentialService
-	accountAuthServiceFactory := accountSrv.NewAccountAuthService
+	accountAuthServiceFactory := auth.NewAccountAuthService
 
 	return &AppDependencies{
 		Logger:    logger,
@@ -240,7 +239,7 @@ func (c *AppContainer) CredentialService(
 
 func (c *AppContainer) AccountAuthService(
 	db database.Connector,
-) *accountSrv.AccountAuthService {
+) *auth.AccountAuthService {
 	if db == nil {
 		db = c.connector
 	}
