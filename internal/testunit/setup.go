@@ -3,9 +3,9 @@ package testunit
 import (
 	"testing"
 
-	identityContainer "github.com/koubae/game-hangar/internal/identity/app/container"
 	accountSrv "github.com/koubae/game-hangar/internal/identity/app/modules/account/service"
 	authSrv "github.com/koubae/game-hangar/internal/identity/app/modules/auth/service"
+	identityContainer "github.com/koubae/game-hangar/internal/identity/container"
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/stretchr/testify/require"
 )

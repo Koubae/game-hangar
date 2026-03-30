@@ -3,7 +3,7 @@ package api
 import (
 	"net/http"
 
-	"github.com/koubae/game-hangar/internal/identity/app/container"
+	"github.com/koubae/game-hangar/internal/identity/container"
 	"github.com/koubae/game-hangar/pkg/di"
 	"github.com/koubae/game-hangar/pkg/web"
 )

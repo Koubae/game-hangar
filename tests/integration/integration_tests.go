@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	identityContainer "github.com/koubae/game-hangar/internal/identity/app/container"
+	identityContainer "github.com/koubae/game-hangar/internal/identity/container"
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/database/postgres"
 	"github.com/koubae/game-hangar/tests/testobj"
@@ -46,20 +46,22 @@ func SetupTestIntegrationIdentity(
 	return ctx, container, func(tasks ...DBTearDownFN) {
 		t.Helper()
 
-		t.Cleanup(func() {
-			container.Logger().
-				Info("Server has shutdown, cleaning up resources ...")
+		t.Cleanup(
+			func() {
+				container.Logger().
+					Info("Server has shutdown, cleaning up resources ...")
 
-			if container != nil {
-				if err := container.Shutdown(); err != nil {
-					container.Logger().
-						Error("Container Shutdown Failed", zap.Error(err))
+				if container != nil {
+					if err := container.Shutdown(); err != nil {
+						container.Logger().
+							Error("Container Shutdown Failed", zap.Error(err))
+					}
 				}
-			}
 
-			container.Logger().
-				Info("Resource cleanup completed, terminating process...")
-		})
+				container.Logger().
+					Info("Resource cleanup completed, terminating process...")
+			},
+		)
 
 		tearDown(tasks...)
 	}
@@ -80,20 +82,22 @@ func DBWithCleanup(
 	return ctx, connector, func(tasks ...DBTearDownFN) {
 		t.Helper()
 
-		t.Cleanup(func() {
-			defer connector.Shutdown()
+		t.Cleanup(
+			func() {
+				defer connector.Shutdown()
 
-			for _, fn := range tasks {
-				if fn == nil {
-					continue
-				}
+				for _, fn := range tasks {
+					if fn == nil {
+						continue
+					}
 
-				err := fn(ctx, connector)
-				if err != nil {
-					t.Error(err)
+					err := fn(ctx, connector)
+					if err != nil {
+						t.Error(err)
+					}
 				}
-			}
-		})
+			},
+		)
 	}
 }
 
@@ -112,10 +116,12 @@ func integrationTestConnector(t *testing.T) *postgres.ConnectorPostgres {
 }
 
 func ResetDB(ctx context.Context, connector *postgres.ConnectorPostgres) error {
-	tables := strings.Join([]string{
-		`"public"."account_credentials"`,
-		`"public"."account"`,
-	}, ", ")
+	tables := strings.Join(
+		[]string{
+			`"public"."account_credentials"`,
+			`"public"."account"`,
+		}, ", ",
+	)
 
 	query := `TRUNCATE TABLE ` + tables + ` RESTART IDENTITY CASCADE`
 	if _, err := connector.SQL(ctx, query); err != nil {

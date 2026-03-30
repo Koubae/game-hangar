@@ -237,7 +237,7 @@ func TestAppError_GetDefaultCode(t *testing.T) {
 
 		"DBError": {
 			appErr:   errs.DBError,
-			expected: 500,
+			expected: 503,
 		},
 		"ResourceNotFound": {
 			appErr:   errs.ResourceNotFound,

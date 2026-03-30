@@ -5,7 +5,7 @@ import (
 	"log"
 
 	"github.com/koubae/game-hangar/internal/identity/app"
-	"github.com/koubae/game-hangar/internal/identity/app/container"
+	"github.com/koubae/game-hangar/internal/identity/container"
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/web"
 )
