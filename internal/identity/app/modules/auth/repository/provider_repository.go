@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"errors"
 	"sync"
 
 	"github.com/jackc/pgx/v5"
@@ -149,16 +148,7 @@ func (r *ProviderRepository) getProvider(
 		&m.Created,
 		&m.Updated,
 	); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, &errs.AppError{
-				Err: errors.Join(errs.ResourceNotFound, pgx.ErrNoRows),
-				Msg: "provider not found",
-			}
-		}
-		return nil, &errs.AppError{
-			Err: errors.Join(errs.DBError, err),
-			Msg: "unknown error while getProvider",
-		}
+		return nil, errs.DBErrToAppErr(db.MapDBErrToDomainErr(err))
 	}
 
 	return &m, nil
