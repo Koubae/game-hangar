@@ -4,7 +4,6 @@ import (
 	"context"
 	"log"
 
-	"github.com/koubae/game-hangar/internal/identity/app"
 	"github.com/koubae/game-hangar/internal/identity/container"
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/web"
@@ -30,7 +29,7 @@ func RunServer() {
 		container,
 		config,
 		web.Router,
-		app.RouterRegister(container),
+		RouterRegister(container),
 	)
 	application.Start(context.Background())
 	if err := application.Stop(); err != nil {
