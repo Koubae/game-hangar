@@ -8,7 +8,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/koubae/game-hangar/internal/errs"
-	"github.com/koubae/game-hangar/internal/identity/app/modules/account/model"
+	"github.com/koubae/game-hangar/internal/identity/app/modules/account"
 	"github.com/koubae/game-hangar/internal/identity/app/modules/account/repository"
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/database/postgres"
@@ -105,14 +105,14 @@ func TestAccountRepository_GetAccount(t *testing.T) {
 	tests := []struct {
 		id          string
 		accountID   string
-		expected    *model.Account
+		expected    *account.Account
 		errThrown   error
 		errReturned error
 	}{
 		{
 			id:        "record-is-found",
 			accountID: "06e1b677-a4fe-42cf-8afd-ceec867d1fa5",
-			expected: &model.Account{
+			expected: &account.Account{
 				ID:       "06e1b677-a4fe-42cf-8afd-ceec867d1fa5",
 				Username: "account-01",
 				Email:    &emailTest,
@@ -132,7 +132,7 @@ func TestAccountRepository_GetAccount(t *testing.T) {
 		},
 	}
 
-	modelToValues := func(s *model.Account) []any {
+	modelToValues := func(s *account.Account) []any {
 		if s == nil {
 			return []any{}
 		}
@@ -147,7 +147,7 @@ func TestAccountRepository_GetAccount(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	fieldsCount := reflect.TypeFor[model.Account]().NumField()
+	fieldsCount := reflect.TypeFor[account.Account]().NumField()
 	for _, tt := range tests {
 		t.Run(
 			tt.id, func(t *testing.T) {

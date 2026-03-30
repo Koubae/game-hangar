@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	accountModel "github.com/koubae/game-hangar/internal/identity/app/modules/account/model"
+	accountModel "github.com/koubae/game-hangar/internal/identity/app/modules/account"
 	accountRepo "github.com/koubae/game-hangar/internal/identity/app/modules/account/repository"
 	authModel "github.com/koubae/game-hangar/internal/identity/app/modules/auth"
 	"github.com/koubae/game-hangar/pkg/database"

@@ -7,7 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/koubae/game-hangar/internal/errs"
-	"github.com/koubae/game-hangar/internal/identity/app/modules/account/model"
+	"github.com/koubae/game-hangar/internal/identity/app/modules/account"
 	"github.com/koubae/game-hangar/pkg/database"
 )
 
@@ -21,7 +21,7 @@ type IAccountRepository interface {
 		ctx context.Context,
 		db database.DBTX,
 		id string,
-	) (*model.Account, error)
+	) (*account.Account, error)
 }
 
 type AccountRepositoryFactory func() IAccountRepository
@@ -99,7 +99,7 @@ func (r *AccountRepository) GetAccount(
 	ctx context.Context,
 	db database.DBTX,
 	id string,
-) (*model.Account, error) {
+) (*account.Account, error) {
 	const query = `
 	SELECT 
 			id::text,
@@ -112,7 +112,7 @@ func (r *AccountRepository) GetAccount(
 	WHERE id = @id 
 	`
 
-	var m model.Account
+	var m account.Account
 	if err := db.SelectOne(ctx, query, pgx.StrictNamedArgs{"id": id}).Scan(
 		&m.ID,
 		&m.Username,
