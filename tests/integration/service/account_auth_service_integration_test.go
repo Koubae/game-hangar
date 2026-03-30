@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	accountSrv "github.com/koubae/game-hangar/internal/identity/app/modules/account/service"
-	authSrv "github.com/koubae/game-hangar/internal/identity/app/modules/auth/service"
 )
 
 func TestAccountAuthService_RegisterByUsername(t *testing.T) {
@@ -29,13 +28,13 @@ func TestAccountAuthService_RegisterByUsername(t *testing.T) {
 			id:          "on-err-provider-not-exists",
 			source:      "provider-source-does-not-exists",
 			username:    "account-integration-01" + "-" + testID,
-			errExpected: authSrv.ErrGetProvider,
+			errExpected: errs.ProviderNotFound,
 		},
 		{
 			id:          "on-err-provider-is-disabled",
 			source:      testobj.ProviderSourceDisabled,
 			username:    "account-integration-01" + "-" + testID,
-			errExpected: authSrv.ErrProviderIsDisabled,
+			errExpected: errs.ProviderDisabled,
 		},
 
 		{

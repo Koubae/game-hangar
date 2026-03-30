@@ -20,6 +20,15 @@ var (
 
 	AccountCredVerifiedAtRequired     = errors.New("verified_at_required_when_is_verified")
 	AccountCredVerifiedNilWhenIsFalse = errors.New("verified_nil_when_not_verified")
+
+	ProviderNotFound = &AppError{
+		Err: errors.New("provider_not_found"),
+		Msg: "provider not found",
+	}
+	ProviderDisabled = &AppError{
+		Err: errors.New("provider_disabled"),
+		Msg: "provider is disabled",
+	}
 )
 
 // AppError Application error that wraps any other errors.

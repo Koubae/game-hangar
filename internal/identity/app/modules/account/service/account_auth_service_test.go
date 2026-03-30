@@ -8,7 +8,6 @@ import (
 	accountRepo "github.com/koubae/game-hangar/internal/identity/app/modules/account/repository"
 	accountSrv "github.com/koubae/game-hangar/internal/identity/app/modules/account/service"
 	authModel "github.com/koubae/game-hangar/internal/identity/app/modules/auth/model"
-	authSrv "github.com/koubae/game-hangar/internal/identity/app/modules/auth/service"
 	"github.com/koubae/game-hangar/internal/testunit"
 	"github.com/koubae/game-hangar/pkg/testutil"
 	"github.com/koubae/game-hangar/tests/testobj"
@@ -49,7 +48,7 @@ func TestAccountAuthService_RegisterByUsernameProviderErr(t *testing.T) {
 					Once()
 			},
 			expected:    nil,
-			errExpected: authSrv.ErrGetProvider,
+			errExpected: errs.ProviderNotFound,
 		},
 		{
 			id:         "err-on-provider-disabled",
@@ -68,7 +67,7 @@ func TestAccountAuthService_RegisterByUsernameProviderErr(t *testing.T) {
 					Once()
 			},
 			expected:    nil,
-			errExpected: authSrv.ErrProviderIsDisabled,
+			errExpected: errs.ProviderDisabled,
 		},
 	}
 

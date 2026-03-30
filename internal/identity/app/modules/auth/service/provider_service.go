@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/koubae/game-hangar/internal/errs"
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/model"
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/repository"
 	"github.com/koubae/game-hangar/pkg/common"
@@ -37,7 +38,8 @@ func (s *ProviderService) IsProviderEnabled(
 	provider, err := s.GetProvider(ctx, source, _type)
 	if err != nil {
 		logger := common.GetLogger()
-		logger.Error("error while checking if provider is enabled",
+		logger.Error(
+			"error while checking if provider is enabled",
 			zap.String("source", source),
 			zap.String("type", _type),
 			zap.Error(err),
@@ -83,7 +85,7 @@ func (s *ProviderService) GetEnabledProvider(
 			),
 			zap.Error(err),
 		)
-		return nil, ErrGetProvider
+		return nil, errs.ProviderNotFound
 
 	}
 	if provider.Disabled {
@@ -94,7 +96,7 @@ func (s *ProviderService) GetEnabledProvider(
 				fmt.Sprintf("%s.%s", source, _type),
 			),
 		)
-		return nil, ErrProviderIsDisabled
+		return nil, errs.ProviderDisabled
 
 	}
 
