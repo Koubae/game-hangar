@@ -11,7 +11,6 @@ import (
 
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/repository"
 	"github.com/koubae/game-hangar/internal/testunit"
-	"github.com/koubae/game-hangar/pkg/database"
 	"github.com/koubae/game-hangar/pkg/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -197,11 +196,11 @@ func TestCredentialService_CreateCredentialTypeUsername(t *testing.T) {
 							)
 						},
 					).
-					Return(int64(0), &database.ErrDuplicate{}).
+					Return(int64(0), errs.ResourceDuplicate).
 					Once()
 			},
 			expected:      int64(0),
-			errorReturned: &database.ErrDuplicate{},
+			errorReturned: errs.ResourceDuplicate,
 		},
 		{
 			id:         "on-db-error",
@@ -256,9 +255,9 @@ func TestCredentialService_CreateCredentialTypeUsername(t *testing.T) {
 				repo := new(testunit.MockCredentialRepository)
 				tt.setupMock(repo)
 
-				service := service.NewCredentialService(connector, repo)
+				_service := service.NewCredentialService(connector, repo)
 
-				result, err := service.CreateCredentialTypeUsername(
+				result, err := _service.CreateCredentialTypeUsername(
 					ctx,
 					tt.credential,
 					tt.accountID,

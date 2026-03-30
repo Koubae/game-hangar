@@ -123,3 +123,43 @@ func TestAppError_ErrorWrapChaining(t *testing.T) {
 		)
 	}
 }
+
+func TestAppError_DBErrToAppErr(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		err      error
+		expected error
+	}{
+		"unknown-db-err": {
+			err:      errors.New("unknown-error"),
+			expected: errs.DBError,
+		},
+		"open-transaction-error": {
+			err:      &database.ErrOpenTransaction{Err: errors.New("open-transaction-error")},
+			expected: errs.DBError,
+		},
+		"duplicate-error": {
+			err:      &database.ErrDuplicate{Err: errors.New("duplicate-error")},
+			expected: errs.ResourceDuplicate,
+		},
+		"not-found-error": {
+			err:      database.ErrNotFound,
+			expected: errs.ResourceNotFound,
+		},
+	}
+
+	for id, tt := range tests {
+		t.Run(
+			id, func(t *testing.T) {
+				t.Parallel()
+
+				err := errs.DBErrToAppErr(tt.err)
+
+				assert.IsType(t, &errs.AppError{}, err)
+				assert.False(t, err.IsUnmapped())
+				assert.ErrorAs(t, err, &tt.expected)
+			},
+		)
+	}
+}

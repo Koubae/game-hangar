@@ -7,10 +7,10 @@ import (
 	"testing"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/koubae/game-hangar/internal/errs"
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/model"
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/repository"
 	"github.com/koubae/game-hangar/pkg/common"
-	"github.com/koubae/game-hangar/pkg/database"
 	"github.com/koubae/game-hangar/pkg/database/postgres"
 	"github.com/koubae/game-hangar/pkg/testutil"
 	"github.com/stretchr/testify/assert"
@@ -55,7 +55,7 @@ func TestCredentialRepository_GetCredentialByProvider(t *testing.T) {
 			username:    username,
 			expected:    nil,
 			errThrown:   pgx.ErrNoRows,
-			errReturned: database.ErrNotFound,
+			errReturned: errs.ResourceNotFound,
 		},
 	}
 
@@ -79,39 +79,41 @@ func TestCredentialRepository_GetCredentialByProvider(t *testing.T) {
 
 	fieldsCount := reflect.TypeFor[model.AccountCredential]().NumField()
 	for _, tt := range tests {
-		t.Run(tt.id, func(t *testing.T) {
-			common.CreateLogger(common.LogLevelDPanic, "")
-			mockRow := new(testutil.MockRow)
-			mockRow.MockScan(
-				fieldsCount,
-				tt.errThrown,
-				modelToValues(tt.expected)...,
-			)
+		t.Run(
+			tt.id, func(t *testing.T) {
+				common.CreateLogger(common.LogLevelDPanic, "")
+				mockRow := new(testutil.MockRow)
+				mockRow.MockScan(
+					fieldsCount,
+					tt.errThrown,
+					modelToValues(tt.expected)...,
+				)
 
-			mockPool := new(testutil.MockDBPool)
-			mockPool.On("QueryRow", mock.Anything, mock.Anything, providerID, username).
-				Return(mockRow)
+				mockPool := new(testutil.MockDBPool)
+				mockPool.On("QueryRow", mock.Anything, mock.Anything, providerID, username).
+					Return(mockRow)
 
-			connector := postgres.ConnectorPostgres{Pool: mockPool}
-			repo := repository.NewCredentialRepository()
+				connector := postgres.ConnectorPostgres{Pool: mockPool}
+				repo := repository.NewCredentialRepository()
 
-			model, err := repo.GetCredentialByProvider(
-				context.Background(),
-				&connector,
-				providerID,
-				username,
-			)
+				model, err := repo.GetCredentialByProvider(
+					context.Background(),
+					&connector,
+					providerID,
+					username,
+				)
 
-			if tt.errThrown != nil {
-				assert.Error(t, err)
-				assert.ErrorIs(t, err, tt.errReturned)
-			} else {
-				assert.NoError(t, err)
-			}
+				if tt.errThrown != nil {
+					assert.Error(t, err)
+					assert.ErrorAs(t, err, &tt.errReturned)
+				} else {
+					assert.NoError(t, err)
+				}
 
-			assert.Equal(t, tt.expected, model)
-			mockPool.AssertExpectations(t)
-		})
+				assert.Equal(t, tt.expected, model)
+				mockPool.AssertExpectations(t)
+			},
+		)
 	}
 }
 
@@ -134,15 +136,17 @@ func TestCredentialRepository_CreateAccountCredential(t *testing.T) {
 	mockRow.MockScan(1, nil, expectedID)
 
 	mockPool := new(testutil.MockDBPool)
-	mockPool.On("QueryRow", mock.Anything, mock.Anything, pgx.StrictNamedArgs{
-		"credential":  params.Credential,
-		"account_id":  params.AccountID,
-		"provider_id": params.ProviderID,
-		"secret":      params.Secret,
-		"secret_type": params.SecretType,
-		"verified":    params.Verified,
-		"verified_at": params.VerifiedAt,
-	}).Return(mockRow)
+	mockPool.On(
+		"QueryRow", mock.Anything, mock.Anything, pgx.StrictNamedArgs{
+			"credential":  params.Credential,
+			"account_id":  params.AccountID,
+			"provider_id": params.ProviderID,
+			"secret":      params.Secret,
+			"secret_type": params.SecretType,
+			"verified":    params.Verified,
+			"verified_at": params.VerifiedAt,
+		},
+	).Return(mockRow)
 
 	ctx := context.Background()
 	connector := postgres.ConnectorPostgres{Pool: mockPool}
@@ -181,7 +185,7 @@ func TestCredentialRepository_CreateAccountCredentialOnErrors(t *testing.T) {
 			},
 			expectedID:  int64(0),
 			errThrown:   nil,
-			errReturned: repository.ErrVerifiedAtRequired,
+			errReturned: errs.AccountCredVerifiedAtRequired,
 		},
 		{
 			id: "validation-err-nil-when-f",
@@ -196,7 +200,7 @@ func TestCredentialRepository_CreateAccountCredentialOnErrors(t *testing.T) {
 			},
 			expectedID:  int64(0),
 			errThrown:   nil,
-			errReturned: repository.ErrVerifiedNilWhenIsFalse,
+			errReturned: errs.AccountCredVerifiedNilWhenIsFalse,
 		},
 		{
 			id: "on-db-error-any",
@@ -226,40 +230,44 @@ func TestCredentialRepository_CreateAccountCredentialOnErrors(t *testing.T) {
 			},
 			expectedID:  int64(0),
 			errThrown:   testutil.DBMockErrDuplicateKey,
-			errReturned: &database.ErrDuplicate{},
+			errReturned: errs.ResourceDuplicate,
 		},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.id, func(t *testing.T) {
-			common.CreateLogger(common.LogLevelDPanic, "")
-			mockRow := new(testutil.MockRow)
-			mockRow.MockScan(1, tt.errThrown, tt.expectedID)
+		t.Run(
+			tt.id, func(t *testing.T) {
+				common.CreateLogger(common.LogLevelDPanic, "")
+				mockRow := new(testutil.MockRow)
+				mockRow.MockScan(1, tt.errThrown, tt.expectedID)
 
-			params := tt.params
+				params := tt.params
 
-			mockPool := new(testutil.MockDBPool)
-			mockPool.On("QueryRow", mock.Anything, mock.Anything, pgx.StrictNamedArgs{
-				"credential":  params.Credential,
-				"account_id":  params.AccountID,
-				"provider_id": params.ProviderID,
-				"secret":      params.Secret,
-				"secret_type": params.SecretType,
-				"verified":    params.Verified,
-				"verified_at": params.VerifiedAt,
-			}).
-				Return(mockRow)
+				mockPool := new(testutil.MockDBPool)
+				mockPool.On(
+					"QueryRow", mock.Anything, mock.Anything, pgx.StrictNamedArgs{
+						"credential":  params.Credential,
+						"account_id":  params.AccountID,
+						"provider_id": params.ProviderID,
+						"secret":      params.Secret,
+						"secret_type": params.SecretType,
+						"verified":    params.Verified,
+						"verified_at": params.VerifiedAt,
+					},
+				).
+					Return(mockRow)
 
-			ctx := context.Background()
-			connector := postgres.ConnectorPostgres{Pool: mockPool}
-			repo := repository.NewCredentialRepository()
+				ctx := context.Background()
+				connector := postgres.ConnectorPostgres{Pool: mockPool}
+				repo := repository.NewCredentialRepository()
 
-			id, err := repo.CreateAccountCredential(ctx, &connector, *params)
+				id, err := repo.CreateAccountCredential(ctx, &connector, *params)
 
-			assert.Error(t, err)
-			assert.ErrorIs(t, err, tt.errReturned)
+				assert.Error(t, err)
+				assert.ErrorAs(t, err, &tt.errReturned)
 
-			assert.Equal(t, tt.expectedID, id)
-		})
+				assert.Equal(t, tt.expectedID, id)
+			},
+		)
 	}
 }

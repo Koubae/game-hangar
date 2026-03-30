@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/koubae/game-hangar/internal/errs"
 	"github.com/koubae/game-hangar/internal/identity/app/modules/account/repository"
 	authModel "github.com/koubae/game-hangar/internal/identity/app/modules/auth/model"
 	authSrv "github.com/koubae/game-hangar/internal/identity/app/modules/auth/service"
@@ -86,20 +87,23 @@ func (s *AccountAuthService) RegisterByUsername(
 		credential,
 	)
 	if cred != nil {
-		logger.Warn(n+"attempt to create account using existing credentials",
+		logger.Warn(
+			n+"attempt to create account using existing credentials",
 			zap.String("source", source),
 			zap.String("credential", credential),
 		)
 		return nil, nil, ErrRegistrationCredExists
 	} else if err != nil {
-		if !errors.Is(err, database.ErrNotFound) {
+		if !errors.Is(err, errs.ResourceNotFound) {
 			return nil, nil, &common.ErrServerError{Err: err}
 		}
 	}
 
-	tx, err := s.db.Transaction(ctx, pgx.TxOptions{
-		IsoLevel: pgx.ReadCommitted,
-	})
+	tx, err := s.db.Transaction(
+		ctx, pgx.TxOptions{
+			IsoLevel: pgx.ReadCommitted,
+		},
+	)
 	if err != nil {
 		return nil, nil, &common.ErrServerError{
 			Err: &database.ErrOpenTransaction{Err: err},
@@ -117,10 +121,12 @@ func (s *AccountAuthService) RegisterByUsername(
 
 	credServiceTX := s.credentialSrvProvider(tx)
 
-	id, err := s.repository.CreateAccount(ctx, tx, repository.NewAccount{
-		Username: credential,
-		Email:    nil,
-	})
+	id, err := s.repository.CreateAccount(
+		ctx, tx, repository.NewAccount{
+			Username: credential,
+			Email:    nil,
+		},
+	)
 	if err != nil {
 		if errors.Is(
 			err,
@@ -172,7 +178,8 @@ func (s *AccountAuthService) RegisterByUsername(
 		return nil, nil, err
 	}
 
-	logger.Info("created new account using username credentials",
+	logger.Info(
+		"created new account using username credentials",
 		zap.String("accountID", *id),
 		zap.Int64("credentialID", credID),
 		zap.String("source", source),

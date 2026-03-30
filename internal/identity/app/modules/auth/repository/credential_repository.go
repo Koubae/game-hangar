@@ -2,23 +2,13 @@ package repository
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/koubae/game-hangar/internal/errs"
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/model"
 	"github.com/koubae/game-hangar/pkg/database"
-)
-
-var (
-	ErrVerifiedAtRequired = errors.New(
-		"verified_at is required when verified=true",
-	)
-	ErrVerifiedNilWhenIsFalse = errors.New(
-		"verified_at must be nil when verified=false",
-	)
 )
 
 type ICredentialRepository interface {
@@ -49,10 +39,16 @@ type NewAccountCredential struct {
 
 func (p *NewAccountCredential) Validate() error {
 	if p.Verified && p.VerifiedAt == nil {
-		return ErrVerifiedAtRequired
+		return &errs.AppError{
+			Err: errs.AccountCredVerifiedAtRequired,
+			Msg: "verified_at is required when verified is true",
+		}
 	}
 	if !p.Verified && p.VerifiedAt != nil {
-		return ErrVerifiedNilWhenIsFalse
+		return &errs.AppError{
+			Err: errs.AccountCredVerifiedNilWhenIsFalse,
+			Msg: "verified_at must be nil when verified is false",
+		}
 	}
 	return nil
 }
@@ -110,7 +106,7 @@ func (r *CredentialRepository) CreateAccountCredential(
 		},
 	).Scan(&id)
 	if err != nil {
-		return 0, db.MapDBErrToDomainErr(err)
+		return 0, errs.DBErrToAppErr(db.MapDBErrToDomainErr(err))
 	}
 
 	return id, nil
@@ -155,13 +151,7 @@ func (r *CredentialRepository) GetCredentialByProvider(
 		&m.Created,
 		&m.Updated,
 	); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, database.ErrNotFound
-		}
-		return nil, fmt.Errorf(
-			"error while GetCredentialByProvider, error: %w",
-			err,
-		)
+		return nil, errs.DBErrToAppErr(db.MapDBErrToDomainErr(err))
 	}
 
 	return &m, nil

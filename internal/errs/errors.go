@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+
+	"github.com/koubae/game-hangar/pkg/database"
 )
 
 var (
@@ -12,6 +14,9 @@ var (
 	DBError           = errors.New("database error")
 	ResourceNotFound  = errors.New("resource not found")
 	ResourceDuplicate = errors.New("resource already exists")
+
+	AccountCredVerifiedAtRequired     = errors.New("verified_at_required_when_is_verified")
+	AccountCredVerifiedNilWhenIsFalse = errors.New("verified_nil_when_not_verified")
 )
 
 // AppError Application error that wraps any other errors.
@@ -53,4 +58,26 @@ func AsAppError(err error) *AppError {
 		return appErr
 	}
 	return &AppError{Err: errors.Join(Unmapped, err), Msg: "unknown error"}
+}
+
+func DBErrToAppErr(err error) *AppError {
+	var mappedErr error
+	var message string
+	switch {
+	case errors.Is(err, database.ErrNotFound):
+		mappedErr = ResourceNotFound
+		message = "resource not found"
+	case errors.Is(err, &database.ErrDuplicate{}):
+		mappedErr = ResourceDuplicate
+		message = "resource already exists"
+	case errors.Is(err, &database.ErrOpenTransaction{}):
+		mappedErr = DBError
+		message = "database error"
+	default:
+		mappedErr = DBError
+		message = "database error"
+	}
+
+	return &AppError{Err: mappedErr, Msg: message}
+
 }
