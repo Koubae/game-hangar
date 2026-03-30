@@ -1,4 +1,4 @@
-package service
+package auth
 
 import (
 	"context"
@@ -7,7 +7,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/koubae/game-hangar/internal/errs"
-	"github.com/koubae/game-hangar/internal/identity/app/modules/auth"
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/database"
 	"go.uber.org/zap"
@@ -15,19 +14,19 @@ import (
 
 type CredentialService struct {
 	db         database.DBTX
-	repository auth.ICredentialRepository
+	repository ICredentialRepository
 }
 
 type CredentialServiceProvider func(db database.DBTX) *CredentialService
 
 type CredentialServiceFactory func(
 	d database.DBTX,
-	r auth.ICredentialRepository,
+	r ICredentialRepository,
 ) *CredentialService
 
 func NewCredentialService(
 	d database.DBTX,
-	r auth.ICredentialRepository,
+	r ICredentialRepository,
 ) *CredentialService {
 	return &CredentialService{
 		db:         d,
@@ -39,7 +38,7 @@ func (s *CredentialService) CreateCredentialTypeUsername(
 	ctx context.Context,
 	credential string,
 	accountID uuid.UUID,
-	provider *auth.Provider,
+	provider *Provider,
 	secret string,
 ) (int64, error) {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
@@ -47,7 +46,7 @@ func (s *CredentialService) CreateCredentialTypeUsername(
 
 	logger := common.GetLogger()
 
-	if auth.ProviderType(provider.Type) != auth.Username {
+	if ProviderType(provider.Type) != Username {
 		logger.Warn(
 			"[CredentialService] create credential got incorrect provider type",
 			zap.String("providerSource", provider.Source),
@@ -58,7 +57,7 @@ func (s *CredentialService) CreateCredentialTypeUsername(
 	}
 
 	verifiedAt := time.Now().UTC()
-	params := auth.NewAccountCredential{
+	params := NewAccountCredential{
 		Credential: credential,
 		AccountID:  accountID,
 		ProviderID: provider.ID,
@@ -100,7 +99,7 @@ func (s *CredentialService) GetCredentialByProvider(
 	ctx context.Context,
 	providerID int64,
 	credential string,
-) (*auth.AccountCredential, error) {
+) (*AccountCredential, error) {
 	return s.getCredentialByProvider(ctx, providerID, credential)
 }
 
@@ -108,7 +107,7 @@ func (s *CredentialService) getCredentialByProvider(
 	ctx context.Context,
 	providerID int64,
 	credential string,
-) (*auth.AccountCredential, error) {
+) (*AccountCredential, error) {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 

@@ -1,4 +1,4 @@
-package service_test
+package auth_test
 
 import (
 	"context"
@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth"
-	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/service"
 	"github.com/koubae/game-hangar/internal/testunit"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -125,7 +124,7 @@ func TestProviderService_IsProviderEnabled(t *testing.T) {
 				repo := container.ProviderRepository().(*testunit.MockProviderRepository)
 				tt.setupMock(repo)
 
-				svc := service.NewProviderService(connector, repo)
+				svc := auth.NewProviderService(connector, repo)
 
 				got := svc.IsProviderEnabled(
 					context.Background(),

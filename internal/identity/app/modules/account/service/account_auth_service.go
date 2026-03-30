@@ -9,8 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/koubae/game-hangar/internal/errs"
 	"github.com/koubae/game-hangar/internal/identity/app/modules/account/repository"
-	authModel "github.com/koubae/game-hangar/internal/identity/app/modules/auth"
-	authSrv "github.com/koubae/game-hangar/internal/identity/app/modules/auth/service"
+	"github.com/koubae/game-hangar/internal/identity/app/modules/auth"
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/database"
 	"go.uber.org/zap"
@@ -20,23 +19,23 @@ type AccountAuthService struct {
 	db         database.Connector
 	repository repository.IAccountRepository
 
-	providerSrv           *authSrv.ProviderService
-	credentialSrvProvider authSrv.CredentialServiceProvider
+	providerSrv           *auth.ProviderService
+	credentialSrvProvider auth.CredentialServiceProvider
 }
 
 type AccountAuthServiceFactory func(
 	d database.Connector,
 	r repository.IAccountRepository,
-	providerSrv *authSrv.ProviderService,
-	credentialSrvProvider authSrv.CredentialServiceProvider,
+	providerSrv *auth.ProviderService,
+	credentialSrvProvider auth.CredentialServiceProvider,
 ) *AccountAuthService
 
 func NewAccountAuthService(
 	d database.Connector,
 	r repository.IAccountRepository,
-	providerSrv *authSrv.ProviderService,
+	providerSrv *auth.ProviderService,
 
-	credentialSrvProvider authSrv.CredentialServiceProvider,
+	credentialSrvProvider auth.CredentialServiceProvider,
 ) *AccountAuthService {
 	return &AccountAuthService{
 		db:                    d,
@@ -68,7 +67,7 @@ func (s *AccountAuthService) RegisterByUsername(
 	provider, err := s.providerSrv.GetEnabledProvider(
 		ctx,
 		source,
-		string(authModel.Username),
+		string(auth.Username),
 	)
 	if err != nil {
 		return nil, nil, err

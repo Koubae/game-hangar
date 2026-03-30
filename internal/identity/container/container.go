@@ -4,7 +4,6 @@ import (
 	accountRepo "github.com/koubae/game-hangar/internal/identity/app/modules/account/repository"
 	accountSrv "github.com/koubae/game-hangar/internal/identity/app/modules/account/service"
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth"
-	authSrv "github.com/koubae/game-hangar/internal/identity/app/modules/auth/service"
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/database"
 	"github.com/koubae/game-hangar/pkg/database/postgres"
@@ -16,9 +15,9 @@ type IdentityAuthContainer interface {
 	ProviderRepository() auth.IProviderRepository
 	CredentialRepository() auth.ICredentialRepository
 
-	AuthService() *authSrv.AuthService
-	ProviderService(db database.DBTX) *authSrv.ProviderService
-	CredentialService(db database.DBTX) *authSrv.CredentialService
+	AuthService() *auth.SecretsService
+	ProviderService(db database.DBTX) *auth.ProviderService
+	CredentialService(db database.DBTX) *auth.CredentialService
 }
 
 type IdentityAccountContainer interface {
@@ -50,10 +49,10 @@ type AppContainer struct {
 	accountRepositoryFactory accountRepo.AccountRepositoryFactory
 
 	// NOTE: Services
-	authService               *authSrv.AuthService
-	authServiceFactory        authSrv.AuthServiceFactory
-	providerServiceFactory    authSrv.ProviderServiceFactory
-	credentialServiceFactory  authSrv.CredentialServiceFactory
+	authService               *auth.SecretsService
+	authServiceFactory        auth.SecretsServiceFactory
+	providerServiceFactory    auth.ProviderServiceFactory
+	credentialServiceFactory  auth.CredentialServiceFactory
 	accountAuthServiceFactory accountSrv.AccountAuthServiceFactory
 }
 
@@ -64,9 +63,9 @@ type AppDependencies struct {
 	ProviderRepositoryFactory   auth.ProviderRepositoryFactory
 	CredentialRepositoryFactory auth.CredentialRepositoryFactory
 	AccountRepositoryFactory    accountRepo.AccountRepositoryFactory
-	AuthServiceFactory          authSrv.AuthServiceFactory
-	ProviderServiceFactory      authSrv.ProviderServiceFactory
-	CredentialServiceFactory    authSrv.CredentialServiceFactory
+	AuthServiceFactory          auth.SecretsServiceFactory
+	ProviderServiceFactory      auth.ProviderServiceFactory
+	CredentialServiceFactory    auth.CredentialServiceFactory
 	AccountAuthServiceFactory   accountSrv.AccountAuthServiceFactory
 }
 
@@ -131,9 +130,9 @@ func LoadAppDependenciesWithDefaFactories(
 	accountRepositoryFactory := accountRepo.NewAccountRepository
 
 	// NOTE: Services
-	authServiceFactory := authSrv.NewAuthService
-	providerServiceFactory := authSrv.NewProviderService
-	credentialServiceFactory := authSrv.NewCredentialService
+	authServiceFactory := auth.NewSecretsService
+	providerServiceFactory := auth.NewProviderService
+	credentialServiceFactory := auth.NewCredentialService
 	accountAuthServiceFactory := accountSrv.NewAccountAuthService
 
 	return &AppDependencies{
@@ -214,7 +213,7 @@ func (c *AppContainer) AccountRepository() accountRepo.IAccountRepository {
 	return c.accountRepository
 }
 
-func (c *AppContainer) AuthService() *authSrv.AuthService {
+func (c *AppContainer) AuthService() *auth.SecretsService {
 	if c.authService == nil {
 		c.authService = c.authServiceFactory()
 	}
@@ -223,7 +222,7 @@ func (c *AppContainer) AuthService() *authSrv.AuthService {
 
 func (c *AppContainer) ProviderService(
 	db database.DBTX,
-) *authSrv.ProviderService {
+) *auth.ProviderService {
 	if db == nil {
 		db = c.connector
 	}
@@ -232,7 +231,7 @@ func (c *AppContainer) ProviderService(
 
 func (c *AppContainer) CredentialService(
 	db database.DBTX,
-) *authSrv.CredentialService {
+) *auth.CredentialService {
 	if db == nil {
 		db = c.connector
 	}
@@ -253,7 +252,7 @@ func (c *AppContainer) AccountAuthService(
 		db,
 		repository,
 		providerSrv,
-		func(db database.DBTX) *authSrv.CredentialService {
+		func(db database.DBTX) *auth.CredentialService {
 			return c.CredentialService(db)
 		},
 	)

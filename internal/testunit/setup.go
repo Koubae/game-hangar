@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	accountSrv "github.com/koubae/game-hangar/internal/identity/app/modules/account/service"
-	authSrv "github.com/koubae/game-hangar/internal/identity/app/modules/auth/service"
+	"github.com/koubae/game-hangar/internal/identity/app/modules/auth"
 	identityContainer "github.com/koubae/game-hangar/internal/identity/container"
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/stretchr/testify/require"
@@ -25,9 +25,9 @@ func NewTestIdentityAppContainer(t *testing.T) *identityContainer.AppContainer {
 	accountRepositoryFactory := NewMockAccountRepository
 
 	// NOTE: Services
-	authServiceFactory := authSrv.NewAuthService
-	providerServiceFactory := authSrv.NewProviderService
-	credentialServiceFactory := authSrv.NewCredentialService
+	authServiceFactory := auth.NewSecretsService
+	providerServiceFactory := auth.NewProviderService
+	credentialServiceFactory := auth.NewCredentialService
 	accountAuthServiceFactory := accountSrv.NewAccountAuthService
 
 	dependencies := &identityContainer.AppDependencies{

@@ -1,4 +1,4 @@
-package service_test
+package auth_test
 
 import (
 	"context"
@@ -7,8 +7,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/koubae/game-hangar/internal/errs"
 	"github.com/koubae/game-hangar/internal/identity/app/modules/auth"
-	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/service"
-
 	"github.com/koubae/game-hangar/internal/testunit"
 	"github.com/koubae/game-hangar/pkg/testutil"
 	"github.com/stretchr/testify/assert"
@@ -104,7 +102,7 @@ func TestCredentialService_GetCredentialByProvider(t *testing.T) {
 				repo := container.CredentialRepository().(*testunit.MockCredentialRepository)
 				tt.setupMock(repo)
 
-				_service := service.NewCredentialService(connector, repo)
+				_service := auth.NewCredentialService(connector, repo)
 
 				result, err := _service.GetCredentialByProvider(
 					ctx,
@@ -254,7 +252,7 @@ func TestCredentialService_CreateCredentialTypeUsername(t *testing.T) {
 				repo := new(testunit.MockCredentialRepository)
 				tt.setupMock(repo)
 
-				_service := service.NewCredentialService(connector, repo)
+				_service := auth.NewCredentialService(connector, repo)
 
 				result, err := _service.CreateCredentialTypeUsername(
 					ctx,
