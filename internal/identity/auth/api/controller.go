@@ -41,12 +41,8 @@ func (c *AuthController) RegisterByUsername(
 	}
 
 	if err := payload.Validate(); err != nil {
-		web.WriteBusinessErrorResponse(
-			w, &common.ClientResponseError{
-				HTTPCode: http.StatusBadRequest,
-				Message:  fmt.Sprintf("invalid payload: %s", err.Error()),
-			},
-		)
+		response := errs.AppErrToClientResponse(err, "payload validation error")
+		web.WriteBusinessErrorResponse(w, response)
 		return
 	}
 
