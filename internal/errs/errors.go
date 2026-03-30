@@ -21,6 +21,11 @@ var (
 	AccountCredVerifiedAtRequired     = errors.New("verified_at_required_when_is_verified")
 	AccountCredVerifiedNilWhenIsFalse = errors.New("verified_nil_when_not_verified")
 
+	AccountCredCreateIncorrectProviderType = &AppError{
+		Err: errors.New("incorrect_provider_type"),
+		Msg: "incorrect provider type",
+	}
+
 	ProviderNotFound = &AppError{
 		Err: errors.New("provider_not_found"),
 		Msg: "provider not found",

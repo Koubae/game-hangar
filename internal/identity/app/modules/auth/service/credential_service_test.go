@@ -242,7 +242,7 @@ func TestCredentialService_CreateCredentialTypeUsername(t *testing.T) {
 				repo.AssertNotCalled(t, "CreateAccountCredential")
 			},
 			expected:      int64(0),
-			errorReturned: service.ErrCreateCredentialIncorrectProviderType,
+			errorReturned: errs.AccountCredCreateIncorrectProviderType,
 		},
 	}
 

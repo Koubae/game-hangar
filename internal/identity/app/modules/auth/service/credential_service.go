@@ -55,7 +55,7 @@ func (s *CredentialService) CreateCredentialTypeUsername(
 			zap.String("providerType", provider.Type),
 			zap.String("providerName", provider.DisplayName),
 		)
-		return 0, ErrCreateCredentialIncorrectProviderType // TODO: remove this error from here
+		return 0, errs.AccountCredCreateIncorrectProviderType
 	}
 
 	verifiedAt := time.Now().UTC()
