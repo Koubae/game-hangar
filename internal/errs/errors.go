@@ -9,6 +9,9 @@ import (
 )
 
 var (
+	ServerErr = errors.New("server error")
+	ClientErr = errors.New("client error")
+
 	Unmapped = errors.New("unmapped error")
 
 	DBError           = errors.New("database error")
@@ -93,6 +96,16 @@ func AsAppError(err error) *AppError {
 
 func Wrap(appErr *AppError, err error) *AppError {
 	return &AppError{Err: errors.Join(appErr, err), Msg: appErr.Msg}
+}
+
+func IsAny(err error, targets ...error) bool {
+	for _, target := range targets {
+		if errors.Is(err, target) {
+			return true
+		}
+	}
+	return false
+
 }
 
 func DBErrToAppErr(err error) *AppError {

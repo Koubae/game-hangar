@@ -60,7 +60,7 @@ func (s *AccountAuthService) RegisterByUsername(
 		n+" started ...",
 		zap.String("source", source),
 		zap.String("credential", credential),
-	) // TODO: This should be debug + we should mesure stats?
+	)
 
 	ctx, cancel := context.WithTimeout(ctx, 8*time.Second)
 	defer cancel()
@@ -88,7 +88,7 @@ func (s *AccountAuthService) RegisterByUsername(
 		return nil, nil, errs.AccountCredDuplicate
 	} else if err != nil {
 		if !errors.Is(err, errs.ResourceNotFound) {
-			return nil, nil, &common.ErrServerError{Err: err}
+			return nil, nil, err
 		}
 	}
 
@@ -98,9 +98,7 @@ func (s *AccountAuthService) RegisterByUsername(
 		},
 	)
 	if err != nil {
-		return nil, nil, &common.ErrServerError{
-			Err: &database.ErrOpenTransaction{Err: err},
-		}
+		return nil, nil, err
 	}
 	defer func() {
 		if rbErr := tx.Rollback(ctx); rbErr != nil &&
@@ -111,7 +109,6 @@ func (s *AccountAuthService) RegisterByUsername(
 
 	// NOTE: TRANSACTION BEGIN
 	// WARN: All below operation are within a transaction
-
 	credServiceTX := s.credentialSrvProvider(tx)
 
 	id, err := s.repository.CreateAccount(
@@ -121,24 +118,13 @@ func (s *AccountAuthService) RegisterByUsername(
 		},
 	)
 	if err != nil {
-		if errors.Is(
-			err,
-			errs.UsernameRequired,
-		) || errors.Is(
-			err,
-			errs.InvalidEmailFormat,
-		) {
-			return nil, nil, err
+		lvl := "error"
+		if errs.IsAny(err, errs.UsernameRequired, errs.InvalidEmailFormat, errs.ResourceDuplicate) {
+			lvl = "debug"
 		}
 
-		if errors.Is(err, errs.ResourceDuplicate) {
-			logger.Debug(n+"duplicate account creation", zap.Error(err))
-			return nil, nil, err
-		}
-
-		// TODO: should be Apperr!
-		logger.Error(n+"error while creating account", zap.Error(err))
-		return nil, nil, &common.ErrServerError{Err: errs.AccountCreationFailed}
+		logger.L(lvl, n+"could not create account", zap.Error(err))
+		return nil, nil, err
 	}
 
 	accountID, _ := uuid.Parse(*id)

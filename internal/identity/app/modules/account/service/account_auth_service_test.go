@@ -397,7 +397,7 @@ func TestAccountAuthService_RegisterByUsernameAccountAndCredentialCreation(
 
 				if tt.errExpected != nil {
 					assert.Error(t, err)
-					assert.ErrorIs(t, err, tt.errExpected)
+					assert.ErrorAs(t, err, &tt.errExpected)
 					assert.Nil(t, accountID)
 					assert.Nil(t, credID)
 				} else {
