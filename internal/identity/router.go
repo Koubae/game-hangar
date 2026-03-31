@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/koubae/game-hangar/internal/errs"
 	authRouter "github.com/koubae/game-hangar/internal/identity/auth/api"
 	"github.com/koubae/game-hangar/pkg/authpkg"
 	"github.com/koubae/game-hangar/pkg/di"
@@ -38,20 +39,16 @@ func RouterRegister(container di.Container) web.RouterRegisterFunc {
 
 		protected.HandleFunc(
 			"/me", func(w http.ResponseWriter, r *http.Request) {
-				w.Write([]byte("protected content"))
+				ctx := r.Context()
+				accessToken, ok := authpkg.GetAccessToken(ctx)
+				if !ok {
+					errs.AppErrToClientResponse(w, errs.AuthNotLoggedIn, "")
+					return
+				}
+
+				w.Write([]byte("protected content " + accessToken.AccountID))
 			},
 		)
-
-		// account.Handle(
-		// 	"/protected",
-		// 	auth.JWTMiddleware(
-		// 		jwt.SigningMethodHS256, secret, http.HandlerFunc(
-		// 			func(w http.ResponseWriter, r *http.Request) {
-		// 				w.Write([]byte("ok"))
-		// 			},
-		// 		),
-		// 	),
-		// )
 
 	}
 

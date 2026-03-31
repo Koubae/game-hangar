@@ -70,6 +70,11 @@ var (
 		Msg:         "login failed",
 		DefaultCode: 401,
 	}
+	AuthNotLoggedIn = &AppError{
+		Err:         ClientErr,
+		Msg:         "not logged in",
+		DefaultCode: 401,
+	}
 
 	ProviderNotFound = &AppError{
 		Err:         ClientErr,

@@ -173,6 +173,11 @@ func JWTMiddleware[S JWTSecret](method jwt.SigningMethod, secret S) func(http.Ha
 	}
 }
 
+func GetAccessToken(ctx context.Context) (*AccessToken, bool) {
+	accessToken, ok := ctx.Value(ContextKeyAccessToken).(*AccessToken)
+	return accessToken, ok
+}
+
 func extractToken(r *http.Request) (string, bool) {
 	if token, ok := extractTokenFromQueryParams(r); ok {
 		return token, true
