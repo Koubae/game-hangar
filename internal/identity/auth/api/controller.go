@@ -54,8 +54,7 @@ func (c *AuthController) RegisterByUsername(
 		return
 	}
 
-	accountAuthSrv := c.container.AccountAuthService(nil)
-	accountID, credID, err := accountAuthSrv.RegisterByUsername(
+	accountID, credID, err := c.container.AccountAuthService(nil).RegisterByUsername(
 		ctx,
 		payload.Source,
 		payload.Username,
