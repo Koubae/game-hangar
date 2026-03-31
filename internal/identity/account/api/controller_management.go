@@ -30,16 +30,15 @@ func (c *AccountManagementController) Me(w http.ResponseWriter, r *http.Request)
 
 	logger := c.container.Logger()
 
-	_account, err := c.container.AccountRepository().GetAccount(
+	_account, err := c.container.AccountManagementService(nil).GetAccount(
 		ctx,
-		c.container.DB(),
 		accessToken.AccountID,
 	)
 	if err != nil {
 		errs.AppErrToClientResponseWithLog(w, err, "", logger)
 		return
 	}
-	
+
 	response := account.NewDTOAccountFromAccount(_account)
 	web.WriteJSONResponse(w, http.StatusOK, response)
 }

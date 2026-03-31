@@ -191,3 +191,14 @@ func (m *Mocker) MockCreateAccount(username string, email *string, returnAccount
 		Once()
 
 }
+
+func (m *Mocker) MockGetAccount(accountID string, returnAccount *account.Account, returnErr error) {
+	repo := m.container.AccountRepository().(*MockAccountRepository)
+	repo.On(
+		"GetAccount",
+		mock.Anything,
+		mock.Anything,
+		accountID,
+	).
+		Return(returnAccount, returnErr)
+}
