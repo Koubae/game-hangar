@@ -30,7 +30,7 @@ func SetupTestIntegrationIdentity(
 
 	ctx, connector, tearDown := DBWithCleanup(t, false)
 
-	dependencies, err := identityContainer.LoadAppDependenciesWithDefaFactories(
+	dependencies, err := identityContainer.LoadAppDependenciesWithDefaultFactories(
 		logger,
 		connector,
 	)

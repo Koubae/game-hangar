@@ -1,0 +1,28 @@
+package api
+
+import (
+	"net/http"
+
+	"github.com/koubae/game-hangar/internal/identity/container"
+	"github.com/koubae/game-hangar/pkg/authpkg"
+	"github.com/koubae/game-hangar/pkg/di"
+	"github.com/koubae/game-hangar/pkg/web"
+)
+
+func RouterRegister(v1 *http.ServeMux, c di.Container) {
+	loggedAccountMiddleware := authpkg.NewJWTMiddleware()
+
+	account := web.Group(v1, "/account")
+	accountLoggedIn := web.GroupWithMiddleware(
+		account,
+		"",
+		loggedAccountMiddleware,
+	)
+
+	authController := NewAccountManagementController(c.(container.IdentityContainer))
+
+	// ------------------------------------------
+	// 	Account Management functions
+	// ------------------------------------------
+	accountLoggedIn.HandleFunc("GET /me", authController.Me)
+}
