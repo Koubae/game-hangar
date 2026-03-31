@@ -14,7 +14,7 @@ type IdentityAuthContainer interface {
 	ProviderRepository() auth2.IProviderRepository
 	CredentialRepository() auth2.ICredentialRepository
 
-	AuthService() *auth2.SecretsService
+	SecretsService() *auth2.SecretsService
 	ProviderService(db database.DBTX) *auth2.ProviderService
 	CredentialService(db database.DBTX) *auth2.CredentialService
 }
@@ -212,7 +212,7 @@ func (c *AppContainer) AccountRepository() accountRepo.IAccountRepository {
 	return c.accountRepository
 }
 
-func (c *AppContainer) AuthService() *auth2.SecretsService {
+func (c *AppContainer) SecretsService() *auth2.SecretsService {
 	if c.authService == nil {
 		c.authService = c.authServiceFactory()
 	}

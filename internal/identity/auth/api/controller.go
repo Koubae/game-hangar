@@ -44,7 +44,7 @@ func (c *AuthController) RegisterByUsername(
 	)
 
 	// TODO: Add password length validation
-	secret, err := c.container.AuthService().HashSecret(payload.Password)
+	secret, err := c.container.SecretsService().HashSecret(payload.Password)
 	if err != nil {
 		errs.AppErrToClientResponseWithLog(
 			w,
