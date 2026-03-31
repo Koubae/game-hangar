@@ -120,3 +120,54 @@ func TestAuthController_RegisterByUsername_ErrOnInValidUsername(t *testing.T) {
 	assert.Equal(t, expected, strings.TrimSpace(response))
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
 }
+
+func TestAuthController_LoginByUsername(t *testing.T) {
+	t.Parallel()
+
+	_, handlerPtr, mocker := testunit.NewTestRouterAndContainer(t)
+	handler := *handlerPtr
+
+	mocker.MockGetProvider(
+		"global",
+		"username",
+		&auth.Provider{ID: 1, Source: "global", Type: "username", Disabled: false},
+		nil,
+	)
+	mocker.MockGetCredentialByProvider(
+		testunit.ProviderUsernameID,
+		testunit.UsernameTest01,
+		&auth.AccountCredential{
+			ID:         1,
+			Credential: testunit.UsernameTest01,
+			AccountID:  testunit.AccountIDTest01,
+			ProviderID: 1,
+			Secret:     testunit.StrongPasswordHash,
+		},
+		nil,
+	)
+
+	payload := fmt.Sprintf(
+		`{
+		"source": "global",	
+		"username": "%s",
+		"password": "%s"
+	}`, testunit.UsernameTest01,
+		testunit.StrongPassword,
+	)
+
+	req, err := http.NewRequest("POST", "/api/v1/auth/login/username", strings.NewReader(payload))
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+
+	rr := httptest.NewRecorder()
+	handler.ServeHTTP(rr, req)
+
+	var response auth.DTOAccessToken
+	err = json.Unmarshal([]byte(rr.Body.String()), &response)
+	require.NoError(t, err)
+
+	assert.IsType(t, auth.DTOAccessToken{}, response)
+	assert.NotEmpty(t, response.AccessToken)
+	assert.NotEmpty(t, response.ExpiresIn)
+	assert.Equal(t, http.StatusOK, rr.Code)
+}

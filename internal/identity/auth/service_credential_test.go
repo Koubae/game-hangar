@@ -240,19 +240,6 @@ func TestCredentialService_CreateCredentialTypeUsername(t *testing.T) {
 			expected:      int64(0),
 			errorReturned: errs.AccountCredCreateIncorrectProviderType,
 		},
-
-		// {
-		// 	id:         "on-account-credential-is-not-verified",
-		// 	credential: username,
-		// 	accountID:  testutil.AccountIDTest01,
-		// 	provider:   testunit.ProviderEmail,
-		// 	setupMock: func(repo *testunit.MockCredentialRepository) {
-		// 		repo.AssertNotCalled(t, "CreateAccountCredential")
-		// 	},
-		// 	expected:      int64(0),
-		// 	errorReturned: errs.AccountCredVerifiedAtRequired,
-		// },
-
 	}
 
 	ctx := context.Background()

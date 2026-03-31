@@ -37,7 +37,8 @@ var (
 	AccountIDTest01    = uuid.New()
 	AccountIDTest01Str = AccountIDTest01.String()
 
-	StrongPassword = "StrongPassword123!"
+	StrongPassword     = "StrongPassword123!"
+	StrongPasswordHash = "$2a$10$fSi7cP.8W9AbkmVwjO5lvuA3gdEKU97YjewosAUMmLjn1PDLozzkm"
 
 	CredIDTest01   = int64(9999)
 	UsernameTest01 = "unit-test-user-01"
