@@ -3,6 +3,9 @@ package testunit
 import (
 	"context"
 	"errors"
+	"net/http"
+	"testing"
+	"time"
 
 	"github.com/koubae/game-hangar/internal/identity/account"
 	"github.com/koubae/game-hangar/internal/identity/auth"
@@ -11,6 +14,7 @@ import (
 	"github.com/koubae/game-hangar/pkg/database/postgres"
 	"github.com/koubae/game-hangar/pkg/testutil"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
 var ErrDBGeneric = errors.New("mock-db-error")
@@ -116,6 +120,39 @@ type Mocker struct {
 
 func NewMocker(container *identityContainer.AppContainer) *Mocker {
 	return &Mocker{container: container}
+}
+
+func (m *Mocker) GenAccessToken(
+	t *testing.T,
+	accountID string,
+	credential string,
+) string {
+	t.Helper()
+
+	secretService := m.container.SecretsService()
+	expire := time.Now().Add(AuthTokenExpirationTime).Unix()
+	accessToken, err := secretService.GenerateJWTAccessToken(
+		"global",
+		"username",
+		accountID,
+		credential,
+		expire,
+	)
+	require.NoError(t, err)
+
+	return accessToken
+}
+
+func (m *Mocker) GenAccessTokenAndSetInReq(
+	t *testing.T,
+	req *http.Request,
+	accountID string,
+	credential string,
+) {
+	t.Helper()
+
+	token := m.GenAccessToken(t, accountID, credential)
+	req.Header.Set("Authorization", "Bearer "+token)
 }
 
 func (m *Mocker) MockGetProvider(

@@ -3,6 +3,7 @@ package testunit
 import (
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/koubae/game-hangar/internal/identity"
 	"github.com/koubae/game-hangar/internal/identity/account"
@@ -11,6 +12,10 @@ import (
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/web"
 	"github.com/stretchr/testify/require"
+)
+
+const (
+	AuthTokenExpirationTime = time.Hour * 4
 )
 
 func Setup() (*common.AppLogger, *common.Config) {

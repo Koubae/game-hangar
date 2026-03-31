@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/koubae/game-hangar/pkg/common"
@@ -61,4 +62,22 @@ type JSONTime time.Time
 func (t JSONTime) MarshalJSON() ([]byte, error) {
 	ts := time.Time(t).Format("2006-01-02 15:04:05")
 	return json.Marshal(ts)
+}
+
+func (t *JSONTime) UnmarshalJSON(b []byte) error {
+	// 1. Remove the quotes from the incoming JSON string
+	s := strings.Trim(string(b), "\"")
+	if s == "null" {
+		return nil
+	}
+
+	// 2. Parse the string using the custom layout
+	parsedTime, err := time.Parse("2006-01-02 15:04:05", s)
+	if err != nil {
+		return err
+	}
+
+	// 3. Cast the parsed time back to your custom type
+	*t = JSONTime(parsedTime)
+	return nil
 }

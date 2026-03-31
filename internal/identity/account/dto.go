@@ -1,27 +1,28 @@
 package account
 
 import (
+	"time"
+
 	"github.com/koubae/game-hangar/internal/errs"
-	"github.com/koubae/game-hangar/pkg/web"
 )
 
 type DTOAccount struct {
-	ID       string       `json:"id"`
-	Username string       `json:"username"`
-	Email    *string      `json:"email"`
-	Disabled bool         `json:"disabled"`
-	Created  web.JSONTime `json:"created"`
-	Updated  web.JSONTime `json:"updated"`
+	ID       string    `json:"id"`
+	Username string    `json:"username"`
+	Email    string    `json:"email"`
+	Disabled bool      `json:"disabled"`
+	Created  time.Time `json:"created"`
+	Updated  time.Time `json:"updated"`
 }
 
 func NewDTOAccountFromAccount(_account *Account) *DTOAccount {
 	return &DTOAccount{
 		ID:       _account.ID,
 		Username: _account.Username,
-		Email:    _account.Email,
+		Email:    *_account.Email,
 		Disabled: _account.Disabled,
-		Created:  web.JSONTime(_account.Created),
-		Updated:  web.JSONTime(_account.Updated),
+		Created:  _account.Created,
+		Updated:  _account.Updated,
 	}
 }
 
