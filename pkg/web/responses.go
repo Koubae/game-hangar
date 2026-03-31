@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/koubae/game-hangar/pkg/common"
 	"go.uber.org/zap"
@@ -53,4 +54,11 @@ func WriteBusinessErrorResponse(w http.ResponseWriter, err error) {
 	}
 
 	WriteJSONErrorResponse(w, code, message)
+}
+
+type JSONTime time.Time
+
+func (t JSONTime) MarshalJSON() ([]byte, error) {
+	ts := time.Time(t).Format("2006-01-02 15:04:05")
+	return json.Marshal(ts)
 }
