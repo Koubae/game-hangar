@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/koubae/game-hangar/internal/errs"
-	accountRepo "github.com/koubae/game-hangar/internal/identity/account"
+	"github.com/koubae/game-hangar/internal/identity/account"
 	"github.com/koubae/game-hangar/internal/identity/auth"
 	"github.com/koubae/game-hangar/internal/testunit"
 	"github.com/koubae/game-hangar/pkg/testutil"
@@ -237,7 +237,7 @@ func TestAccountAuthService_RegisterByUsernameAccountAndCredentialCreation(
 						"CreateAccount",
 						mock.Anything,
 						mock.Anything,
-						accountRepo.NewAccount{
+						account.NewAccount{
 							Username: "test-cred",
 							Email:    nil,
 						},
@@ -259,7 +259,7 @@ func TestAccountAuthService_RegisterByUsernameAccountAndCredentialCreation(
 						"CreateAccount",
 						mock.Anything,
 						mock.Anything,
-						accountRepo.NewAccount{
+						account.NewAccount{
 							Username: "test-cred",
 							Email:    nil,
 						},
@@ -295,7 +295,7 @@ func TestAccountAuthService_RegisterByUsernameAccountAndCredentialCreation(
 						"CreateAccount",
 						mock.Anything,
 						mock.Anything,
-						accountRepo.NewAccount{
+						account.NewAccount{
 							Username: "test-cred",
 							Email:    nil,
 						},
@@ -327,7 +327,7 @@ func TestAccountAuthService_RegisterByUsernameAccountAndCredentialCreation(
 						"CreateAccount",
 						mock.Anything,
 						mock.Anything,
-						accountRepo.NewAccount{
+						account.NewAccount{
 							Username: "test-cred",
 							Email:    nil,
 						},
