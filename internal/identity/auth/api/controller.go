@@ -1,8 +1,6 @@
 package api
 
 import (
-	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 
@@ -10,7 +8,6 @@ import (
 	"github.com/koubae/game-hangar/internal/identity/account"
 	"github.com/koubae/game-hangar/internal/identity/auth"
 	"github.com/koubae/game-hangar/internal/identity/container"
-	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/web"
 	"go.uber.org/zap"
 )
@@ -29,19 +26,12 @@ func (c *AuthController) RegisterByUsername(
 	w http.ResponseWriter,
 	r *http.Request,
 ) {
-	var payload account.DTOCreateAccount
-	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		web.WriteBusinessErrorResponse(
-			w, &common.ClientResponseError{
-				HTTPCode: http.StatusBadRequest,
-				Message:  fmt.Sprintf("invalid json: %v", err.Error()),
-			},
-		)
+	payload, ok := web.LoadJsonBodyOrBadRequestResponse[account.DTOCreateAccount](w, r)
+	if !ok {
 		return
 	}
-
 	if err := payload.Validate(); err != nil {
-		response := errs.AppErrToClientResponse(err, "payload validation error")
+		response := errs.AppErrToClientResponse(err, "")
 		web.WriteBusinessErrorResponse(w, response)
 		return
 	}
