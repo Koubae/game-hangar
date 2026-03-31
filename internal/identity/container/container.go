@@ -1,7 +1,7 @@
 package container
 
 import (
-	accountRepo "github.com/koubae/game-hangar/internal/identity/account"
+	"github.com/koubae/game-hangar/internal/identity/account"
 	"github.com/koubae/game-hangar/internal/identity/auth"
 	"github.com/koubae/game-hangar/pkg/authpkg"
 	"github.com/koubae/game-hangar/pkg/common"
@@ -21,7 +21,7 @@ type IdentityAuthContainer interface {
 }
 
 type IdentityAccountContainer interface {
-	AccountRepository() accountRepo.IAccountRepository
+	AccountRepository() account.IAccountRepository
 	AccountAuthService(db database.Connector) *auth.AccountAuthService
 }
 
@@ -45,8 +45,8 @@ type AppContainer struct {
 	credentialRepository        auth.ICredentialRepository
 	credentialRepositoryFactory auth.CredentialRepositoryFactory
 
-	accountRepository        accountRepo.IAccountRepository
-	accountRepositoryFactory accountRepo.AccountRepositoryFactory
+	accountRepository        account.IAccountRepository
+	accountRepositoryFactory account.AccountRepositoryFactory
 
 	// NOTE: Services
 	authService               *auth.SecretsService
@@ -62,7 +62,7 @@ type AppDependencies struct {
 
 	ProviderRepositoryFactory   auth.ProviderRepositoryFactory
 	CredentialRepositoryFactory auth.CredentialRepositoryFactory
-	AccountRepositoryFactory    accountRepo.AccountRepositoryFactory
+	AccountRepositoryFactory    account.AccountRepositoryFactory
 	AuthServiceFactory          auth.SecretsServiceFactory
 	ProviderServiceFactory      auth.ProviderServiceFactory
 	CredentialServiceFactory    auth.CredentialServiceFactory
@@ -133,7 +133,7 @@ func LoadAppDependenciesWithDefaFactories(
 	// NOTE: Repositories
 	providerRepositoryFactory := auth.NewProviderRepository
 	credentialRepositoryFactory := auth.NewCredentialRepository
-	accountRepositoryFactory := accountRepo.NewAccountRepository
+	accountRepositoryFactory := account.NewAccountRepository
 
 	// NOTE: Services
 	authServiceFactory := auth.NewSecretsService
@@ -211,7 +211,7 @@ func (c *AppContainer) CredentialRepository() auth.ICredentialRepository {
 	return c.credentialRepository
 }
 
-func (c *AppContainer) AccountRepository() accountRepo.IAccountRepository {
+func (c *AppContainer) AccountRepository() account.IAccountRepository {
 	if c.accountRepository == nil {
 		c.accountRepository = c.accountRepositoryFactory()
 	}
