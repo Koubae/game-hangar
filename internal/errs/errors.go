@@ -194,7 +194,7 @@ func AsAppError(err error) *AppError {
 // NOTE: Avoid Wrap the same error multiple times as this will "concatenate" the previous Msg
 func Wrap(appErr *AppError, err error) *AppError {
 	msg := fmt.Sprintf("%s, error: %s", appErr.Msg, err.Error())
-	return &AppError{Err: errors.Join(appErr, err), Msg: msg}
+	return &AppError{Err: errors.Join(appErr, err), Msg: msg, DefaultCode: appErr.DefaultCode}
 }
 
 func IsAny(err error, targets ...error) bool {
