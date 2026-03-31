@@ -5,7 +5,10 @@ import (
 	"github.com/koubae/game-hangar/pkg/testutil"
 )
 
-const AppPrefix = "TESTING_"
+const (
+	AppPrefix = "TESTING_"
+	EnvFile   = ".env.testing"
+)
 
 var (
 	ProviderUsername = &authModels.Provider{

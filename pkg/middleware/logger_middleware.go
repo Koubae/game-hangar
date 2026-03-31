@@ -84,7 +84,7 @@ func RecoveryMiddleware(logger common.Logger, next http.Handler) http.Handler {
 						http.StatusInternalServerError,
 					)
 
-					logger.Error(
+					logger.DPanic(
 						fmt.Sprintf(
 							"unhandled exception occurred: panic recovered in http handler, panic: %s",
 							panicToString(rec),

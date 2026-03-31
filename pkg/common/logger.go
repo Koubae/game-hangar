@@ -41,6 +41,7 @@ type Logger interface {
 	Error(msg string, fields ...zap.Field)
 	Fatal(msg string, fields ...zap.Field)
 	Panic(msg string, fields ...zap.Field)
+	DPanic(msg string, fields ...zap.Field)
 	L(level string, msg string, fields ...zap.Field)
 }
 
@@ -70,6 +71,10 @@ func (l *AppLogger) Fatal(msg string, fields ...zap.Field) {
 
 func (l *AppLogger) Panic(msg string, fields ...zap.Field) {
 	l.Logger.Panic(msg, fields...)
+}
+
+func (l *AppLogger) DPanic(msg string, fields ...zap.Field) {
+	l.Logger.DPanic(msg, fields...)
 }
 
 func (l *AppLogger) L(level string, msg string, fields ...zap.Field) {
