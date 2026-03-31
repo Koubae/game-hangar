@@ -154,7 +154,7 @@ func TestAppError_DBErrToAppErr(t *testing.T) {
 			id, func(t *testing.T) {
 				t.Parallel()
 
-				err := errs.DBErrToAppErr(tt.err)
+				err := errs.DBErrToAppErr(tt.err, "test")
 
 				assert.IsType(t, &errs.AppError{}, err)
 				assert.False(t, err.IsUnmapped())

@@ -5,7 +5,9 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/koubae/game-hangar/internal/errs"
+	"github.com/koubae/game-hangar/pkg/authpkg"
 	"github.com/koubae/game-hangar/pkg/common"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -40,6 +42,28 @@ func (s *SecretsService) HashSecret(secret string) (string, error) {
 func (s *SecretsService) VerifySecret(hash string, secret string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(secret))
 	return err == nil
+}
+
+func (s *SecretsService) GenerateJWTAccessToken(
+	source string,
+	_type string,
+	accountID string,
+	credential string,
+	expire int64,
+) (string, error) {
+	privateKey := authpkg.GetPrivateKey()
+	claims := jwt.MapClaims{
+		"sub":  accountID,
+		"exp":  expire,
+		"iss":  "GameHangar-Identity",
+		"role": "account",
+
+		"source":     source,
+		"type":       _type,
+		"credential": credential,
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
+	return token.SignedString(privateKey)
 }
 
 type PasswordValidationRules struct {

@@ -6,7 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/koubae/game-hangar/internal/errs"
-	auth2 "github.com/koubae/game-hangar/internal/identity/auth"
+	"github.com/koubae/game-hangar/internal/identity/auth"
 	"github.com/koubae/game-hangar/internal/testunit"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -42,7 +42,7 @@ func TestCredentialService_GetCredentialByProvider(t *testing.T) {
 						username,
 					).
 					Return(
-						&auth2.AccountCredential{
+						&auth.AccountCredential{
 							ID:         1,
 							Credential: username,
 							AccountID:  testunit.AccountIDTest01,
@@ -101,7 +101,7 @@ func TestCredentialService_GetCredentialByProvider(t *testing.T) {
 				repo := container.CredentialRepository().(*testunit.MockCredentialRepository)
 				tt.setupMock(repo)
 
-				_service := auth2.NewCredentialService(connector, repo)
+				_service := auth.NewCredentialService(connector, repo)
 
 				result, err := _service.GetCredentialByProvider(
 					ctx,
@@ -133,7 +133,7 @@ func TestCredentialService_CreateCredentialTypeUsername(t *testing.T) {
 		id            string
 		credential    string
 		accountID     uuid.UUID
-		provider      *auth2.Provider
+		provider      *auth.Provider
 		setupMock     func(repo *testunit.MockCredentialRepository)
 		expected      int64
 		errorReturned error
@@ -153,7 +153,7 @@ func TestCredentialService_CreateCredentialTypeUsername(t *testing.T) {
 					).
 					Run(
 						func(args mock.Arguments) {
-							params := args.Get(2).(auth2.NewAccountCredential)
+							params := args.Get(2).(auth.NewAccountCredential)
 							assert.Equal(t, "password", params.SecretType)
 							assert.True(
 								t,
@@ -183,7 +183,7 @@ func TestCredentialService_CreateCredentialTypeUsername(t *testing.T) {
 					).
 					Run(
 						func(args mock.Arguments) {
-							params := args.Get(2).(auth2.NewAccountCredential)
+							params := args.Get(2).(auth.NewAccountCredential)
 							assert.Equal(t, "password", params.SecretType)
 							assert.True(
 								t,
@@ -213,7 +213,7 @@ func TestCredentialService_CreateCredentialTypeUsername(t *testing.T) {
 					).
 					Run(
 						func(args mock.Arguments) {
-							params := args.Get(2).(auth2.NewAccountCredential)
+							params := args.Get(2).(auth.NewAccountCredential)
 							assert.Equal(t, "password", params.SecretType)
 							assert.True(
 								t,
@@ -240,19 +240,6 @@ func TestCredentialService_CreateCredentialTypeUsername(t *testing.T) {
 			expected:      int64(0),
 			errorReturned: errs.AccountCredCreateIncorrectProviderType,
 		},
-
-		// {
-		// 	id:         "on-account-credential-is-not-verified",
-		// 	credential: username,
-		// 	accountID:  testutil.AccountIDTest01,
-		// 	provider:   testunit.ProviderEmail,
-		// 	setupMock: func(repo *testunit.MockCredentialRepository) {
-		// 		repo.AssertNotCalled(t, "CreateAccountCredential")
-		// 	},
-		// 	expected:      int64(0),
-		// 	errorReturned: errs.AccountCredVerifiedAtRequired,
-		// },
-
 	}
 
 	ctx := context.Background()
@@ -264,7 +251,7 @@ func TestCredentialService_CreateCredentialTypeUsername(t *testing.T) {
 				repo := new(testunit.MockCredentialRepository)
 				tt.setupMock(repo)
 
-				_service := auth2.NewCredentialService(connector, repo)
+				_service := auth.NewCredentialService(connector, repo)
 
 				result, err := _service.CreateCredentialTypeUsername(
 					ctx,

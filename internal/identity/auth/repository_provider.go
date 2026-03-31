@@ -134,7 +134,7 @@ func (r *ProviderRepository) getProvider(
 		&m.Created,
 		&m.Updated,
 	); err != nil {
-		return nil, errs.DBErrToAppErr(db.MapDBErrToDomainErr(err))
+		return nil, errs.DBErrToAppErr(db.MapDBErrToDomainErr(err), "provider")
 	}
 
 	return &m, nil

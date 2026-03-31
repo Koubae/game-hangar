@@ -6,10 +6,12 @@ import (
 )
 
 var RootDir string
+var ConfigDir string
 
 // Get the root directory of the project
 func init() {
 	RootDir = getRootProjectDirectory()
+	ConfigDir = filepath.Join(RootDir, "conf")
 }
 
 func getRootProjectDirectory() string {

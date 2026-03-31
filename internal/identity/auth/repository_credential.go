@@ -73,7 +73,7 @@ func (r *CredentialRepository) CreateAccountCredential(
 		},
 	).Scan(&id)
 	if err != nil {
-		return 0, errs.DBErrToAppErr(db.MapDBErrToDomainErr(err))
+		return 0, errs.DBErrToAppErr(db.MapDBErrToDomainErr(err), "account_credential")
 	}
 
 	return id, nil
@@ -118,7 +118,7 @@ func (r *CredentialRepository) GetCredentialByProvider(
 		&m.Created,
 		&m.Updated,
 	); err != nil {
-		return nil, errs.DBErrToAppErr(db.MapDBErrToDomainErr(err))
+		return nil, errs.DBErrToAppErr(db.MapDBErrToDomainErr(err), "account_credential")
 	}
 
 	return &m, nil
