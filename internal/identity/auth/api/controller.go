@@ -43,15 +43,16 @@ func (c *AuthController) RegisterByUsername(
 		zap.String("username", payload.Username),
 	)
 
-	// TODO: Add password length validation
-	secret, err := c.container.SecretsService().HashSecret(payload.Password)
+	secretService := c.container.SecretsService()
+	err := secretService.ValidatePasswordDefaultRules(payload.Password)
 	if err != nil {
-		errs.AppErrToClientResponseWithLog(
-			w,
-			err,
-			"hash secret error on registration by username",
-			logger,
-		)
+		errs.AppErrToClientResponseWithLog(w, err, "", logger)
+		return
+	}
+
+	secret, err := secretService.HashSecret(payload.Password)
+	if err != nil {
+		errs.AppErrToClientResponseWithLog(w, err, "hash secret error on registration by username", logger)
 		return
 	}
 

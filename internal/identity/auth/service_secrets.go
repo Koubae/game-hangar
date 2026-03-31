@@ -6,8 +6,18 @@ import (
 	"unicode/utf8"
 
 	"github.com/koubae/game-hangar/internal/errs"
+	"github.com/koubae/game-hangar/pkg/common"
 	"golang.org/x/crypto/bcrypt"
 )
+
+const (
+	MinPasswordLengthLowerBound = 3
+	MaxPasswordLengthUpperBound = 72
+	MinPasswordDefault          = 8
+	MaxPasswordDefault          = 12
+)
+
+var passwordRules *PasswordValidationRules
 
 type SecretsService struct{}
 
@@ -31,9 +41,6 @@ func (s *SecretsService) VerifySecret(hash string, secret string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(secret))
 	return err == nil
 }
-
-const MinPasswordLengthLowerBound = 3
-const MaxPasswordLengthUpperBound = 72
 
 type PasswordValidationRules struct {
 	MinLength int
@@ -78,6 +85,17 @@ func NewPasswordValidationRules(
 	}
 }
 
+func LoadPasswordRulesConfig(envPrefix string) {
+	minLength := common.GetEnvInt(envPrefix+"AUTH_PASSWORD_MIN_LENGTH", MinPasswordDefault)
+	maxLength := common.GetEnvInt(envPrefix+"AUTH_PASSWORD_MAX_LENGTH", MaxPasswordDefault)
+	upperCase := common.GetEnvBool(envPrefix+"AUTH_PASSWORD_UPPERCASE", true)
+	lowerCase := common.GetEnvBool(envPrefix+"AUTH_PASSWORD_LOWERCASE", true)
+	digits := common.GetEnvBool(envPrefix+"AUTH_PASSWORD_DIGITS", true)
+	special := common.GetEnvBool(envPrefix+"AUTH_PASSWORD_SPECIAL", true)
+
+	passwordRules = NewPasswordValidationRules(minLength, maxLength, upperCase, lowerCase, digits, special)
+}
+
 type PasswordValidationErrList struct {
 	MinLength string
 	MaxLength string
@@ -106,6 +124,14 @@ func (e *PasswordValidationErrList) Error() string {
 		msg += e.Special
 	}
 	return msg
+}
+
+func (s *SecretsService) ValidatePasswordDefaultRules(password string) error {
+	err := s.ValidatePassword(password, *passwordRules)
+	if err != nil {
+		return errs.Wrap(errs.AuthPasswordValidation, err)
+	}
+	return nil
 }
 
 func (s *SecretsService) ValidatePassword(password string, rules PasswordValidationRules) error {
