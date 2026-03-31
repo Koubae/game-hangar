@@ -3,6 +3,7 @@ package container
 import (
 	accountRepo "github.com/koubae/game-hangar/internal/identity/account"
 	"github.com/koubae/game-hangar/internal/identity/auth"
+	"github.com/koubae/game-hangar/pkg/authpkg"
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/database"
 	"github.com/koubae/game-hangar/pkg/database/postgres"
@@ -85,6 +86,10 @@ func NewAppContainer(
 	providerRepository := dependencies.ProviderRepositoryFactory()
 
 	auth.LoadPasswordRulesConfig(appPrefix)
+	err = authpkg.LoadCerts(appPrefix)
+	if err != nil {
+		return nil, err
+	}
 
 	return &AppContainer{
 		logger:                      dependencies.Logger,

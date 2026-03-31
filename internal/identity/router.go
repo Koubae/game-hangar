@@ -1,20 +1,19 @@
 package identity
 
 import (
-	"crypto/rsa"
 	"fmt"
 	"io"
 	"net/http"
 
-	"github.com/golang-jwt/jwt/v5"
 	authRouter "github.com/koubae/game-hangar/internal/identity/auth/api"
-	"github.com/koubae/game-hangar/pkg/auth"
+	"github.com/koubae/game-hangar/pkg/authpkg"
 	"github.com/koubae/game-hangar/pkg/di"
 	"github.com/koubae/game-hangar/pkg/web"
 )
 
 func RouterRegister(container di.Container) web.RouterRegisterFunc {
 	return func(mux *http.ServeMux) {
+		loggedAccountMiddleware := authpkg.NewJWTMiddleware()
 
 		v1 := web.Group(mux, "/api/v1")
 
@@ -31,12 +30,10 @@ func RouterRegister(container di.Container) web.RouterRegisterFunc {
 			},
 		)
 
-		// var secret []byte = []byte("your-secret")
-		secret, _ := jwt.ParseRSAPublicKeyFromPEM([]byte("your-secret"))
 		protected := web.GroupWithMiddleware(
 			account,
 			"/protected",
-			auth.JWTMiddleware[*rsa.PublicKey](jwt.SigningMethodHS256, secret),
+			loggedAccountMiddleware,
 		)
 
 		protected.HandleFunc(

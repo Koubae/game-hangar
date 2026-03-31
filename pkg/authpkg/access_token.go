@@ -1,4 +1,4 @@
-package auth
+package authpkg
 
 type AccessToken struct {
 	Source      string

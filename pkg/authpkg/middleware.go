@@ -1,4 +1,4 @@
-package auth
+package authpkg
 
 import (
 	"context"
@@ -28,6 +28,11 @@ const (
 	ContextKeyRole        contextKey = "role"
 	ContextKeyAccessToken contextKey = "access_token"
 )
+
+func NewJWTMiddleware() func(http.Handler) http.Handler {
+	secret := GetPublicKey()
+	return JWTMiddleware[*rsa.PublicKey](jwt.SigningMethodRS256, secret)
+}
 
 func JWTMiddleware[S JWTSecret](method jwt.SigningMethod, secret S) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
