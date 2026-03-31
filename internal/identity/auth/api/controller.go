@@ -43,6 +43,7 @@ func (c *AuthController) RegisterByUsername(
 		zap.String("username", payload.Username),
 	)
 
+	// TODO: Add password length validation
 	secret, err := c.container.AuthService().HashSecret(payload.Password)
 	if err != nil {
 		errs.AppErrToClientResponseWithLog(
@@ -54,6 +55,7 @@ func (c *AuthController) RegisterByUsername(
 		return
 	}
 
+	// TODO: Add username validation
 	accountID, credID, err := c.container.AccountAuthService(nil).RegisterByUsername(
 		ctx,
 		payload.Source,
