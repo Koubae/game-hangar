@@ -18,11 +18,12 @@ type IdentityAuthContainer interface {
 	SecretsService() *auth.SecretsService
 	ProviderService(db database.DBTX) *auth.ProviderService
 	CredentialService(db database.DBTX) *auth.CredentialService
+	AccountAuthService(db database.Connector) *auth.AccountAuthService
 }
 
 type IdentityAccountContainer interface {
 	AccountRepository() account.IAccountRepository
-	AccountAuthService(db database.Connector) *auth.AccountAuthService
+	AccountManagementService(db database.DBTX) *account.ManagementService
 }
 
 type IdentityContainer interface {
@@ -49,24 +50,26 @@ type AppContainer struct {
 	accountRepositoryFactory account.AccountRepositoryFactory
 
 	// NOTE: Services
-	authService               *auth.SecretsService
-	authServiceFactory        auth.SecretsServiceFactory
-	providerServiceFactory    auth.ProviderServiceFactory
-	credentialServiceFactory  auth.CredentialServiceFactory
-	accountAuthServiceFactory auth.AccountAuthServiceFactory
+	authService                     *auth.SecretsService
+	authServiceFactory              auth.SecretsServiceFactory
+	providerServiceFactory          auth.ProviderServiceFactory
+	credentialServiceFactory        auth.CredentialServiceFactory
+	accountAuthServiceFactory       auth.AccountAuthServiceFactory
+	accountManagementServiceFactory account.ManagementServiceFactory
 }
 
 type AppDependencies struct {
 	Logger    common.Logger
 	Connector *postgres.ConnectorPostgres
 
-	ProviderRepositoryFactory   auth.ProviderRepositoryFactory
-	CredentialRepositoryFactory auth.CredentialRepositoryFactory
-	AccountRepositoryFactory    account.AccountRepositoryFactory
-	AuthServiceFactory          auth.SecretsServiceFactory
-	ProviderServiceFactory      auth.ProviderServiceFactory
-	CredentialServiceFactory    auth.CredentialServiceFactory
-	AccountAuthServiceFactory   auth.AccountAuthServiceFactory
+	ProviderRepositoryFactory       auth.ProviderRepositoryFactory
+	CredentialRepositoryFactory     auth.CredentialRepositoryFactory
+	AccountRepositoryFactory        account.AccountRepositoryFactory
+	AuthServiceFactory              auth.SecretsServiceFactory
+	ProviderServiceFactory          auth.ProviderServiceFactory
+	CredentialServiceFactory        auth.CredentialServiceFactory
+	AccountAuthServiceFactory       auth.AccountAuthServiceFactory
+	AccountManagementServiceFactory account.ManagementServiceFactory
 }
 
 func NewAppContainer(
@@ -92,16 +95,17 @@ func NewAppContainer(
 	}
 
 	return &AppContainer{
-		logger:                      dependencies.Logger,
-		connector:                   dependencies.Connector,
-		providerRepository:          providerRepository,
-		providerRepositoryFactory:   dependencies.ProviderRepositoryFactory,
-		credentialRepositoryFactory: dependencies.CredentialRepositoryFactory,
-		accountRepositoryFactory:    dependencies.AccountRepositoryFactory,
-		authServiceFactory:          dependencies.AuthServiceFactory,
-		providerServiceFactory:      dependencies.ProviderServiceFactory,
-		credentialServiceFactory:    dependencies.CredentialServiceFactory,
-		accountAuthServiceFactory:   dependencies.AccountAuthServiceFactory,
+		logger:                          dependencies.Logger,
+		connector:                       dependencies.Connector,
+		providerRepository:              providerRepository,
+		providerRepositoryFactory:       dependencies.ProviderRepositoryFactory,
+		credentialRepositoryFactory:     dependencies.CredentialRepositoryFactory,
+		accountRepositoryFactory:        dependencies.AccountRepositoryFactory,
+		authServiceFactory:              dependencies.AuthServiceFactory,
+		providerServiceFactory:          dependencies.ProviderServiceFactory,
+		credentialServiceFactory:        dependencies.CredentialServiceFactory,
+		accountAuthServiceFactory:       dependencies.AccountAuthServiceFactory,
+		accountManagementServiceFactory: dependencies.AccountManagementServiceFactory,
 	}, nil
 }
 
@@ -123,10 +127,10 @@ func createProductionAppDependencies(
 		zap.String("db", connector.String()),
 	)
 
-	return LoadAppDependenciesWithDefaFactories(logger, connector)
+	return LoadAppDependenciesWithDefaultFactories(logger, connector)
 }
 
-func LoadAppDependenciesWithDefaFactories(
+func LoadAppDependenciesWithDefaultFactories(
 	logger common.Logger,
 	connector *postgres.ConnectorPostgres,
 ) (*AppDependencies, error) {
@@ -140,6 +144,7 @@ func LoadAppDependenciesWithDefaFactories(
 	providerServiceFactory := auth.NewProviderService
 	credentialServiceFactory := auth.NewCredentialService
 	accountAuthServiceFactory := auth.NewAccountAuthService
+	accountManagementServiceFactory := account.NewManagementService
 
 	return &AppDependencies{
 		Logger:    logger,
@@ -149,10 +154,11 @@ func LoadAppDependenciesWithDefaFactories(
 		CredentialRepositoryFactory: credentialRepositoryFactory,
 		AccountRepositoryFactory:    accountRepositoryFactory,
 
-		AuthServiceFactory:        authServiceFactory,
-		ProviderServiceFactory:    providerServiceFactory,
-		CredentialServiceFactory:  credentialServiceFactory,
-		AccountAuthServiceFactory: accountAuthServiceFactory,
+		AuthServiceFactory:              authServiceFactory,
+		ProviderServiceFactory:          providerServiceFactory,
+		CredentialServiceFactory:        credentialServiceFactory,
+		AccountAuthServiceFactory:       accountAuthServiceFactory,
+		AccountManagementServiceFactory: accountManagementServiceFactory,
 	}, nil
 }
 
@@ -173,7 +179,7 @@ func (c *AppContainer) Shutdown() error {
 		}
 	}()
 
-	c.DB().Shutdown()
+	_ = c.DB().Shutdown()
 	c.Logger().Info("database connection closed")
 	return nil
 }
@@ -262,4 +268,13 @@ func (c *AppContainer) AccountAuthService(
 			return c.CredentialService(db)
 		},
 	)
+}
+
+func (c *AppContainer) AccountManagementService(
+	db database.DBTX,
+) *account.ManagementService {
+	if db == nil {
+		db = c.connector
+	}
+	return c.accountManagementServiceFactory(db, c.AccountRepository())
 }
