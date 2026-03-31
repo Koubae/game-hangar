@@ -100,7 +100,7 @@ func (c *AuthController) LoginByUsername(
 		zap.String("username", string(auth.Username)),
 	)
 
-	provider, err := c.container.ProviderService(nil).GetProvider(ctx, payload.Source, string(auth.Username))
+	provider, err := c.container.ProviderService(nil).GetEnabledProvider(ctx, payload.Source, string(auth.Username))
 	if err != nil {
 		errs.AppErrToClientResponseWithLog(w, errs.Wrap(errs.AuthLoginFailed, err), "", logger)
 		return

@@ -124,50 +124,113 @@ func TestAuthController_RegisterByUsername_ErrOnInValidUsername(t *testing.T) {
 func TestAuthController_LoginByUsername(t *testing.T) {
 	t.Parallel()
 
-	_, handlerPtr, mocker := testunit.NewTestRouterAndContainer(t)
-	handler := *handlerPtr
+	tests := map[string]struct {
+		providerReturned *auth.Provider
+		providerGetErr   error
 
-	mocker.MockGetProvider(
-		"global",
-		"username",
-		&auth.Provider{ID: 1, Source: "global", Type: "username", Disabled: false},
-		nil,
-	)
-	mocker.MockGetCredentialByProvider(
-		testunit.ProviderUsernameID,
-		testunit.UsernameTest01,
-		&auth.AccountCredential{
-			ID:         1,
-			Credential: testunit.UsernameTest01,
-			AccountID:  testunit.AccountIDTest01,
-			ProviderID: 1,
-			Secret:     testunit.StrongPasswordHash,
+		credentialReturned *auth.AccountCredential
+		credentialGetErr   error
+
+		expectedCode        int
+		expectedErrResponse string
+	}{
+		"login-success": {
+			providerReturned: &auth.Provider{ID: 1, Source: "global", Type: "username", Disabled: false},
+			providerGetErr:   nil,
+
+			credentialReturned: &auth.AccountCredential{
+				ID:         1,
+				Credential: testunit.UsernameTest01,
+				AccountID:  testunit.AccountIDTest01,
+				ProviderID: 1,
+				Secret:     testunit.StrongPasswordHash,
+			},
+
+			credentialGetErr: nil,
+			expectedCode:     http.StatusOK,
+
+			expectedErrResponse: "",
 		},
-		nil,
-	)
+		"err-on-provider-not-found": {
+			providerReturned: nil,
+			providerGetErr:   errs.ProviderNotFound,
 
-	payload := fmt.Sprintf(
-		`{
-		"source": "global",	
-		"username": "%s",
-		"password": "%s"
-	}`, testunit.UsernameTest01,
-		testunit.StrongPassword,
-	)
+			credentialReturned: nil,
+			credentialGetErr:   nil,
 
-	req, err := http.NewRequest("POST", "/api/v1/auth/login/username", strings.NewReader(payload))
-	require.NoError(t, err)
-	req.Header.Set("Content-Type", "application/json")
+			expectedCode:        http.StatusUnauthorized,
+			expectedErrResponse: `{"code":401,"message":"login failed, error: provider not found"}`,
+		},
+		"err-on-provider-disabled": {
+			providerReturned: &auth.Provider{Disabled: true, ID: 1, Source: "global", Type: "username"},
+			providerGetErr:   nil,
 
-	rr := httptest.NewRecorder()
-	handler.ServeHTTP(rr, req)
+			credentialReturned: nil,
+			credentialGetErr:   nil,
 
-	var response auth.DTOAccessToken
-	err = json.Unmarshal([]byte(rr.Body.String()), &response)
-	require.NoError(t, err)
+			expectedCode:        http.StatusUnauthorized,
+			expectedErrResponse: `{"code":401,"message":"login failed, error: provider is disabled"}`,
+		},
+		"err-on-credential-not-found": {
+			providerReturned: &auth.Provider{ID: 1, Source: "global", Type: "username", Disabled: false},
+			providerGetErr:   nil,
 
-	assert.IsType(t, auth.DTOAccessToken{}, response)
-	assert.NotEmpty(t, response.AccessToken)
-	assert.NotEmpty(t, response.ExpiresIn)
-	assert.Equal(t, http.StatusOK, rr.Code)
+			credentialReturned: nil,
+			credentialGetErr:   errs.ProviderNotFound,
+
+			expectedCode:        http.StatusUnauthorized,
+			expectedErrResponse: `{"code":401,"message":"credential login failed, error: provider not found"}`,
+		},
+	}
+	for id, tt := range tests {
+		t.Run(
+			id, func(t *testing.T) {
+				t.Parallel()
+
+				_, handlerPtr, mocker := testunit.NewTestRouterAndContainer(t)
+				handler := *handlerPtr
+
+				mocker.MockGetProvider("global", "username", tt.providerReturned, tt.providerGetErr)
+				mocker.MockGetCredentialByProvider(
+					testunit.ProviderUsernameID,
+					testunit.UsernameTest01,
+					tt.credentialReturned,
+					tt.credentialGetErr,
+				)
+
+				payload := fmt.Sprintf(
+					`{
+					"source": "global",	
+					"username": "%s",
+					"password": "%s"
+				}`, testunit.UsernameTest01,
+					testunit.StrongPassword,
+				)
+
+				req, err := http.NewRequest("POST", "/api/v1/auth/login/username", strings.NewReader(payload))
+				require.NoError(t, err)
+				req.Header.Set("Content-Type", "application/json")
+
+				rr := httptest.NewRecorder()
+				handler.ServeHTTP(rr, req)
+
+				if tt.expectedErrResponse == "" {
+					var response auth.DTOAccessToken
+					err = json.Unmarshal([]byte(rr.Body.String()), &response)
+					require.NoError(t, err)
+
+					assert.IsType(t, auth.DTOAccessToken{}, response)
+					assert.NotEmpty(t, response.AccessToken)
+					assert.NotEmpty(t, response.ExpiresIn)
+					assert.Equal(t, tt.expectedCode, rr.Code)
+				} else {
+					response := rr.Body.String()
+					assert.Equal(t, tt.expectedErrResponse, strings.TrimSpace(response))
+					assert.Equal(t, tt.expectedCode, rr.Code)
+				}
+
+			},
+		)
+	}
+
 }
