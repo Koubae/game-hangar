@@ -16,13 +16,6 @@ import (
 var (
 	Now = time.Now()
 
-	ProviderUsernameID = int64(1)
-	AccountIDTest01    = uuid.New()
-	AccountIDTest01Str = AccountIDTest01.String()
-
-	CredIDTest01   = int64(9999)
-	UsernameTest01 = "unit-test-user-01"
-
 	DBMockErrDuplicateKey = &pgconn.PgError{
 		Code:           "23505",
 		ConstraintName: "some_unique_constraint_name",

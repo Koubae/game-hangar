@@ -8,7 +8,6 @@ import (
 	"github.com/koubae/game-hangar/internal/errs"
 	auth2 "github.com/koubae/game-hangar/internal/identity/auth"
 	"github.com/koubae/game-hangar/internal/testunit"
-	"github.com/koubae/game-hangar/pkg/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -46,7 +45,7 @@ func TestCredentialService_GetCredentialByProvider(t *testing.T) {
 						&auth2.AccountCredential{
 							ID:         1,
 							Credential: username,
-							AccountID:  testutil.AccountIDTest01,
+							AccountID:  testunit.AccountIDTest01,
 							ProviderID: 1,
 						}, nil,
 					).
@@ -142,7 +141,7 @@ func TestCredentialService_CreateCredentialTypeUsername(t *testing.T) {
 		{
 			id:         "credential-created",
 			credential: username,
-			accountID:  testutil.AccountIDTest01,
+			accountID:  testunit.AccountIDTest01,
 			provider:   testunit.ProviderUsername,
 			setupMock: func(repo *testunit.MockCredentialRepository) {
 				repo.
@@ -172,7 +171,7 @@ func TestCredentialService_CreateCredentialTypeUsername(t *testing.T) {
 		{
 			id:         "credential-is-duplicated",
 			credential: username,
-			accountID:  testutil.AccountIDTest01,
+			accountID:  testunit.AccountIDTest01,
 			provider:   testunit.ProviderUsername,
 			setupMock: func(repo *testunit.MockCredentialRepository) {
 				repo.
@@ -202,7 +201,7 @@ func TestCredentialService_CreateCredentialTypeUsername(t *testing.T) {
 		{
 			id:         "on-db-error",
 			credential: username,
-			accountID:  testutil.AccountIDTest01,
+			accountID:  testunit.AccountIDTest01,
 			provider:   testunit.ProviderUsername,
 			setupMock: func(repo *testunit.MockCredentialRepository) {
 				repo.
@@ -233,7 +232,7 @@ func TestCredentialService_CreateCredentialTypeUsername(t *testing.T) {
 		{
 			id:         "on-wrong-provider-type",
 			credential: username,
-			accountID:  testutil.AccountIDTest01,
+			accountID:  testunit.AccountIDTest01,
 			provider:   testunit.ProviderEmail,
 			setupMock: func(repo *testunit.MockCredentialRepository) {
 				repo.AssertNotCalled(t, "CreateAccountCredential")
@@ -241,6 +240,19 @@ func TestCredentialService_CreateCredentialTypeUsername(t *testing.T) {
 			expected:      int64(0),
 			errorReturned: errs.AccountCredCreateIncorrectProviderType,
 		},
+
+		// {
+		// 	id:         "on-account-credential-is-not-verified",
+		// 	credential: username,
+		// 	accountID:  testutil.AccountIDTest01,
+		// 	provider:   testunit.ProviderEmail,
+		// 	setupMock: func(repo *testunit.MockCredentialRepository) {
+		// 		repo.AssertNotCalled(t, "CreateAccountCredential")
+		// 	},
+		// 	expected:      int64(0),
+		// 	errorReturned: errs.AccountCredVerifiedAtRequired,
+		// },
+
 	}
 
 	ctx := context.Background()

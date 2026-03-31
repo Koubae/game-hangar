@@ -80,3 +80,12 @@ func (p *NewAccountCredential) Validate() error {
 	}
 	return nil
 }
+
+func (p *NewAccountCredential) ValidateForTypeUsername() error {
+	err := p.Validate()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

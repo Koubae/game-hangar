@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/koubae/game-hangar/internal/errs"
 	auth2 "github.com/koubae/game-hangar/internal/identity/auth"
+	"github.com/koubae/game-hangar/internal/testunit"
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/database/postgres"
 	"github.com/koubae/game-hangar/pkg/testutil"
@@ -36,7 +37,7 @@ func TestCredentialRepository_GetCredentialByProvider(t *testing.T) {
 			expected: &auth2.AccountCredential{
 				ID:         1,
 				Credential: username,
-				AccountID:  testutil.AccountIDTest01,
+				AccountID:  testunit.AccountIDTest01,
 				ProviderID: 1,
 				Secret:     "sha255-secret",
 				SecretType: "password",
@@ -121,7 +122,7 @@ func TestCredentialRepository_CreateAccountCredential(t *testing.T) {
 
 	params := auth2.NewAccountCredential{
 		Credential: "unit-test-user-123",
-		AccountID:  testutil.AccountIDTest01,
+		AccountID:  testunit.AccountIDTest01,
 		ProviderID: 1,
 		Secret:     "sha255-secret",
 		SecretType: "password",
@@ -172,40 +173,10 @@ func TestCredentialRepository_CreateAccountCredentialOnErrors(t *testing.T) {
 		errReturned error
 	}{
 		{
-			id: "validation-err-verified-required",
-			params: &auth2.NewAccountCredential{
-				Credential: username,
-				AccountID:  testutil.AccountIDTest01,
-				ProviderID: providerID,
-				Secret:     "sha255-secret",
-				SecretType: "password",
-				Verified:   true,
-				VerifiedAt: nil,
-			},
-			expectedID:  int64(0),
-			errThrown:   nil,
-			errReturned: errs.AccountCredVerifiedAtRequired,
-		},
-		{
-			id: "validation-err-nil-when-f",
-			params: &auth2.NewAccountCredential{
-				Credential: username,
-				AccountID:  testutil.AccountIDTest01,
-				ProviderID: providerID,
-				Secret:     "sha255-secret",
-				SecretType: "password",
-				Verified:   false,
-				VerifiedAt: &testutil.Now,
-			},
-			expectedID:  int64(0),
-			errThrown:   nil,
-			errReturned: errs.AccountCredVerifiedNilWhenIsFalse,
-		},
-		{
 			id: "on-db-error-any",
 			params: &auth2.NewAccountCredential{
 				Credential: username,
-				AccountID:  testutil.AccountIDTest01,
+				AccountID:  testunit.AccountIDTest01,
 				ProviderID: providerID,
 				Secret:     "sha255-secret",
 				SecretType: "password",
@@ -220,7 +191,7 @@ func TestCredentialRepository_CreateAccountCredentialOnErrors(t *testing.T) {
 			id: "on-db-error-duplicate-resource",
 			params: &auth2.NewAccountCredential{
 				Credential: username,
-				AccountID:  testutil.AccountIDTest01,
+				AccountID:  testunit.AccountIDTest01,
 				ProviderID: providerID,
 				Secret:     "sha255-secret",
 				SecretType: "password",

@@ -36,10 +36,6 @@ func (r *CredentialRepository) CreateAccountCredential(
 	db database.DBTX,
 	params NewAccountCredential,
 ) (int64, error) {
-	if err := params.Validate(); err != nil {
-		return 0, err
-	}
-
 	const query = `
     INSERT INTO account_credentials (
         credential,

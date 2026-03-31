@@ -1,6 +1,7 @@
 package testunit
 
 import (
+	"github.com/google/uuid"
 	authModels "github.com/koubae/game-hangar/internal/identity/auth"
 	"github.com/koubae/game-hangar/pkg/testutil"
 )
@@ -30,4 +31,12 @@ var (
 		Created:     testutil.Now,
 		Updated:     testutil.Now,
 	}
+
+	ProviderUsernameID = int64(1)
+
+	AccountIDTest01    = uuid.New()
+	AccountIDTest01Str = AccountIDTest01.String()
+
+	CredIDTest01   = int64(9999)
+	UsernameTest01 = "unit-test-user-01"
 )

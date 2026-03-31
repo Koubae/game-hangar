@@ -8,7 +8,6 @@ import (
 	"github.com/koubae/game-hangar/internal/identity/account"
 	"github.com/koubae/game-hangar/internal/identity/auth"
 	"github.com/koubae/game-hangar/internal/testunit"
-	"github.com/koubae/game-hangar/pkg/testutil"
 	"github.com/koubae/game-hangar/tests/testobj"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -135,7 +134,7 @@ func TestAccountAuthService_RegisterByUsernameCredentialErr(t *testing.T) {
 						&auth.AccountCredential{
 							ID:         1,
 							Credential: "test-cred",
-							AccountID:  testutil.AccountIDTest01,
+							AccountID:  testunit.AccountIDTest01,
 							ProviderID: 1,
 						}, nil,
 					).
@@ -216,7 +215,7 @@ func TestAccountAuthService_RegisterByUsernameAccountAndCredentialCreation(
 		credID    *int64
 	}
 
-	accountID := testutil.AccountIDTest01.String()
+	accountID := testunit.AccountIDTest01.String()
 	credIDExpected := int64(9999)
 	tests := []struct {
 		id            string

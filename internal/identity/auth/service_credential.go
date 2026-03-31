@@ -66,6 +66,9 @@ func (s *CredentialService) CreateCredentialTypeUsername(
 		Verified:   true,
 		VerifiedAt: &verifiedAt,
 	}
+	if err := params.ValidateForTypeUsername(); err != nil {
+		return 0, err
+	}
 
 	id, err := s.repository.CreateAccountCredential(ctx, s.db, params)
 	if err != nil {

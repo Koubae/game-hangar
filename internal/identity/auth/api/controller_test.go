@@ -11,7 +11,6 @@ import (
 	"github.com/koubae/game-hangar/internal/errs"
 	"github.com/koubae/game-hangar/internal/identity/auth"
 	"github.com/koubae/game-hangar/internal/testunit"
-	"github.com/koubae/game-hangar/pkg/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -23,16 +22,16 @@ func TestAuthController_RegisterByUsername(t *testing.T) {
 	handler := *handlerPtr
 
 	mocker.MockGetDefaultUsernameProvider()
-	mocker.MockGetCredentialByProvider(testutil.ProviderUsernameID, testutil.UsernameTest01, nil, errs.ResourceNotFound)
-	mocker.MockCreateAccountCredential(testutil.CredIDTest01, nil)
-	mocker.MockCreateAccount(testutil.UsernameTest01, nil, testutil.AccountIDTest01Str, nil)
+	mocker.MockGetCredentialByProvider(testunit.ProviderUsernameID, testunit.UsernameTest01, nil, errs.ResourceNotFound)
+	mocker.MockCreateAccountCredential(testunit.CredIDTest01, nil)
+	mocker.MockCreateAccount(testunit.UsernameTest01, nil, testunit.AccountIDTest01Str, nil)
 
 	payload := fmt.Sprintf(
 		`{
 		"source": "global",	
 		"username": "%s",
 		"password": "StrongPassword123!"
-	}`, testutil.UsernameTest01,
+	}`, testunit.UsernameTest01,
 	)
 
 	req, err := http.NewRequest("POST", "/api/v1/auth/register/username", strings.NewReader(payload))
@@ -47,9 +46,9 @@ func TestAuthController_RegisterByUsername(t *testing.T) {
 	require.NoError(t, err)
 
 	expected := auth.DTOAccountLoggedIn{
-		AccountID:    testutil.AccountIDTest01Str,
-		Username:     testutil.UsernameTest01,
-		LoggedCredID: testutil.CredIDTest01,
+		AccountID:    testunit.AccountIDTest01Str,
+		Username:     testunit.UsernameTest01,
+		LoggedCredID: testunit.CredIDTest01,
 	}
 	assert.Equal(t, expected, response)
 	assert.Equal(t, http.StatusCreated, rr.Code)
@@ -62,16 +61,16 @@ func TestAuthController_RegisterByUsername_ErrOnInValidPassword(t *testing.T) {
 	handler := *handlerPtr
 
 	mocker.MockGetDefaultUsernameProvider()
-	mocker.MockGetCredentialByProvider(testutil.ProviderUsernameID, testutil.UsernameTest01, nil, errs.ResourceNotFound)
-	mocker.MockCreateAccountCredential(testutil.CredIDTest01, nil)
-	mocker.MockCreateAccount(testutil.UsernameTest01, nil, testutil.AccountIDTest01Str, nil)
+	mocker.MockGetCredentialByProvider(testunit.ProviderUsernameID, testunit.UsernameTest01, nil, errs.ResourceNotFound)
+	mocker.MockCreateAccountCredential(testunit.CredIDTest01, nil)
+	mocker.MockCreateAccount(testunit.UsernameTest01, nil, testunit.AccountIDTest01Str, nil)
 
 	payload := fmt.Sprintf(
 		`{
 		"source": "global",	
 		"username": "%s",
 		"password": "pass-not-strong"
-	}`, testutil.UsernameTest01,
+	}`, testunit.UsernameTest01,
 	)
 
 	req, err := http.NewRequest("POST", "/api/v1/auth/register/username", strings.NewReader(payload))
