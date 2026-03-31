@@ -32,9 +32,9 @@ var (
 		DefaultCode: 503,
 	}
 
-	InvalidPayload = &AppError{
+	PayloadValidation = &AppError{
 		Err:         ClientErr,
-		Msg:         "invalid payload",
+		Msg:         "payload validation error",
 		DefaultCode: 400,
 	}
 
@@ -162,7 +162,7 @@ func AsAppError(err error) *AppError {
 // Wrap wraps an error with an AppError.
 // NOTE: Avoid Wrap the same error multiple times as this will "concatenate" the previous Msg
 func Wrap(appErr *AppError, err error) *AppError {
-	msg := fmt.Sprintf("[AppError:%s] wrapped error: %s", appErr.Msg, err.Error())
+	msg := fmt.Sprintf("%s, error: %s", appErr.Msg, err.Error())
 	return &AppError{Err: errors.Join(appErr, err), Msg: msg}
 }
 

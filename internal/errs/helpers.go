@@ -42,7 +42,7 @@ func AppErrToClientResponse(err error, msg string) *common.ClientResponseError {
 	} else {
 		responseError = &common.ClientResponseError{
 			HTTPCode: appErr.GetDefaultCode(),
-			Message:  fmt.Sprintf("%s, error: %s", msg, err.Error()),
+			Message:  fmt.Sprintf("%s%s", msg, err.Error()),
 		}
 	}
 
@@ -51,7 +51,7 @@ func AppErrToClientResponse(err error, msg string) *common.ClientResponseError {
 
 func DTOSchemaValidation(dto any) *AppError {
 	if err := common.DTOSchemaValidation(dto); err != nil {
-		return Wrap(InvalidPayload, err)
+		return Wrap(PayloadValidation, err)
 	}
 	return nil
 }
