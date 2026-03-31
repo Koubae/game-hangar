@@ -30,8 +30,9 @@ func TestAuthController_RegisterByUsername(t *testing.T) {
 		`{
 		"source": "global",	
 		"username": "%s",
-		"password": "StrongPassword123!"
+		"password": "%s"
 	}`, testunit.UsernameTest01,
+		testunit.StrongPassword,
 	)
 
 	req, err := http.NewRequest("POST", "/api/v1/auth/register/username", strings.NewReader(payload))
@@ -82,6 +83,40 @@ func TestAuthController_RegisterByUsername_ErrOnInValidPassword(t *testing.T) {
 
 	response := rr.Body.String()
 	expected := `{"code":400,"message":"password validation error, error: at least one uppercase letter is required\nat least one digit is required\n"}`
+	assert.Equal(t, expected, strings.TrimSpace(response))
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+}
+
+func TestAuthController_RegisterByUsername_ErrOnInValidUsername(t *testing.T) {
+	t.Parallel()
+
+	_, handlerPtr, mocker := testunit.NewTestRouterAndContainer(t)
+	handler := *handlerPtr
+
+	username := "!invalid-username"
+
+	mocker.MockGetDefaultUsernameProvider()
+	mocker.MockGetCredentialByProvider(testunit.ProviderUsernameID, username, nil, errs.ResourceNotFound)
+	mocker.MockCreateAccountCredential(testunit.CredIDTest01, nil)
+	mocker.MockCreateAccount(username, nil, testunit.AccountIDTest01Str, nil)
+
+	payload := fmt.Sprintf(
+		`{
+		"source": "global",	
+		"username": "%s",
+		"password": "StrongPassword123!"
+	}`, username,
+	)
+
+	req, err := http.NewRequest("POST", "/api/v1/auth/register/username", strings.NewReader(payload))
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+
+	rr := httptest.NewRecorder()
+	handler.ServeHTTP(rr, req)
+
+	response := rr.Body.String()
+	expected := `{"code":400,"message":"could not create account: credential contains invalid characters"}`
 	assert.Equal(t, expected, strings.TrimSpace(response))
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
 }

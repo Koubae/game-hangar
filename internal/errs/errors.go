@@ -44,8 +44,9 @@ var (
 		DefaultCode: 404,
 	}
 	ResourceDuplicate = &AppError{
-		Err:         ClientErr,
-		Msg:         "resource already exists",
+		Err: ClientErr,
+		Msg: "resource already exists",
+
 		DefaultCode: 409,
 	}
 
@@ -79,6 +80,31 @@ var (
 	AccountCredVerifiedNilWhenIsFalse = &AppError{
 		Err:         ClientErr,
 		Msg:         "verified_at must be nil when verified is false",
+		DefaultCode: 400,
+	}
+	AccountCredCredentialRequired = &AppError{
+		Err:         ClientErr,
+		Msg:         "credential is required",
+		DefaultCode: 400,
+	}
+	AccountCredCredentialTooShort = &AppError{
+		Err:         ClientErr,
+		Msg:         "credential is too short",
+		DefaultCode: 400,
+	}
+	AccountCredCredentialTooLong = &AppError{
+		Err:         ClientErr,
+		Msg:         "credential is too long",
+		DefaultCode: 400,
+	}
+	AccountCredCredentialInvalid = &AppError{
+		Err:         ClientErr,
+		Msg:         "credential contains invalid characters",
+		DefaultCode: 400,
+	}
+	AccountCredCredentialReserved = &AppError{
+		Err:         ClientErr,
+		Msg:         "credential contains reserved characters",
 		DefaultCode: 400,
 	}
 

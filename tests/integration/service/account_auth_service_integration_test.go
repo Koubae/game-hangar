@@ -15,7 +15,7 @@ func TestAccountAuthService_RegisterByUsername(t *testing.T) {
 	ctx, container, tearDown := integration.SetupTestIntegrationIdentity(t)
 	defer tearDown(integration.ResetDB)
 
-	testID := uuid.NewString()[:8]
+	testID := uuid.NewString()[:4]
 	tests := []struct {
 		id          string
 		source      string
@@ -25,13 +25,13 @@ func TestAccountAuthService_RegisterByUsername(t *testing.T) {
 		{
 			id:          "on-err-provider-not-exists",
 			source:      "provider-source-does-not-exists",
-			username:    "account-integration-01" + "-" + testID,
+			username:    "integration-01" + "-" + testID,
 			errExpected: errs.ProviderNotFound,
 		},
 		{
 			id:          "on-err-provider-is-disabled",
 			source:      testobj.ProviderSourceDisabled,
-			username:    "account-integration-01" + "-" + testID,
+			username:    "integration-01" + "-" + testID,
 			errExpected: errs.ProviderDisabled,
 		},
 
@@ -51,7 +51,7 @@ func TestAccountAuthService_RegisterByUsername(t *testing.T) {
 		{
 			id:          "account-and-credential-are-created",
 			source:      testobj.ProviderSourceDefault,
-			username:    "account-integration-01" + "-" + testID,
+			username:    "integration-01" + "-" + testID,
 			errExpected: nil,
 		},
 	}

@@ -1,7 +1,10 @@
 package auth
 
 import (
+	"regexp"
+	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/google/uuid"
 	"github.com/koubae/game-hangar/internal/errs"
@@ -29,6 +32,9 @@ const (
 	Apple    ProviderType = "apple"
 	Discord  ProviderType = "discord"
 	Facebook ProviderType = "facebook"
+
+	UsernameMinLength = 4
+	UsernameMaxLength = 20
 )
 
 type Provider struct {
@@ -81,10 +87,49 @@ func (p *NewAccountCredential) Validate() error {
 	return nil
 }
 
+var usernamePattern = regexp.MustCompile(`^[\pL\pN_-][\pL\pN_-]*$`)
+
+var reservedUsernameNames = map[string]struct{}{
+	"admin":     {},
+	"moderator": {},
+	"mod":       {},
+	"support":   {},
+	"system":    {},
+	"root":      {},
+	"null":      {},
+	"undefined": {},
+	"owner":     {},
+	"staff":     {},
+	"dev":       {},
+	"developer": {},
+	"gm":        {},
+	"gameadmin": {},
+}
+
 func (p *NewAccountCredential) ValidateForTypeUsername() error {
 	err := p.Validate()
 	if err != nil {
 		return err
+	}
+
+	p.Credential = strings.TrimSpace(p.Credential)
+	if p.Credential == "" {
+		return errs.AccountCredCredentialRequired
+	}
+
+	length := utf8.RuneCountInString(p.Credential)
+	if length < UsernameMinLength {
+		return errs.AccountCredCredentialTooShort
+	}
+	if length > UsernameMaxLength {
+		return errs.AccountCredCredentialTooLong
+	}
+
+	if !usernamePattern.MatchString(p.Credential) {
+		return errs.AccountCredCredentialInvalid
+	}
+	if _, ok := reservedUsernameNames[strings.ToLower(p.Credential)]; ok {
+		return errs.AccountCredCredentialReserved
 	}
 
 	return nil

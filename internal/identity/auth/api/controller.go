@@ -56,7 +56,6 @@ func (c *AuthController) RegisterByUsername(
 		return
 	}
 
-	// TODO: Add username validation
 	accountID, credID, err := c.container.AccountAuthService(nil).RegisterByUsername(
 		ctx,
 		payload.Source,
@@ -64,7 +63,7 @@ func (c *AuthController) RegisterByUsername(
 		secret,
 	)
 	if err != nil {
-		errs.AppErrToClientResponseWithLog(w, err, "could not create account", logger)
+		errs.AppErrToClientResponseWithLog(w, err, "could not create account: ", logger)
 		return
 	}
 
