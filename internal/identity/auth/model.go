@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/koubae/game-hangar/internal/errs"
 )
 
 type ProviderType string
@@ -58,4 +59,24 @@ type AccountCredential struct {
 
 	Created time.Time
 	Updated time.Time
+}
+
+type NewAccountCredential struct {
+	Credential string
+	AccountID  uuid.UUID
+	ProviderID int64
+	Secret     string
+	SecretType string
+	Verified   bool
+	VerifiedAt *time.Time
+}
+
+func (p *NewAccountCredential) Validate() error {
+	if p.Verified && p.VerifiedAt == nil {
+		return errs.AccountCredVerifiedAtRequired
+	}
+	if !p.Verified && p.VerifiedAt != nil {
+		return errs.AccountCredVerifiedNilWhenIsFalse
+	}
+	return nil
 }

@@ -2,9 +2,7 @@ package auth
 
 import (
 	"context"
-	"time"
 
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/koubae/game-hangar/internal/errs"
 	"github.com/koubae/game-hangar/pkg/database"
@@ -25,26 +23,6 @@ type ICredentialRepository interface {
 }
 
 type CredentialRepositoryFactory func() ICredentialRepository
-
-type NewAccountCredential struct {
-	Credential string
-	AccountID  uuid.UUID
-	ProviderID int64
-	Secret     string
-	SecretType string
-	Verified   bool
-	VerifiedAt *time.Time
-}
-
-func (p *NewAccountCredential) Validate() error {
-	if p.Verified && p.VerifiedAt == nil {
-		return errs.AccountCredVerifiedAtRequired
-	}
-	if !p.Verified && p.VerifiedAt != nil {
-		return errs.AccountCredVerifiedNilWhenIsFalse
-	}
-	return nil
-}
 
 type CredentialRepository struct{}
 
