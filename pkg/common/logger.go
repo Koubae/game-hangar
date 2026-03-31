@@ -41,6 +41,8 @@ type Logger interface {
 	Error(msg string, fields ...zap.Field)
 	Fatal(msg string, fields ...zap.Field)
 	Panic(msg string, fields ...zap.Field)
+	DPanic(msg string, fields ...zap.Field)
+	L(level string, msg string, fields ...zap.Field)
 }
 
 type AppLogger struct {
@@ -69,6 +71,24 @@ func (l *AppLogger) Fatal(msg string, fields ...zap.Field) {
 
 func (l *AppLogger) Panic(msg string, fields ...zap.Field) {
 	l.Logger.Panic(msg, fields...)
+}
+
+func (l *AppLogger) DPanic(msg string, fields ...zap.Field) {
+	l.Logger.DPanic(msg, fields...)
+}
+
+func (l *AppLogger) L(level string, msg string, fields ...zap.Field) {
+	lvl, err := zapcore.ParseLevel(level)
+	if err != nil {
+		l.Warn(
+			"bad log level passed to Logger.L, defaults to info",
+			zap.String("bad-level", level),
+			zap.Error(err),
+		)
+		lvl = zapcore.InfoLevel
+	}
+	l.Logger.Log(lvl, msg, fields...)
+
 }
 
 func (l *AppLogger) LogCloser(loggerTmp Logger, z *zap.Logger) {
@@ -109,7 +129,8 @@ func (l *AppLogger) TimeIt(level string, name string) func() {
 		end := time.Now()
 		elapsed := end.Sub(start)
 
-		l.Log(lvl, name+" operation finished",
+		l.Log(
+			lvl, name+"operation finished",
 			zap.Time("start", start.UTC()),
 			zap.Time("end", end.UTC()),
 			zap.String("elapsed_s", fmt.Sprintf("%.6f", elapsed.Seconds())),
@@ -171,7 +192,10 @@ func CreateLogger(logLevel LogLevel, filePath string) *AppLogger {
 		zapcore.NewCore(fileEncoder, fileWriter, level),
 	)
 
-	_zapLogger := zap.New(core, zap.AddStacktrace(zapcore.ErrorLevel))
+	_zapLogger := zap.New(
+		core,
+		zap.AddStacktrace(zapcore.DPanicLevel),
+	) // TODO: Make this configurable!!!
 	logger = &AppLogger{
 		Logger: _zapLogger,
 	}

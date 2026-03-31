@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/repository"
-	"github.com/koubae/game-hangar/pkg/database"
+	"github.com/koubae/game-hangar/internal/errs"
+	"github.com/koubae/game-hangar/internal/identity/auth"
 	"github.com/koubae/game-hangar/pkg/database/postgres"
 	"github.com/koubae/game-hangar/tests/integration"
 	"github.com/stretchr/testify/assert"
@@ -47,20 +47,24 @@ func createTestAccount(
 
 	var err error
 	var accountID uuid.UUID
-	err = connector.SelectOne(ctx, `
+	err = connector.SelectOne(
+		ctx, `
 		INSERT INTO account (id, username, email)
 			VALUES ($1, $2, $3), ($4, $5, $6)
 		RETURNING id 
-	;`, id, username, email, id2, username2, email2).Scan(&accountID)
+	;`, id, username, email, id2, username2, email2,
+	).Scan(&accountID)
 	require.NoError(t, err)
 	require.NotEqual(t, 0, accountID)
 
 	var credentialID int
-	err = connector.SelectOne(ctx, `
+	err = connector.SelectOne(
+		ctx, `
 		INSERT INTO account_credentials (credential, account_id, provider_id, secret)
 			VALUES ($1, $2, $3, encode(digest('pass', 'sha256'), 'hex'))
 		RETURNING id 
-	`, username, accountID, 1).Scan(&credentialID)
+	`, username, accountID, 1,
+	).Scan(&credentialID)
 	require.NoError(t, err)
 	require.NotEqual(t, 0, credentialID)
 
@@ -104,45 +108,47 @@ func TestCredentialRepository_GetCredentialByProvider(t *testing.T) {
 			providerID:  1,
 			username:    "does-not-exists",
 			expected:    nil,
-			errReturned: database.ErrNotFound,
+			errReturned: errs.ResourceNotFound,
 		},
 		{
 			id:          "record-is-not-found-wrong-provider",
 			providerID:  2,
 			username:    testData.username1,
 			expected:    nil,
-			errReturned: database.ErrNotFound,
+			errReturned: errs.ResourceNotFound,
 		},
 	}
 
-	repo := repository.NewCredentialRepository()
+	repo := auth.NewCredentialRepository()
 	for _, tt := range tests {
-		t.Run(tt.id, func(t *testing.T) {
-			model, err := repo.GetCredentialByProvider(
-				ctx,
-				connector,
-				tt.providerID,
-				tt.username,
-			)
+		t.Run(
+			tt.id, func(t *testing.T) {
+				model, err := repo.GetCredentialByProvider(
+					ctx,
+					connector,
+					tt.providerID,
+					tt.username,
+				)
 
-			if tt.errReturned != nil {
-				assert.Error(t, err)
-				assert.ErrorIs(t, tt.errReturned, err)
-			} else {
-				assert.NoError(t, err)
-			}
-
-			var result *credExpected
-			if tt.expected != nil {
-				result = &credExpected{
-					AccountID:  model.AccountID.String(),
-					ProviderID: model.ProviderID,
-					Credential: model.Credential,
+				if tt.errReturned != nil {
+					assert.Error(t, err)
+					assert.ErrorAs(t, err, &tt.errReturned)
+				} else {
+					assert.NoError(t, err)
 				}
-			}
 
-			assert.Equal(t, tt.expected, result)
-		})
+				var result *credExpected
+				if tt.expected != nil {
+					result = &credExpected{
+						AccountID:  model.AccountID.String(),
+						ProviderID: model.ProviderID,
+						Credential: model.Credential,
+					}
+				}
+
+				assert.Equal(t, tt.expected, result)
+			},
+		)
 	}
 }
 
@@ -153,12 +159,12 @@ func TestCredentialRepository_CreateAccountCredential(t *testing.T) {
 	testData := createTestAccount(t, ctx, connector)
 	tests := []struct {
 		id          string
-		params      repository.NewAccountCredential
+		params      auth.NewAccountCredential
 		errReturned error
 	}{
 		{
 			id: "credential-created",
-			params: repository.NewAccountCredential{
+			params: auth.NewAccountCredential{
 				Credential: testData.username2,
 				AccountID:  testData.accountID2UUID,
 				ProviderID: 1,
@@ -168,28 +174,30 @@ func TestCredentialRepository_CreateAccountCredential(t *testing.T) {
 		},
 		{
 			id: "err-duplicate-credential",
-			params: repository.NewAccountCredential{
+			params: auth.NewAccountCredential{
 				Credential: testData.username2,
 				AccountID:  testData.accountID2UUID,
 				ProviderID: 1,
 				Secret:     "secret-hash-sha256",
 			},
-			errReturned: &database.ErrDuplicate{},
+			errReturned: errs.ResourceDuplicate,
 		},
 	}
 
-	repo := repository.NewCredentialRepository()
+	repo := auth.NewCredentialRepository()
 	for _, tt := range tests {
-		t.Run(tt.id, func(t *testing.T) {
-			id, err := repo.CreateAccountCredential(ctx, connector, tt.params)
-			if tt.errReturned != nil {
-				assert.Error(t, err)
-				assert.ErrorIs(t, tt.errReturned, err)
-				assert.Equal(t, int64(0), id)
-			} else {
-				assert.NoError(t, err)
-				assert.NotEqual(t, int64(0), id)
-			}
-		})
+		t.Run(
+			tt.id, func(t *testing.T) {
+				id, err := repo.CreateAccountCredential(ctx, connector, tt.params)
+				if tt.errReturned != nil {
+					assert.Error(t, err)
+					assert.ErrorAs(t, err, &tt.errReturned)
+					assert.Equal(t, int64(0), id)
+				} else {
+					assert.NoError(t, err)
+					assert.NotEqual(t, int64(0), id)
+				}
+			},
+		)
 	}
 }

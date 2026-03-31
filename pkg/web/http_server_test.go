@@ -177,6 +177,10 @@ func (m *MockLogger) Fatal(msg string, fields ...zap.Field) {
 	m.FatalMsg = msg
 	m.FatalFields = fields
 }
+func (m *MockLogger) DPanic(msg string, fields ...zap.Field)          {}
+func (m *MockLogger) L(level string, msg string, fields ...zap.Field) {}
+
+var _ common.Logger = (*MockLogger)(nil)
 
 func TestAppStopError(t *testing.T) {
 	loggerTmp := common.CreateLogger(common.LogLevelDPanic, "")

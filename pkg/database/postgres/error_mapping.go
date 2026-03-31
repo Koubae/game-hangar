@@ -3,6 +3,7 @@ package postgres
 import (
 	"errors"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/koubae/game-hangar/pkg/database"
 )
@@ -10,6 +11,10 @@ import (
 func MapPostgresErrToDomainErr(err error) error {
 	if err == nil {
 		return nil
+	}
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return database.ErrNotFound
 	}
 
 	var pgErr *pgconn.PgError

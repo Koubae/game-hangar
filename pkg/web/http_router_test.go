@@ -97,9 +97,10 @@ type routerMockLogger struct {
 	common.Logger
 }
 
-func (m *routerMockLogger) Debug(msg string, fields ...zap.Field) {}
-func (m *routerMockLogger) Info(msg string, fields ...zap.Field)  {}
-func (m *routerMockLogger) Warn(msg string, fields ...zap.Field)  {}
-func (m *routerMockLogger) Error(msg string, fields ...zap.Field) {}
-func (m *routerMockLogger) Panic(msg string, fields ...zap.Field) {}
-func (m *routerMockLogger) Fatal(msg string, fields ...zap.Field) {}
+func (m *routerMockLogger) Debug(msg string, fields ...zap.Field)  {}
+func (m *routerMockLogger) Info(msg string, fields ...zap.Field)   {}
+func (m *routerMockLogger) Warn(msg string, fields ...zap.Field)   {}
+func (m *routerMockLogger) Error(msg string, fields ...zap.Field)  {}
+func (m *routerMockLogger) Panic(msg string, fields ...zap.Field)  {}
+func (m *routerMockLogger) DPanic(msg string, fields ...zap.Field) {}
+func (m *routerMockLogger) Fatal(msg string, fields ...zap.Field)  {}

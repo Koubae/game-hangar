@@ -14,8 +14,7 @@ import (
 )
 
 var (
-	Now             = time.Now()
-	AccountIDTest01 = uuid.New()
+	Now = time.Now()
 
 	DBMockErrDuplicateKey = &pgconn.PgError{
 		Code:           "23505",
@@ -115,80 +114,82 @@ func (m *MockRow) Scan(dest ...any) error {
 }
 
 func (m *MockRow) MockScan(argsN int, err error, values ...any) {
-	m.On("Scan", m.Args(argsN)...).Run(func(args mock.Arguments) {
-		if err != nil {
-			return
-		}
-
-		set := func(ptr any, _index, val any) {
-			switch ptr := ptr.(type) {
-			case *int:
-				*ptr = val.(int)
-			case **int:
-				*ptr = val.(*int)
-
-			case *int64:
-				*ptr = val.(int64)
-			case **int64:
-				*ptr = val.(*int64)
-
-			case *string:
-				*ptr = val.(string)
-			case **string:
-				*ptr = val.(*string)
-
-			case *bool:
-				*ptr = val.(bool)
-			case **bool:
-				*ptr = val.(*bool)
-
-			case *uuid.UUID:
-				*ptr = val.(uuid.UUID)
-			case **uuid.UUID:
-				*ptr = val.(*uuid.UUID)
-
-			case *time.Time:
-				*ptr = val.(time.Time)
-			case **time.Time:
-				*ptr = val.(*time.Time)
-
-			case *any:
-				*ptr = val
-
-			default:
-				panic(fmt.Sprintf("MockScan: untyped or unhandled destination at index %d (%T)", _index, ptr))
-			}
-		}
-
-		setNil := func(ptr any) {
-			switch p := ptr.(type) {
-			case **string:
-				*p = nil
-			case **int64:
-				*p = nil
-			case **bool:
-				*p = nil
-			case **uuid.UUID:
-				*p = nil
-			case **time.Time:
-				*p = nil
-			}
-		}
-
-		for i, val := range values {
-			if i >= len(args) {
-				break
+	m.On("Scan", m.Args(argsN)...).Run(
+		func(args mock.Arguments) {
+			if err != nil {
+				return
 			}
 
-			ptr := args.Get(i)
-			if val == nil {
-				setNil(ptr)
-				continue
+			set := func(ptr any, _index, val any) {
+				switch ptr := ptr.(type) {
+				case *int:
+					*ptr = val.(int)
+				case **int:
+					*ptr = val.(*int)
+
+				case *int64:
+					*ptr = val.(int64)
+				case **int64:
+					*ptr = val.(*int64)
+
+				case *string:
+					*ptr = val.(string)
+				case **string:
+					*ptr = val.(*string)
+
+				case *bool:
+					*ptr = val.(bool)
+				case **bool:
+					*ptr = val.(*bool)
+
+				case *uuid.UUID:
+					*ptr = val.(uuid.UUID)
+				case **uuid.UUID:
+					*ptr = val.(*uuid.UUID)
+
+				case *time.Time:
+					*ptr = val.(time.Time)
+				case **time.Time:
+					*ptr = val.(*time.Time)
+
+				case *any:
+					*ptr = val
+
+				default:
+					panic(fmt.Sprintf("MockScan: untyped or unhandled destination at index %d (%T)", _index, ptr))
+				}
 			}
 
-			set(ptr, i, val)
-		}
-	}).Return(err)
+			setNil := func(ptr any) {
+				switch p := ptr.(type) {
+				case **string:
+					*p = nil
+				case **int64:
+					*p = nil
+				case **bool:
+					*p = nil
+				case **uuid.UUID:
+					*p = nil
+				case **time.Time:
+					*p = nil
+				}
+			}
+
+			for i, val := range values {
+				if i >= len(args) {
+					break
+				}
+
+				ptr := args.Get(i)
+				if val == nil {
+					setNil(ptr)
+					continue
+				}
+
+				set(ptr, i, val)
+			}
+		},
+	).Return(err)
 }
 
 var DefaultStubPgxTx pgx.Tx = &stubPgxTx{}

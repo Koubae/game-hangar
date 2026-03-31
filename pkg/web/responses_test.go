@@ -119,7 +119,7 @@ func TestWriteBusinessErrorResponse(t *testing.T) {
 	}{
 		{
 			name: "BusinessError match",
-			err: &common.BusinessError{
+			err: &common.ClientResponseError{
 				HTTPCode: http.StatusForbidden,
 				Message:  "access denied",
 			},

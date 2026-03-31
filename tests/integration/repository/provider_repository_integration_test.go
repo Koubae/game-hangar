@@ -4,9 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/model"
-	"github.com/koubae/game-hangar/internal/identity/app/modules/auth/repository"
-	"github.com/koubae/game-hangar/pkg/database"
+	"github.com/koubae/game-hangar/internal/errs"
+	auth2 "github.com/koubae/game-hangar/internal/identity/auth"
 	"github.com/koubae/game-hangar/tests/integration"
 	"github.com/stretchr/testify/assert"
 )
@@ -19,13 +18,13 @@ func TestProviderRepository_GetProvider(t *testing.T) {
 		id       string
 		source   string
 		_type    string
-		expected model.Provider
+		expected auth2.Provider
 	}{
 		{
 			id:     "provider-username",
 			source: "global",
 			_type:  "username",
-			expected: model.Provider{
+			expected: auth2.Provider{
 				Source:      "global",
 				Type:        "username",
 				DisplayName: "Username",
@@ -37,7 +36,7 @@ func TestProviderRepository_GetProvider(t *testing.T) {
 			source: "global",
 
 			_type: "email",
-			expected: model.Provider{
+			expected: auth2.Provider{
 				Source:      "global",
 				Type:        "email",
 				DisplayName: "Email",
@@ -48,7 +47,7 @@ func TestProviderRepository_GetProvider(t *testing.T) {
 			id:     "provider-device",
 			source: "global",
 			_type:  "device",
-			expected: model.Provider{
+			expected: auth2.Provider{
 				Source:      "global",
 				Type:        "device",
 				DisplayName: "Device",
@@ -59,7 +58,7 @@ func TestProviderRepository_GetProvider(t *testing.T) {
 			id:     "provider-guest",
 			source: "global",
 			_type:  "guest",
-			expected: model.Provider{
+			expected: auth2.Provider{
 				Source:      "global",
 				Type:        "guest",
 				DisplayName: "Guest",
@@ -70,7 +69,7 @@ func TestProviderRepository_GetProvider(t *testing.T) {
 			id:     "provider-anonymous",
 			source: "global",
 			_type:  "anonymous",
-			expected: model.Provider{
+			expected: auth2.Provider{
 				Source:      "global",
 				Type:        "anonymous",
 				DisplayName: "Anonymous",
@@ -81,7 +80,7 @@ func TestProviderRepository_GetProvider(t *testing.T) {
 			id:     "provider-steam",
 			source: "global",
 			_type:  "steam",
-			expected: model.Provider{
+			expected: auth2.Provider{
 				Source:      "global",
 				Type:        "steam",
 				DisplayName: "Steam",
@@ -92,7 +91,7 @@ func TestProviderRepository_GetProvider(t *testing.T) {
 			id:     "provider-playstation",
 			source: "global",
 			_type:  "psn",
-			expected: model.Provider{
+			expected: auth2.Provider{
 				Source:      "global",
 				Type:        "psn",
 				DisplayName: "PlayStation Network",
@@ -103,7 +102,7 @@ func TestProviderRepository_GetProvider(t *testing.T) {
 			id:     "provider-xbox",
 			source: "global",
 			_type:  "xbox",
-			expected: model.Provider{
+			expected: auth2.Provider{
 				Source:      "global",
 				Type:        "xbox",
 				DisplayName: "Xbox",
@@ -114,7 +113,7 @@ func TestProviderRepository_GetProvider(t *testing.T) {
 			id:     "provider-nintendo",
 			source: "global",
 			_type:  "nintendo",
-			expected: model.Provider{
+			expected: auth2.Provider{
 				Source:      "global",
 				Type:        "nintendo",
 				DisplayName: "Nintendo",
@@ -123,32 +122,38 @@ func TestProviderRepository_GetProvider(t *testing.T) {
 		},
 	}
 
-	providerRepository := repository.NewProviderRepository()
+	providerRepository := auth2.NewProviderRepository()
 	providerRepository.LoadProviders(context.Background(), connector)
 	for _, tt := range tests {
-		t.Run(tt.id, func(t *testing.T) {
-			provider, err := providerRepository.GetProvider(context.Background(), connector, tt.source, tt._type)
-			if err != nil {
-				t.Fatalf("Failed to get provider: %v", err)
-			}
-			if provider == nil {
-				t.Fatalf("Provider is nil")
-			}
+		t.Run(
+			tt.id, func(t *testing.T) {
+				provider, err := providerRepository.GetProvider(context.Background(), connector, tt.source, tt._type)
+				if err != nil {
+					t.Fatalf("Failed to get provider: %v", err)
+				}
+				if provider == nil {
+					t.Fatalf("Provider is nil")
+				}
 
-			if provider.Source != tt.expected.Source {
-				t.Fatalf("Provider source is not '%s' got: %s\n ", tt.expected.Source, provider.Source)
-			}
+				if provider.Source != tt.expected.Source {
+					t.Fatalf("Provider source is not '%s' got: %s\n ", tt.expected.Source, provider.Source)
+				}
 
-			if provider.Type != tt.expected.Type {
-				t.Fatalf("Provider type is not '%s' got: %s\n ", tt.expected.Type, provider.Type)
-			}
-			if provider.DisplayName != tt.expected.DisplayName {
-				t.Fatalf("Provider display name is not '%s' \n got: %s", tt.expected.DisplayName, provider.DisplayName)
-			}
-			if provider.Category != tt.expected.Category {
-				t.Fatalf("Provider category is not '%s' \n got: %s", tt.expected.Category, provider.Category)
-			}
-		})
+				if provider.Type != tt.expected.Type {
+					t.Fatalf("Provider type is not '%s' got: %s\n ", tt.expected.Type, provider.Type)
+				}
+				if provider.DisplayName != tt.expected.DisplayName {
+					t.Fatalf(
+						"Provider display name is not '%s' \n got: %s",
+						tt.expected.DisplayName,
+						provider.DisplayName,
+					)
+				}
+				if provider.Category != tt.expected.Category {
+					t.Fatalf("Provider category is not '%s' \n got: %s", tt.expected.Category, provider.Category)
+				}
+			},
+		)
 	}
 }
 
@@ -158,7 +163,7 @@ func TestProviderRepository_GetProviderFoundWhenCacheMiss(t *testing.T) {
 
 	source := "global"
 	_type := "username"
-	providerRepository := repository.NewProviderRepository()
+	providerRepository := auth2.NewProviderRepository()
 	provider, err := providerRepository.GetProvider(context.Background(), connector, source, _type)
 	if err != nil {
 		t.Fatalf("Failed to get provider: %v", err)
@@ -191,7 +196,7 @@ func TestProviderRepository_GetProviderNotFound(t *testing.T) {
 		id          string
 		source      string
 		_type       string
-		expected    *model.Provider
+		expected    *auth2.Provider
 		errReturned error
 	}{
 		{
@@ -199,27 +204,29 @@ func TestProviderRepository_GetProviderNotFound(t *testing.T) {
 			source:      "global",
 			_type:       "not-exists",
 			expected:    nil,
-			errReturned: database.ErrNotFound,
+			errReturned: errs.ResourceNotFound,
 		},
 		{
 			id:          "not-found-because-source-not-exists",
 			source:      "not-exists",
 			_type:       "username",
 			expected:    nil,
-			errReturned: database.ErrNotFound,
+			errReturned: errs.ResourceNotFound,
 		},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.id, func(t *testing.T) {
-			providerRepository := repository.NewProviderRepository()
-			providerRepository.LoadProviders(context.Background(), connector)
+		t.Run(
+			tt.id, func(t *testing.T) {
+				providerRepository := auth2.NewProviderRepository()
+				providerRepository.LoadProviders(context.Background(), connector)
 
-			model, err := providerRepository.GetProvider(context.Background(), connector, tt.source, tt._type)
+				_model, err := providerRepository.GetProvider(context.Background(), connector, tt.source, tt._type)
 
-			assert.Error(t, err)
-			assert.ErrorIs(t, tt.errReturned, err)
-			assert.Equal(t, tt.expected, model)
-		})
+				assert.Error(t, err)
+				assert.ErrorAs(t, err, &tt.errReturned)
+				assert.Equal(t, tt.expected, _model)
+			},
+		)
 	}
 }

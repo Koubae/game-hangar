@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/koubae/game-hangar/internal/identity/app/modules/account/repository"
-	"github.com/koubae/game-hangar/pkg/database"
+	"github.com/koubae/game-hangar/internal/errs"
+	"github.com/koubae/game-hangar/internal/identity/account"
 	"github.com/koubae/game-hangar/tests/integration"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -21,12 +21,12 @@ func TestAccountRepository_CreateAccount(t *testing.T) {
 	email1 := fmt.Sprintf("%s@integration.test", username1)
 	tests := []struct {
 		id          string
-		params      repository.NewAccount
+		params      account.NewAccount
 		errReturned error
 	}{
 		{
 			id: "account-created",
-			params: repository.NewAccount{
+			params: account.NewAccount{
 				Username: username1,
 				Email:    &email1,
 			},
@@ -34,15 +34,15 @@ func TestAccountRepository_CreateAccount(t *testing.T) {
 		},
 		{
 			id: "err-duplicate-account",
-			params: repository.NewAccount{
+			params: account.NewAccount{
 				Username: username1,
 				Email:    &email1,
 			},
-			errReturned: &database.ErrDuplicate{},
+			errReturned: errs.ResourceDuplicate,
 		},
 		{
 			id: "account-created-email-can-be-null",
-			params: repository.NewAccount{
+			params: account.NewAccount{
 				Username: "account-integration-02" + "-" + testID,
 				Email:    nil,
 			},
@@ -50,19 +50,21 @@ func TestAccountRepository_CreateAccount(t *testing.T) {
 		},
 	}
 
-	repo := repository.NewAccountRepository()
+	repo := account.NewAccountRepository()
 	for _, tt := range tests {
-		t.Run(tt.id, func(t *testing.T) {
-			id, err := repo.CreateAccount(ctx, connector, tt.params)
-			if tt.errReturned != nil {
-				assert.Error(t, err)
-				assert.ErrorIs(t, tt.errReturned, err)
-				assert.Nil(t, id)
-			} else {
-				assert.NoError(t, err)
-				assert.NotEqual(t, nil, id)
-			}
-		})
+		t.Run(
+			tt.id, func(t *testing.T) {
+				id, err := repo.CreateAccount(ctx, connector, tt.params)
+				if tt.errReturned != nil {
+					assert.Error(t, err)
+					assert.ErrorAs(t, err, &tt.errReturned)
+					assert.Nil(t, id)
+				} else {
+					assert.NoError(t, err)
+					assert.NotEqual(t, nil, id)
+				}
+			},
+		)
 	}
 }
 
@@ -74,12 +76,12 @@ func TestAccountRepository_GetAccount(t *testing.T) {
 	username1 := "account-integration-01" + "-" + testID
 	email1 := fmt.Sprintf("%s@integration.test", username1)
 
-	repo := repository.NewAccountRepository()
+	repo := account.NewAccountRepository()
 
 	id1, err := repo.CreateAccount(
 		ctx,
 		connector,
-		repository.NewAccount{Username: username1, Email: &email1},
+		account.NewAccount{Username: username1, Email: &email1},
 	)
 	if err != nil {
 		require.NoError(t, err)
@@ -111,30 +113,32 @@ func TestAccountRepository_GetAccount(t *testing.T) {
 			id:          "record-is-not-found",
 			accountID:   uuid.NewString(),
 			expected:    nil,
-			errReturned: database.ErrNotFound,
+			errReturned: errs.ResourceNotFound,
 		},
 	}
 	for _, tt := range tests {
-		t.Run(tt.id, func(t *testing.T) {
-			model, err := repo.GetAccount(ctx, connector, tt.accountID)
-			if tt.errReturned != nil {
-				assert.Error(t, err)
-				assert.ErrorIs(t, err, tt.errReturned)
-				assert.Nil(t, model)
-			} else {
-				assert.NoError(t, err)
-			}
-
-			var result *modelExpected
-			if tt.expected != nil {
-				result = &modelExpected{
-					ID:       model.ID,
-					Username: model.Username,
-					Email:    model.Email,
+		t.Run(
+			tt.id, func(t *testing.T) {
+				model, err := repo.GetAccount(ctx, connector, tt.accountID)
+				if tt.errReturned != nil {
+					assert.Error(t, err)
+					assert.ErrorAs(t, err, &tt.errReturned)
+					assert.Nil(t, model)
+				} else {
+					assert.NoError(t, err)
 				}
-			}
 
-			assert.Equal(t, tt.expected, result)
-		})
+				var result *modelExpected
+				if tt.expected != nil {
+					result = &modelExpected{
+						ID:       model.ID,
+						Username: model.Username,
+						Email:    model.Email,
+					}
+				}
+
+				assert.Equal(t, tt.expected, result)
+			},
+		)
 	}
 }

@@ -1,0 +1,243 @@
+package auth_test
+
+import (
+	"context"
+	"errors"
+	"reflect"
+	"testing"
+
+	"github.com/jackc/pgx/v5"
+	"github.com/koubae/game-hangar/internal/errs"
+	auth2 "github.com/koubae/game-hangar/internal/identity/auth"
+	"github.com/koubae/game-hangar/internal/testunit"
+	"github.com/koubae/game-hangar/pkg/common"
+	"github.com/koubae/game-hangar/pkg/database/postgres"
+	"github.com/koubae/game-hangar/pkg/testutil"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+)
+
+func TestCredentialRepository_GetCredentialByProvider(t *testing.T) {
+	t.Parallel()
+
+	providerID := int64(1)
+	username := "unit-test-user-123"
+	tests := []struct {
+		id          string
+		provider    int64
+		username    string
+		expected    *auth2.AccountCredential
+		errThrown   error
+		errReturned error
+	}{
+		{
+			id:       "record-is-found",
+			provider: providerID,
+			username: username,
+			expected: &auth2.AccountCredential{
+				ID:         1,
+				Credential: username,
+				AccountID:  testunit.AccountIDTest01,
+				ProviderID: 1,
+				Secret:     "sha255-secret",
+				SecretType: "password",
+				Verified:   true,
+				VerifiedAt: &testutil.Now,
+				Disabled:   false,
+				DisabledAt: nil,
+			},
+			errThrown:   nil,
+			errReturned: nil,
+		},
+		{
+			id:          "record-is-not-found",
+			provider:    providerID,
+			username:    username,
+			expected:    nil,
+			errThrown:   pgx.ErrNoRows,
+			errReturned: errs.ResourceNotFound,
+		},
+	}
+
+	modelToValues := func(s *auth2.AccountCredential) []any {
+		if s == nil {
+			return []any{}
+		}
+		return []any{
+			s.ID,
+			s.Credential,
+			s.AccountID,
+			s.ProviderID,
+			s.Secret,
+			s.SecretType,
+			s.Verified,
+			s.VerifiedAt,
+			s.Disabled,
+			s.DisabledAt,
+		}
+	}
+
+	fieldsCount := reflect.TypeFor[auth2.AccountCredential]().NumField()
+	for _, tt := range tests {
+		t.Run(
+			tt.id, func(t *testing.T) {
+				common.CreateLogger(common.LogLevelDPanic, "")
+				mockRow := new(testutil.MockRow)
+				mockRow.MockScan(
+					fieldsCount,
+					tt.errThrown,
+					modelToValues(tt.expected)...,
+				)
+
+				mockPool := new(testutil.MockDBPool)
+				mockPool.On("QueryRow", mock.Anything, mock.Anything, providerID, username).
+					Return(mockRow)
+
+				connector := postgres.ConnectorPostgres{Pool: mockPool}
+				repo := auth2.NewCredentialRepository()
+
+				model, err := repo.GetCredentialByProvider(
+					context.Background(),
+					&connector,
+					providerID,
+					username,
+				)
+
+				if tt.errThrown != nil {
+					assert.Error(t, err)
+					assert.ErrorAs(t, err, &tt.errReturned)
+				} else {
+					assert.NoError(t, err)
+				}
+
+				assert.Equal(t, tt.expected, model)
+				mockPool.AssertExpectations(t)
+			},
+		)
+	}
+}
+
+func TestCredentialRepository_CreateAccountCredential(t *testing.T) {
+	t.Parallel()
+
+	params := auth2.NewAccountCredential{
+		Credential: "unit-test-user-123",
+		AccountID:  testunit.AccountIDTest01,
+		ProviderID: 1,
+		Secret:     "sha255-secret",
+		SecretType: "password",
+		Verified:   true,
+		VerifiedAt: &testutil.Now,
+	}
+	expectedID := int64(1234)
+
+	common.CreateLogger(common.LogLevelDPanic, "")
+	mockRow := new(testutil.MockRow)
+	mockRow.MockScan(1, nil, expectedID)
+
+	mockPool := new(testutil.MockDBPool)
+	mockPool.On(
+		"QueryRow", mock.Anything, mock.Anything, pgx.StrictNamedArgs{
+			"credential":  params.Credential,
+			"account_id":  params.AccountID,
+			"provider_id": params.ProviderID,
+			"secret":      params.Secret,
+			"secret_type": params.SecretType,
+			"verified":    params.Verified,
+			"verified_at": params.VerifiedAt,
+		},
+	).Return(mockRow)
+
+	ctx := context.Background()
+	connector := postgres.ConnectorPostgres{Pool: mockPool}
+	repo := auth2.NewCredentialRepository()
+
+	id, err := repo.CreateAccountCredential(ctx, &connector, params)
+
+	assert.NoError(t, err)
+	assert.NotEqual(t, 0, id)
+	assert.Equal(t, expectedID, id)
+}
+
+func TestCredentialRepository_CreateAccountCredentialOnErrors(t *testing.T) {
+	t.Parallel()
+
+	providerID := int64(1)
+	username := "unit-test-user-123"
+	mockedDBErr := errors.New("mocked-db-error")
+	tests := []struct {
+		id          string
+		params      *auth2.NewAccountCredential
+		expectedID  int64
+		errThrown   error
+		errReturned error
+	}{
+		{
+			id: "on-db-error-any",
+			params: &auth2.NewAccountCredential{
+				Credential: username,
+				AccountID:  testunit.AccountIDTest01,
+				ProviderID: providerID,
+				Secret:     "sha255-secret",
+				SecretType: "password",
+				Verified:   true,
+				VerifiedAt: &testutil.Now,
+			},
+			expectedID:  int64(0),
+			errThrown:   mockedDBErr,
+			errReturned: mockedDBErr,
+		},
+		{
+			id: "on-db-error-duplicate-resource",
+			params: &auth2.NewAccountCredential{
+				Credential: username,
+				AccountID:  testunit.AccountIDTest01,
+				ProviderID: providerID,
+				Secret:     "sha255-secret",
+				SecretType: "password",
+				Verified:   true,
+				VerifiedAt: &testutil.Now,
+			},
+			expectedID:  int64(0),
+			errThrown:   testutil.DBMockErrDuplicateKey,
+			errReturned: errs.ResourceDuplicate,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(
+			tt.id, func(t *testing.T) {
+				common.CreateLogger(common.LogLevelDPanic, "")
+				mockRow := new(testutil.MockRow)
+				mockRow.MockScan(1, tt.errThrown, tt.expectedID)
+
+				params := tt.params
+
+				mockPool := new(testutil.MockDBPool)
+				mockPool.On(
+					"QueryRow", mock.Anything, mock.Anything, pgx.StrictNamedArgs{
+						"credential":  params.Credential,
+						"account_id":  params.AccountID,
+						"provider_id": params.ProviderID,
+						"secret":      params.Secret,
+						"secret_type": params.SecretType,
+						"verified":    params.Verified,
+						"verified_at": params.VerifiedAt,
+					},
+				).
+					Return(mockRow)
+
+				ctx := context.Background()
+				connector := postgres.ConnectorPostgres{Pool: mockPool}
+				repo := auth2.NewCredentialRepository()
+
+				id, err := repo.CreateAccountCredential(ctx, &connector, *params)
+
+				assert.Error(t, err)
+				assert.ErrorAs(t, err, &tt.errReturned)
+
+				assert.Equal(t, tt.expectedID, id)
+			},
+		)
+	}
+}
