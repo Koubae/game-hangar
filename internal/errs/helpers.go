@@ -2,51 +2,43 @@ package errs
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/koubae/game-hangar/pkg/common"
+	"github.com/koubae/game-hangar/pkg/web"
 	"go.uber.org/zap"
 )
 
-func AppErrToClientResponseWithLog(err error, msg string, logger common.Logger) *common.ClientResponseError {
-	var responseError *common.ClientResponseError
+func AppErrToClientResponseWithLog(w http.ResponseWriter, err error, msg string, logger common.Logger) {
 	var lvl string
 
-	appErr := AsAppError(err)
-	if appErr.IsServerErr() {
+	if AsAppError(err).IsServerErr() {
 		lvl = "error"
-		responseError = &common.ClientResponseError{
-			HTTPCode: appErr.GetDefaultCode(),
-			Message:  "unexpected error occurred",
-		}
 	} else {
 		lvl = "info"
-		responseError = &common.ClientResponseError{
-			HTTPCode: appErr.GetDefaultCode(),
-			Message:  fmt.Sprintf("%s, error: %s", msg, err.Error()),
-		}
 	}
-
 	logger.L(lvl, msg, zap.Error(err))
-	return responseError
+
+	AppErrToClientResponse(w, err, msg)
 }
 
-func AppErrToClientResponse(err error, msg string) *common.ClientResponseError {
-	var responseError *common.ClientResponseError
+func AppErrToClientResponse(w http.ResponseWriter, err error, msg string) {
+	var response common.ClientResponseError
 
 	appErr := AsAppError(err)
 	if appErr.IsServerErr() {
-		responseError = &common.ClientResponseError{
+		response = common.ClientResponseError{
 			HTTPCode: appErr.GetDefaultCode(),
 			Message:  "unexpected error occurred",
 		}
 	} else {
-		responseError = &common.ClientResponseError{
+		response = common.ClientResponseError{
 			HTTPCode: appErr.GetDefaultCode(),
 			Message:  fmt.Sprintf("%s%s", msg, err.Error()),
 		}
 	}
 
-	return responseError
+	web.WriteBusinessErrorResponse(w, &response)
 }
 
 func DTOSchemaValidation(dto any) *AppError {

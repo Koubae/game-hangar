@@ -31,8 +31,7 @@ func (c *AuthController) RegisterByUsername(
 		return
 	}
 	if err := payload.Validate(); err != nil {
-		response := errs.AppErrToClientResponse(err, "")
-		web.WriteBusinessErrorResponse(w, response)
+		errs.AppErrToClientResponse(w, err, "")
 		return
 	}
 
@@ -46,12 +45,12 @@ func (c *AuthController) RegisterByUsername(
 
 	secret, err := c.container.AuthService().HashSecret(payload.Password)
 	if err != nil {
-		response := errs.AppErrToClientResponseWithLog(
+		errs.AppErrToClientResponseWithLog(
+			w,
 			err,
-			"error while hashing secret during registration by username",
+			"hash secret error on registration by username",
 			logger,
 		)
-		web.WriteBusinessErrorResponse(w, response)
 		return
 	}
 
@@ -63,8 +62,7 @@ func (c *AuthController) RegisterByUsername(
 		secret,
 	)
 	if err != nil {
-		response := errs.AppErrToClientResponseWithLog(err, "could not create account", logger)
-		web.WriteBusinessErrorResponse(w, response)
+		errs.AppErrToClientResponseWithLog(w, err, "could not create account", logger)
 		return
 	}
 
