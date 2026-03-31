@@ -60,6 +60,16 @@ var (
 		Msg:         "password validation error",
 		DefaultCode: 400,
 	}
+	AuthLoginPasswordMismatch = &AppError{
+		Err:         ClientErr,
+		Msg:         "password mismatch",
+		DefaultCode: 401,
+	}
+	AuthLoginFailed = &AppError{
+		Err:         ClientErr,
+		Msg:         "login failed",
+		DefaultCode: 401,
+	}
 
 	ProviderNotFound = &AppError{
 		Err:         ClientErr,
@@ -207,19 +217,29 @@ func IsAny(err error, targets ...error) bool {
 
 }
 
-func DBErrToAppErr(err error) *AppError {
+func DBErrToAppErr(err error, resource string) *AppError {
 	var mappedErr *AppError
+	wrapErr := true
 	switch {
 	case errors.Is(err, database.ErrNotFound):
 		mappedErr = ResourceNotFound
+		wrapErr = false
 	case errors.Is(err, &database.ErrDuplicate{}):
 		mappedErr = ResourceDuplicate
+		wrapErr = false
 	case errors.Is(err, &database.ErrOpenTransaction{}):
 		mappedErr = DBError
 	default:
 		mappedErr = DBError
 	}
 
-	mappedErr = Wrap(mappedErr, err)
+	mappedErr = &AppError{
+		Err:         mappedErr,
+		Msg:         fmt.Sprintf("%s %s", resource, mappedErr.Msg),
+		DefaultCode: mappedErr.DefaultCode,
+	}
+	if wrapErr {
+		mappedErr = Wrap(mappedErr, err)
+	}
 	return mappedErr
 }

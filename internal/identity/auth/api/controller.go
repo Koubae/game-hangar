@@ -1,8 +1,8 @@
 package api
 
 import (
-	"io"
 	"net/http"
+	"time"
 
 	"github.com/koubae/game-hangar/internal/errs"
 	"github.com/koubae/game-hangar/internal/identity/account"
@@ -10,6 +10,10 @@ import (
 	"github.com/koubae/game-hangar/internal/identity/container"
 	"github.com/koubae/game-hangar/pkg/web"
 	"go.uber.org/zap"
+)
+
+const (
+	AuthTokenExpirationTime = time.Hour * 4
 )
 
 type AuthController struct {
@@ -79,6 +83,59 @@ func (c *AuthController) LoginByUsername(
 	w http.ResponseWriter,
 	r *http.Request,
 ) {
-	w.WriteHeader(http.StatusOK)
-	_, _ = io.WriteString(w, "ok LoginByUsername\n")
+	payload, ok := web.LoadJsonBodyOrBadRequestResponse[account.DTOLoginByUsername](w, r)
+	if !ok {
+		return
+	}
+	if err := payload.Validate(); err != nil {
+		errs.AppErrToClientResponse(w, err, "")
+		return
+	}
+
+	ctx := r.Context()
+	logger := c.container.Logger()
+	logger.Debug(
+		"LoginByUsername called",
+		zap.String("source", payload.Source),
+		zap.String("username", string(auth.Username)),
+	)
+
+	provider, err := c.container.ProviderService(nil).GetProvider(ctx, payload.Source, string(auth.Username))
+	if err != nil {
+		errs.AppErrToClientResponseWithLog(w, errs.Wrap(errs.AuthLoginFailed, err), "", logger)
+		return
+	}
+
+	credential, err := c.container.CredentialService(nil).GetCredentialByProvider(ctx, provider.ID, payload.Username)
+	if err != nil {
+		errs.AppErrToClientResponseWithLog(w, errs.Wrap(errs.AuthLoginFailed, err), "credential ", logger)
+		return
+	}
+
+	secretService := c.container.SecretsService()
+	if !secretService.VerifySecret(credential.Secret, payload.Password) {
+		errs.AppErrToClientResponseWithLog(
+			w,
+			errs.Wrap(errs.AuthLoginFailed, errs.AuthLoginPasswordMismatch),
+			"credential ",
+			logger,
+		)
+		return
+	}
+
+	expire := time.Now().Add(AuthTokenExpirationTime).Unix()
+	accessToken, err := secretService.GenerateJWTAccessToken(
+		provider.Source,
+		provider.Type,
+		credential.AccountID.String(),
+		credential.Credential,
+		expire,
+	)
+
+	response := auth.DTOAccessToken{
+		AccessToken: accessToken,
+		ExpiresIn:   expire,
+	}
+	web.WriteJSONResponse(w, http.StatusOK, response)
+
 }

@@ -18,3 +18,8 @@ type DTOAccountLoggedIn struct {
 	Username     string `json:"username"      binding:"required"`
 	LoggedCredID int64  `json:"credential_id" binding:"required"`
 }
+
+type DTOAccessToken struct {
+	AccessToken string `json:"access_token"`
+	ExpiresIn   int64  `json:"expires"`
+}

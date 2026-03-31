@@ -88,7 +88,7 @@ func (r *AccountRepository) CreateAccount(
 	).
 		Scan(&id)
 	if err != nil {
-		return nil, errs.DBErrToAppErr(db.MapDBErrToDomainErr(err))
+		return nil, errs.DBErrToAppErr(db.MapDBErrToDomainErr(err), "account")
 	}
 
 	return &id, nil
@@ -120,7 +120,7 @@ func (r *AccountRepository) GetAccount(
 		&m.Created,
 		&m.Updated,
 	); err != nil {
-		return nil, errs.DBErrToAppErr(db.MapDBErrToDomainErr(err))
+		return nil, errs.DBErrToAppErr(db.MapDBErrToDomainErr(err), "account")
 	}
 
 	return &m, nil

@@ -3,7 +3,7 @@ package authpkg
 type AccessToken struct {
 	Source      string
 	Type        string
-	AccountID   int64
+	AccountID   string
 	Credential  string
 	Issuer      string
 	Role        string

@@ -108,7 +108,7 @@ func JWTMiddleware[S JWTSecret](method jwt.SigningMethod, secret S) func(http.Ha
 					)
 					return
 				}
-				accountID, ok := claims["sub"].(float64)
+				accountID, ok := claims["sub"].(string)
 				if !ok {
 					web.WriteBusinessErrorResponse(
 						w, &common.ClientResponseError{
@@ -152,7 +152,7 @@ func JWTMiddleware[S JWTSecret](method jwt.SigningMethod, secret S) func(http.Ha
 				accessToken := &AccessToken{
 					Source:      source,
 					Type:        _type,
-					AccountID:   int64(accountID),
+					AccountID:   accountID,
 					Credential:  credential,
 					Issuer:      issuer,
 					Role:        role,
@@ -161,7 +161,7 @@ func JWTMiddleware[S JWTSecret](method jwt.SigningMethod, secret S) func(http.Ha
 
 				ctx := context.WithValue(r.Context(), ContextKeySource, source)
 				ctx = context.WithValue(ctx, ContextKeyType, _type)
-				ctx = context.WithValue(ctx, ContextKeyAccountID, int64(accountID))
+				ctx = context.WithValue(ctx, ContextKeyAccountID, accountID)
 				ctx = context.WithValue(ctx, ContextKeyCredential, credential)
 				ctx = context.WithValue(ctx, ContextKeyIssuer, issuer)
 				ctx = context.WithValue(ctx, ContextKeyRole, role)
