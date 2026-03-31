@@ -1,6 +1,7 @@
 package testunit
 
 import (
+	"net/http"
 	"testing"
 
 	auth2 "github.com/koubae/game-hangar/internal/identity/auth"

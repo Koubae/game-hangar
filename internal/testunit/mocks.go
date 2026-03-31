@@ -6,6 +6,7 @@ import (
 
 	"github.com/koubae/game-hangar/internal/identity/account"
 	"github.com/koubae/game-hangar/internal/identity/auth"
+	identityContainer "github.com/koubae/game-hangar/internal/identity/container"
 	"github.com/koubae/game-hangar/pkg/database"
 	"github.com/koubae/game-hangar/pkg/database/postgres"
 	"github.com/koubae/game-hangar/pkg/testutil"
@@ -107,4 +108,86 @@ func (m *MockAccountRepository) GetAccount(
 ) (*account.Account, error) {
 	args := m.Called(ctx, db, id)
 	return args.Get(0).(*account.Account), args.Error(1)
+}
+
+type Mocker struct {
+	container *identityContainer.AppContainer
+}
+
+func NewMocker(container *identityContainer.AppContainer) *Mocker {
+	return &Mocker{container: container}
+}
+
+func (m *Mocker) MockGetProvider(
+	source string,
+	_type string,
+	returnProvider *auth.Provider,
+	returnErr error,
+) {
+	repo := m.container.ProviderRepository().(*MockProviderRepository)
+	repo.On(
+		"GetProvider",
+		mock.Anything,
+		mock.Anything,
+		source,
+		_type,
+	).
+		Return(returnProvider, returnErr)
+
+}
+
+func (m *Mocker) MockGetDefaultUsernameProvider() {
+	m.MockGetProvider(
+		"global",
+		"username",
+		&auth.Provider{ID: 1, Source: "global", Type: "username", Disabled: false},
+		nil,
+	)
+
+}
+
+func (m *Mocker) MockGetCredentialByProvider(
+	providerID int64,
+	credential string,
+	returnCred *auth.AccountCredential,
+	returnErr error,
+) {
+	repo := m.container.CredentialRepository().(*MockCredentialRepository)
+	repo.On(
+		"GetCredentialByProvider",
+		mock.Anything,
+		mock.Anything,
+		providerID,
+		credential,
+	).
+		Return(returnCred, returnErr)
+
+}
+
+func (m *Mocker) MockCreateAccountCredential(returnCredID int64, returnErr error) {
+	repo := m.container.CredentialRepository().(*MockCredentialRepository)
+	repo.On(
+		"CreateAccountCredential",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).
+		Return(returnCredID, returnErr).
+		Once()
+}
+
+func (m *Mocker) MockCreateAccount(username string, email *string, returnAccountID string, returnErr error) {
+	repo := m.container.AccountRepository().(*MockAccountRepository)
+	repo.On(
+		"CreateAccount",
+		mock.Anything,
+		mock.Anything,
+		account.NewAccount{
+			Username: username,
+			Email:    email,
+		},
+	).
+		Return(&returnAccountID, returnErr).
+		Once()
+
 }
