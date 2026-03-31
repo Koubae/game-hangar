@@ -54,6 +54,11 @@ var (
 		Msg:         "secret hash error",
 		DefaultCode: 500,
 	}
+	AuthPasswordValidation = &AppError{
+		Err:         ClientErr,
+		Msg:         "password validation error",
+		DefaultCode: 400,
+	}
 
 	ProviderNotFound = &AppError{
 		Err:         ClientErr,
