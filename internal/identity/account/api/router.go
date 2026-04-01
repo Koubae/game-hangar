@@ -30,9 +30,11 @@ func RouterRegister(v1 *http.ServeMux, c di.Container) {
 	// 	Account Management functions | Backoffice Access
 	// ------------------------------------------
 	loggedAdminMiddleware := authpkg.NewAdminJWTMiddleware()
+
+	accountBackoffice := web.Group(v1, "/backoffice/account")
 	accountBackofficeLoggedIn := web.GroupWithMiddleware(
-		v1,
-		"/backoffice/account",
+		accountBackoffice,
+		"",
 		loggedAdminMiddleware,
 	)
 	accountBackofficeLoggedIn.HandleFunc("GET /{id}", authController.GetAccount)

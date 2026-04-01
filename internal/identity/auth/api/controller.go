@@ -116,30 +116,76 @@ func (c *AuthController) LoginByUsername(
 	}
 
 	expire := time.Now().Add(AuthTokenExpirationTime).Unix()
-	// TODO: DEVELOPMENT ONLY
-	var accessToken string
-	if credential.Credential == "admin" {
-		scope := "identity:account:read,write"
-		accessToken, err = secretService.GenerateAdminJWTAccessToken(
-			provider.Source,
-			provider.Type,
-			credential.AccountID.String(),
-			credential.Credential,
-			scope,
-			expire,
-		)
+	accessToken, err := secretService.GenerateJWTAccessToken(
+		provider.Source,
+		provider.Type,
+		credential.AccountID.String(),
+		credential.Credential,
+		expire,
+	)
 
-	} else {
-		accessToken, err = secretService.GenerateJWTAccessToken(
-			provider.Source,
-			provider.Type,
-			credential.AccountID.String(),
-			credential.Credential,
-			expire,
-		)
-
+	response := auth.DTOAccessToken{
+		AccessToken: accessToken,
+		ExpiresIn:   expire,
 	}
+	web.WriteJSONResponse(w, http.StatusOK, response)
+
+}
+
+func (c *AuthController) LoginAdminByUsername(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
+	payload, ok := errspkg.LoadAndValidateJSON[account.DTOLoginByUsername](w, r)
+	if !ok {
+		return
+	}
+
+	ctx := r.Context()
+	logger := c.container.Logger()
+	logger.Debug(
+		"LoginByUsername called",
+		zap.String("source", payload.Source),
+		zap.String("username", string(auth.Username)),
+	)
+
+	provider, err := c.container.ProviderService(nil).GetEnabledProvider(ctx, payload.Source, string(auth.Username))
+	if err != nil {
+		errspkg.AppErrToClientResponseWithLog(w, errspkg.Wrap(errspkg.AuthLoginFailed, err), "", logger)
+		return
+	}
+
+	credential, err := c.container.CredentialService(nil).GetCredentialByProvider(ctx, provider.ID, payload.Username)
+	if err != nil {
+		errspkg.AppErrToClientResponseWithLog(w, errspkg.Wrap(errspkg.AuthLoginFailed, err), "credential ", logger)
+		return
+	}
+
+	secretService := c.container.SecretsService()
+	if !secretService.VerifySecret(credential.Secret, payload.Password) {
+		errspkg.AppErrToClientResponseWithLog(
+			w,
+			errspkg.Wrap(errspkg.AuthLoginFailed, errspkg.AuthLoginPasswordMismatch),
+			"credential ",
+			logger,
+		)
+		return
+	}
+
+	expire := time.Now().Add(AuthTokenExpirationTime).Unix()
 	// TODO: DEVELOPMENT ONLY
+	// TODO: Add scope - permissions system in DB!
+	scope := "identity:account:read,write"
+	// TODO: DEVELOPMENT ONLY
+	
+	accessToken, err := secretService.GenerateAdminJWTAccessToken(
+		provider.Source,
+		provider.Type,
+		credential.AccountID.String(),
+		credential.Credential,
+		scope,
+		expire,
+	)
 
 	response := auth.DTOAccessToken{
 		AccessToken: accessToken,
