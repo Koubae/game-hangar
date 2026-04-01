@@ -56,7 +56,6 @@ func (s *CredentialService) CreateCredentialTypeUsername(
 		return 0, errs.AccountCredCreateIncorrectProviderType
 	}
 
-	verifiedAt := time.Now().UTC()
 	params := NewAccountCredential{
 		Credential: credential,
 		AccountID:  accountID,
@@ -64,7 +63,7 @@ func (s *CredentialService) CreateCredentialTypeUsername(
 		Secret:     secret,
 		SecretType: "password",
 		Verified:   true,
-		VerifiedAt: &verifiedAt,
+		VerifiedAt: new(time.Now().UTC()),
 	}
 	if err := params.ValidateForTypeUsername(); err != nil {
 		return 0, err

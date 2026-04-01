@@ -16,20 +16,20 @@ func RunServer() {
 	config := common.NewConfig(loggerTmp, ".env", AppPrefix)
 	logger := common.CreateLogger(config.LogLevel, config.LogFilePath)
 
-	container, err := container.NewAppContainer(AppPrefix, logger, nil)
+	_container, err := container.NewAppContainer(AppPrefix, logger, nil)
 	if err != nil {
 		log.Fatalf("Error while creating container, error: %s", err)
 	}
 
-	providerRepository := container.ProviderRepository()
-	providerRepository.LoadProviders(context.Background(), container.DB())
+	providerRepository := _container.ProviderRepository()
+	providerRepository.LoadProviders(context.Background(), _container.DB())
 
 	application := web.NewHTTPApp(
 		AppPrefix,
-		container,
+		_container,
 		config,
 		web.Router,
-		RouterRegister(container),
+		RouterRegister(_container),
 	)
 	application.Start(context.Background())
 	if err := application.Stop(); err != nil {

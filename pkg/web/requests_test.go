@@ -54,7 +54,7 @@ func TestLoadJsonBodyOrBadRequestResponse(t *testing.T) {
 				r := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(tt.body))
 				w := httptest.NewRecorder()
 
-				payload, ok := LoadJsonBodyOrBadRequestResponse[testPayload](w, r)
+				payload, ok := LoadJsonBody[testPayload](w, r)
 
 				assert.Equal(t, tt.expectedOk, ok)
 				if tt.expectedOk {

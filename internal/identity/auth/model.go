@@ -87,7 +87,7 @@ func (p *NewAccountCredential) Validate() error {
 	return nil
 }
 
-var usernamePattern = regexp.MustCompile(`^[\pL\pN_-][\pL\pN_-]*$`)
+var usernamePattern = regexp.MustCompile(`^[\pL\pN_-]+$`)
 
 var reservedUsernameNames = map[string]struct{}{
 	"admin":     {},

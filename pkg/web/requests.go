@@ -8,7 +8,7 @@ import (
 	"github.com/koubae/game-hangar/pkg/common"
 )
 
-func LoadJsonBodyOrBadRequestResponse[T any](w http.ResponseWriter, r *http.Request) (*T, bool) {
+func LoadJsonBody[T any](w http.ResponseWriter, r *http.Request) (*T, bool) {
 	var payload T
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		WriteBusinessErrorResponse(
