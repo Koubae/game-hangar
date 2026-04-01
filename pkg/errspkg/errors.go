@@ -8,78 +8,72 @@ import (
 	"github.com/koubae/game-hangar/pkg/database"
 )
 
-var ServerErr = &AppError{
-	Err:         errors.New("server error"),
-	Msg:         "unexpected error",
-	DefaultCode: 500,
-}
+var (
+	ServerErr = &AppError{
+		Err:         errors.New("server error"),
+		Msg:         "unexpected error",
+		DefaultCode: 500,
+	}
+	ClientErr = &AppError{
+		Err:         errors.New("client error"),
+		Msg:         "client error",
+		DefaultCode: 400,
+	}
 
-var ClientErr = &AppError{
-	Err:         errors.New("client error"),
-	Msg:         "client error",
-	DefaultCode: 400,
-}
+	Unmapped = &AppError{
+		Err:         ServerErr,
+		Msg:         "unmapped error",
+		DefaultCode: 500,
+	}
 
-var Unmapped = &AppError{
-	Err:         ServerErr,
-	Msg:         "unmapped error",
-	DefaultCode: 500,
-}
+	DBError = &AppError{
+		Err:         ServerErr,
+		Msg:         "database error",
+		DefaultCode: 503,
+	}
 
-var DBError = &AppError{
-	Err:         ServerErr,
-	Msg:         "database error",
-	DefaultCode: 503,
-}
+	PayloadValidation = &AppError{
+		Err:         ClientErr,
+		Msg:         "payload validation error",
+		DefaultCode: 400,
+	}
+	ResourceNotFound = &AppError{
+		Err:         ClientErr,
+		Msg:         "resource not found",
+		DefaultCode: 404,
+	}
+	ResourceDuplicate = &AppError{
+		Err:         ClientErr,
+		Msg:         "resource already exists",
+		DefaultCode: 409,
+	}
 
-var PayloadValidation = &AppError{
-	Err:         ClientErr,
-	Msg:         "payload validation error",
-	DefaultCode: 400,
-}
-
-var ResourceNotFound = &AppError{
-	Err:         ClientErr,
-	Msg:         "resource not found",
-	DefaultCode: 404,
-}
-
-var ResourceDuplicate = &AppError{
-	Err: ClientErr,
-	Msg: "resource already exists",
-
-	DefaultCode: 409,
-}
-
-var AuthSecretHash = &AppError{
-	Err:         ServerErr,
-	Msg:         "secret hash error",
-	DefaultCode: 500,
-}
-
-var AuthPasswordValidation = &AppError{
-	Err:         ClientErr,
-	Msg:         "password validation error",
-	DefaultCode: 400,
-}
-
-var AuthLoginPasswordMismatch = &AppError{
-	Err:         ClientErr,
-	Msg:         "password mismatch",
-	DefaultCode: 401,
-}
-
-var AuthLoginFailed = &AppError{
-	Err:         ClientErr,
-	Msg:         "login failed",
-	DefaultCode: 401,
-}
-
-var AuthNotLoggedIn = &AppError{
-	Err:         ClientErr,
-	Msg:         "not logged in",
-	DefaultCode: 401,
-}
+	AuthSecretHash = &AppError{
+		Err:         ServerErr,
+		Msg:         "secret hash error",
+		DefaultCode: 500,
+	}
+	AuthPasswordValidation = &AppError{
+		Err:         ClientErr,
+		Msg:         "password validation error",
+		DefaultCode: 400,
+	}
+	AuthLoginPasswordMismatch = &AppError{
+		Err:         ClientErr,
+		Msg:         "password mismatch",
+		DefaultCode: 401,
+	}
+	AuthLoginFailed = &AppError{
+		Err:         ClientErr,
+		Msg:         "login failed",
+		DefaultCode: 401,
+	}
+	AuthNotLoggedIn = &AppError{
+		Err:         ClientErr,
+		Msg:         "not logged in",
+		DefaultCode: 401,
+	}
+)
 
 // Validator interface for validating a Request Body Payload
 type Validator interface {
