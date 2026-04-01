@@ -48,6 +48,11 @@ var (
 		DefaultCode: 409,
 	}
 
+	AuthPermissionsScopeEmpty = &AppError{
+		Err:         ClientErr,
+		Msg:         "no permissions found",
+		DefaultCode: 401,
+	}
 	AuthPermissionsScopeFormat = &AppError{
 		Err:         ClientErr,
 		Msg:         "permissions scope format error",

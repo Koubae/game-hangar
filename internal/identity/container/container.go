@@ -19,6 +19,7 @@ type IdentityAuthContainer interface {
 	SecretsService() *auth.SecretsService
 	ProviderService(db database.DBTX) *auth.ProviderService
 	CredentialService(db database.DBTX) *auth.CredentialService
+	PermissionService(db database.DBTX) *auth.PermissionService
 	AccountAuthService(db database.Connector) *auth.AccountAuthService
 }
 
@@ -58,6 +59,7 @@ type AppContainer struct {
 	authServiceFactory              auth.SecretsServiceFactory
 	providerServiceFactory          auth.ProviderServiceFactory
 	credentialServiceFactory        auth.CredentialServiceFactory
+	permissionServiceFactory        auth.PermissionServiceFactory
 	accountAuthServiceFactory       auth.AccountAuthServiceFactory
 	accountManagementServiceFactory account.ManagementServiceFactory
 }
@@ -73,6 +75,7 @@ type AppDependencies struct {
 	AuthServiceFactory              auth.SecretsServiceFactory
 	ProviderServiceFactory          auth.ProviderServiceFactory
 	CredentialServiceFactory        auth.CredentialServiceFactory
+	PermissionServiceFactory        auth.PermissionServiceFactory
 	AccountAuthServiceFactory       auth.AccountAuthServiceFactory
 	AccountManagementServiceFactory account.ManagementServiceFactory
 }
@@ -110,6 +113,7 @@ func NewAppContainer(
 		authServiceFactory:              dependencies.AuthServiceFactory,
 		providerServiceFactory:          dependencies.ProviderServiceFactory,
 		credentialServiceFactory:        dependencies.CredentialServiceFactory,
+		permissionServiceFactory:        dependencies.PermissionServiceFactory,
 		accountAuthServiceFactory:       dependencies.AccountAuthServiceFactory,
 		accountManagementServiceFactory: dependencies.AccountManagementServiceFactory,
 	}, nil
@@ -150,6 +154,7 @@ func LoadAppDependenciesWithDefaultFactories(
 	authServiceFactory := auth.NewSecretsService
 	providerServiceFactory := auth.NewProviderService
 	credentialServiceFactory := auth.NewCredentialService
+	permissionServiceFactory := auth.NewPermissionService
 	accountAuthServiceFactory := auth.NewAccountAuthService
 	accountManagementServiceFactory := account.NewManagementService
 
@@ -165,6 +170,7 @@ func LoadAppDependenciesWithDefaultFactories(
 		AuthServiceFactory:              authServiceFactory,
 		ProviderServiceFactory:          providerServiceFactory,
 		CredentialServiceFactory:        credentialServiceFactory,
+		PermissionServiceFactory:        permissionServiceFactory,
 		AccountAuthServiceFactory:       accountAuthServiceFactory,
 		AccountManagementServiceFactory: accountManagementServiceFactory,
 	}, nil
@@ -264,6 +270,15 @@ func (c *AppContainer) CredentialService(
 		db = c.connector
 	}
 	return c.credentialServiceFactory(db, c.CredentialRepository())
+}
+
+func (c *AppContainer) PermissionService(
+	db database.DBTX,
+) *auth.PermissionService {
+	if db == nil {
+		db = c.connector
+	}
+	return c.permissionServiceFactory(db, c.PermissionRepository())
 }
 
 func (c *AppContainer) AccountAuthService(

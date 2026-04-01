@@ -7,7 +7,6 @@ import (
 	"github.com/koubae/game-hangar/internal/identity/account"
 	"github.com/koubae/game-hangar/internal/identity/auth"
 	"github.com/koubae/game-hangar/internal/identity/container"
-	"github.com/koubae/game-hangar/pkg/authpkg"
 	"github.com/koubae/game-hangar/pkg/errspkg"
 	"github.com/koubae/game-hangar/pkg/web"
 	"go.uber.org/zap"
@@ -170,7 +169,15 @@ func (c *AuthController) LoginAdminByUsername(
 		return
 	}
 
-	// TODO: loada admin_account + permissions ... and 401 if not found!
+	permissions, scope, err := c.container.PermissionService(nil).LoadAdminAccountPermissions(
+		ctx,
+		credential.AccountID.String(),
+		payload.Scope,
+	)
+	if err != nil {
+		errspkg.AppErrToClientResponseWithLog(w, errspkg.Wrap(errspkg.AuthLoginFailed, err), "", logger)
+		return
+	}
 
 	secretService := c.container.SecretsService()
 	if !secretService.VerifySecret(credential.Secret, payload.Password) {
@@ -184,11 +191,6 @@ func (c *AuthController) LoginAdminByUsername(
 	}
 
 	expire := time.Now().Add(AuthTokenExpirationTime).Unix()
-	// TODO: DEVELOPMENT ONLY
-	// TODO: Add scope - permissions system in DB!
-	scope := payload.Scope
-	// TODO: DEVELOPMENT ONLY
-
 	accessToken, err := secretService.GenerateAdminJWTAccessToken(
 		provider.Source,
 		provider.Type,
@@ -206,7 +208,6 @@ func (c *AuthController) LoginAdminByUsername(
 		)
 		return
 	}
-	permissions, _ := authpkg.ParsePermissions(scope)
 
 	response := auth.DTOAdminAccessToken{
 		AccessToken: accessToken,
