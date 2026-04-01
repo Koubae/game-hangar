@@ -86,6 +86,32 @@ func (m *MockCredentialRepository) CreateAccountCredential(
 	return id, args.Error(1)
 }
 
+type MockPermissionRepository struct {
+	mock.Mock
+}
+
+func NewMockPermissionRepository() auth.IPermissionRepository {
+	return new(MockPermissionRepository)
+}
+
+func (m *MockPermissionRepository) LoadPermissions(
+	ctx context.Context,
+	db database.DBTX,
+) {
+	_ = m.Called(ctx, db)
+}
+
+func (m *MockPermissionRepository) GetPermissions(
+	ctx context.Context,
+	db database.DBTX,
+	ids []int64,
+) []*auth.Permission {
+	args := m.Called(ctx, db, ids)
+
+	permissions, _ := args.Get(0).([]*auth.Permission)
+	return permissions
+}
+
 type MockAccountRepository struct {
 	mock.Mock
 }

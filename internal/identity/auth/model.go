@@ -67,6 +67,14 @@ type AccountCredential struct {
 	Updated time.Time
 }
 
+type Permission struct {
+	ID       int64
+	Service  string
+	Resource string
+	Action   string
+	Created  time.Time
+}
+
 type NewAccountCredential struct {
 	Credential string
 	AccountID  uuid.UUID
