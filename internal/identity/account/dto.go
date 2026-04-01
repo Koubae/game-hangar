@@ -58,3 +58,18 @@ func (dto DTOLoginByUsername) Validate() error {
 	}
 	return nil
 }
+
+type DTOAdminLoginByUsername struct {
+	Source   string `json:"source"   binding:"required"`
+	Username string `json:"username" binding:"required"`
+	Password string `json:"password" binding:"required"`
+	Scope    string `json:"scope" binding:"required"`
+}
+
+func (dto DTOAdminLoginByUsername) Validate() error {
+	err := errspkg.DTOSchemaValidation(dto)
+	if err != nil {
+		return err
+	}
+	return nil
+}

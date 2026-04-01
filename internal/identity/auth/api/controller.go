@@ -7,6 +7,7 @@ import (
 	"github.com/koubae/game-hangar/internal/identity/account"
 	"github.com/koubae/game-hangar/internal/identity/auth"
 	"github.com/koubae/game-hangar/internal/identity/container"
+	"github.com/koubae/game-hangar/pkg/authpkg"
 	"github.com/koubae/game-hangar/pkg/errspkg"
 	"github.com/koubae/game-hangar/pkg/web"
 	"go.uber.org/zap"
@@ -123,6 +124,15 @@ func (c *AuthController) LoginByUsername(
 		credential.Credential,
 		expire,
 	)
+	if err != nil {
+		errspkg.AppErrToClientResponseWithLog(
+			w,
+			errspkg.AuthLoginFailed,
+			"access-token generation error ",
+			logger,
+		)
+		return
+	}
 
 	response := auth.DTOAccessToken{
 		AccessToken: accessToken,
@@ -136,7 +146,7 @@ func (c *AuthController) LoginAdminByUsername(
 	w http.ResponseWriter,
 	r *http.Request,
 ) {
-	payload, ok := errspkg.LoadAndValidateJSON[account.DTOLoginByUsername](w, r)
+	payload, ok := errspkg.LoadAndValidateJSON[account.DTOAdminLoginByUsername](w, r)
 	if !ok {
 		return
 	}
@@ -175,9 +185,9 @@ func (c *AuthController) LoginAdminByUsername(
 	expire := time.Now().Add(AuthTokenExpirationTime).Unix()
 	// TODO: DEVELOPMENT ONLY
 	// TODO: Add scope - permissions system in DB!
-	scope := "identity:account:read,write"
+	scope := payload.Scope
 	// TODO: DEVELOPMENT ONLY
-	
+
 	accessToken, err := secretService.GenerateAdminJWTAccessToken(
 		provider.Source,
 		provider.Type,
@@ -186,10 +196,21 @@ func (c *AuthController) LoginAdminByUsername(
 		scope,
 		expire,
 	)
+	if err != nil {
+		errspkg.AppErrToClientResponseWithLog(
+			w,
+			errspkg.AuthLoginFailed,
+			"access-token generation error ",
+			logger,
+		)
+		return
+	}
+	permissions, _ := authpkg.ParsePermissions(scope)
 
-	response := auth.DTOAccessToken{
+	response := auth.DTOAdminAccessToken{
 		AccessToken: accessToken,
 		ExpiresIn:   expire,
+		Permissions: permissions,
 	}
 	web.WriteJSONResponse(w, http.StatusOK, response)
 
