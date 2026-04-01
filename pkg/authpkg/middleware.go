@@ -10,6 +10,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/web"
+	"go.uber.org/zap"
 )
 
 type JWTSecret interface {
@@ -26,6 +27,7 @@ const (
 	ContextKeyCredential  contextKey = "credential"
 	ContextKeyIssuer      contextKey = "issuer"
 	ContextKeyRole        contextKey = "role"
+	ContextKeyPermissions contextKey = "permissions"
 	ContextKeyAccessToken contextKey = "access_token"
 )
 
@@ -48,6 +50,8 @@ func JWTMiddleware[S JWTSecret](method jwt.SigningMethod, secret S) func(http.Ha
 					)
 					return
 				}
+
+				logger := common.GetLogger()
 
 				token, err := jwt.Parse(
 					tokenString, func(t *jwt.Token) (interface{}, error) {
@@ -148,6 +152,21 @@ func JWTMiddleware[S JWTSecret](method jwt.SigningMethod, secret S) func(http.Ha
 					)
 					return
 				}
+				scope, ok := claims["scope"].(string)
+				if !ok {
+					scope = ""
+				}
+				permissions, err := ParsePermissions(scope)
+				if err != nil {
+					logger.Error("error parsing scopes", zap.String("scope", scope), zap.Error(err))
+					web.WriteBusinessErrorResponse(
+						w, &common.ClientResponseError{
+							HTTPCode: http.StatusUnauthorized,
+							Message:  "invalid token",
+						},
+					)
+					return
+				}
 
 				accessToken := &AccessToken{
 					Source:      source,
@@ -156,6 +175,7 @@ func JWTMiddleware[S JWTSecret](method jwt.SigningMethod, secret S) func(http.Ha
 					Credential:  credential,
 					Issuer:      issuer,
 					Role:        role,
+					Permissions: permissions,
 					AccessToken: tokenString,
 				}
 
@@ -165,17 +185,13 @@ func JWTMiddleware[S JWTSecret](method jwt.SigningMethod, secret S) func(http.Ha
 				ctx = context.WithValue(ctx, ContextKeyCredential, credential)
 				ctx = context.WithValue(ctx, ContextKeyIssuer, issuer)
 				ctx = context.WithValue(ctx, ContextKeyRole, role)
+				ctx = context.WithValue(ctx, ContextKeyPermissions, permissions)
 				ctx = context.WithValue(ctx, ContextKeyAccessToken, accessToken)
 
 				next.ServeHTTP(w, r.WithContext(ctx))
 			},
 		)
 	}
-}
-
-func GetAccessToken(ctx context.Context) (*AccessToken, bool) {
-	accessToken, ok := ctx.Value(ContextKeyAccessToken).(*AccessToken)
-	return accessToken, ok
 }
 
 func extractToken(r *http.Request) (string, bool) {

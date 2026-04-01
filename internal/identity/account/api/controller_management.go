@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/koubae/game-hangar/internal/identity/account"
@@ -8,6 +9,7 @@ import (
 	"github.com/koubae/game-hangar/pkg/authpkg"
 	"github.com/koubae/game-hangar/pkg/errspkg"
 	"github.com/koubae/game-hangar/pkg/web"
+	"go.uber.org/zap"
 )
 
 type AccountManagementController struct {
@@ -29,6 +31,11 @@ func (c *AccountManagementController) Me(w http.ResponseWriter, r *http.Request)
 	}
 
 	logger := c.container.Logger()
+
+	// TODO: rem -- dev
+	permissions := authpkg.GetPermissionsOrDefault(ctx)
+	logger.Info("permissions", zap.String("permissions", fmt.Sprintf("%v", permissions)))
+	// TODO: rem -- dev
 
 	_account, err := c.container.AccountManagementService(nil).GetAccount(
 		ctx,

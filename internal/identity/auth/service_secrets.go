@@ -53,10 +53,11 @@ func (s *SecretsService) GenerateJWTAccessToken(
 ) (string, error) {
 	privateKey := authpkg.GetPrivateKey()
 	claims := jwt.MapClaims{
-		"sub":  accountID,
-		"exp":  expire,
-		"iss":  "GameHangar-Identity",
-		"role": "account",
+		"sub":   accountID,
+		"exp":   expire,
+		"iss":   "GameHangar-Identity",
+		"role":  "account",
+		"scope": "",
 
 		"source":     source,
 		"type":       _type,
