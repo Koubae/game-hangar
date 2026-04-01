@@ -164,12 +164,13 @@ func (c *AuthController) LoginAdminByUsername(
 		errspkg.AppErrToClientResponseWithLog(w, errspkg.Wrap(errspkg.AuthLoginFailed, err), "", logger)
 		return
 	}
-
 	credential, err := c.container.CredentialService(nil).GetCredentialByProvider(ctx, provider.ID, payload.Username)
 	if err != nil {
 		errspkg.AppErrToClientResponseWithLog(w, errspkg.Wrap(errspkg.AuthLoginFailed, err), "credential ", logger)
 		return
 	}
+
+	// TODO: loada admin_account + permissions ... and 401 if not found!
 
 	secretService := c.container.SecretsService()
 	if !secretService.VerifySecret(credential.Secret, payload.Password) {

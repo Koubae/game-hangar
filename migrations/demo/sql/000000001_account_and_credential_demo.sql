@@ -2,8 +2,7 @@
 INSERT INTO account (username, email, id)
 VALUES ('account_test_1', 'account_test_1@test.com', '06e1b677-a4fe-42cf-8afd-ceec867d1fa5'),
        ('account_test_2', 'account_test_2@test.com', '93a6437f-af81-47c1-9aa4-5caedc0a6869'),
-       ('account_test_3', NULL, '9e0f95a2-6535-4679-9db6-c93a823702b1'),
-       ('root', NULL, 'c7b9d2c4-8f1a-4e3b-9c5e-2a6f4d1a0b7c')
+       ('account_test_3', NULL, '9e0f95a2-6535-4679-9db6-c93a823702b1')
 ;
 
 SELECT * FROM account;
@@ -54,18 +53,12 @@ DECLARE
     account_1_id UUID := (SELECT id FROM account WHERE username = 'account_test_1');
     account_2_id UUID := (SELECT id FROM account WHERE username = 'account_test_2');
     account_3_id UUID := (SELECT id FROM account WHERE username = 'account_test_3');
-    root UUID := (SELECT id FROM account WHERE username = 'root');
     -- Provider IDs (selected by name)
     provider_username BIGINT := (SELECT id FROM provider WHERE source = 'global' AND type = 'username');
     provider_email    BIGINT := (SELECT id FROM provider WHERE source = 'global' AND type = 'email');
 BEGIN
     INSERT INTO account_credentials (credential, account_id, provider_id, secret, verified, verified_at)
     VALUES
-        -- root
-        ('root', root, provider_username,
-         '$2a$10$/ibRSFWvBxGUO2lYMnh0yOTGSIycp.Ae6Oc5Py/fIVYBxpT5PTGAS',
-         true, CURRENT_TIMESTAMP),
-
         -- user_test_1
         ('account_test_1', account_1_id, provider_username,
          encode(digest('pass', 'sha256'), 'hex'),
