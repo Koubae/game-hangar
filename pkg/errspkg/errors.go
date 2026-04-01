@@ -152,6 +152,11 @@ func Wrap(appErr *AppError, err error) *AppError {
 	return &AppError{Err: errors.Join(appErr, err), Msg: msg, DefaultCode: appErr.DefaultCode}
 }
 
+func NewWithMsg(appErr *AppError, msg string) *AppError {
+	msg = fmt.Sprintf("%s %s", appErr.Msg, msg)
+	return &AppError{Err: appErr.Err, Msg: msg, DefaultCode: appErr.DefaultCode}
+}
+
 func IsAny(err error, targets ...error) bool {
 	for _, target := range targets {
 		if errors.Is(err, target) {
