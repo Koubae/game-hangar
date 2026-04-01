@@ -37,7 +37,7 @@ func NewJWTMiddleware() func(http.Handler) http.Handler {
 }
 
 func NewAdminJWTMiddleware() func(http.Handler) http.Handler {
-	secret := GetPublicKey() // TODO: new public key!
+	secret := GetAdminPublicKey()
 	return JWTMiddleware[*rsa.PublicKey](jwt.SigningMethodRS256, secret, true)
 }
 
