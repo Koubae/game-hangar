@@ -2,8 +2,6 @@ package account
 
 import (
 	"context"
-	"net/mail"
-	"strings"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/koubae/game-hangar/internal/errs"
@@ -25,27 +23,6 @@ type IAccountRepository interface {
 
 type AccountRepositoryFactory func() IAccountRepository
 
-// TODO: This stuff should go in a "domain" layer. or dto??
-type NewAccount struct {
-	Username string
-	Email    *string
-}
-
-func (p *NewAccount) Validate() error {
-	if strings.TrimSpace(p.Username) == "" {
-		return errs.UsernameRequired
-	}
-
-	if p.Email != nil {
-		_, err := mail.ParseAddressList(*p.Email)
-		if err != nil {
-			return errs.InvalidEmailFormat
-		}
-	}
-
-	return nil
-}
-
 type AccountRepository struct{}
 
 func NewAccountRepository() IAccountRepository {
@@ -58,10 +35,6 @@ func (r *AccountRepository) CreateAccount(
 	db database.DBTX,
 	params NewAccount,
 ) (*string, error) {
-	if err := params.Validate(); err != nil {
-		return nil, err
-	}
-
 	const query = `
 		INSERT into account (
 				id, 

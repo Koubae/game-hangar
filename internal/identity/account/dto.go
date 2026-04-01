@@ -16,10 +16,15 @@ type DTOAccount struct {
 }
 
 func NewDTOAccountFromAccount(_account *Account) *DTOAccount {
+	var email string
+	if _account.Email != nil {
+		email = *_account.Email
+	}
+
 	return &DTOAccount{
 		ID:       _account.ID,
 		Username: _account.Username,
-		Email:    *_account.Email,
+		Email:    email,
 		Disabled: _account.Disabled,
 		Created:  _account.Created,
 		Updated:  _account.Updated,

@@ -63,6 +63,14 @@ func (s *AccountAuthService) RegisterByUsername(
 	ctx, cancel := context.WithTimeout(ctx, 8*time.Second)
 	defer cancel()
 
+	createAccountParams := account.NewAccount{
+		Username: credential,
+		Email:    nil,
+	}
+	if err := createAccountParams.Validate(); err != nil {
+		return nil, nil, err
+	}
+
 	provider, err := s.providerSrv.GetEnabledProvider(
 		ctx,
 		source,
@@ -109,15 +117,10 @@ func (s *AccountAuthService) RegisterByUsername(
 	// WARN: All below operation are within a transaction
 	credServiceTX := s.credentialSrvProvider(tx)
 
-	id, err := s.repository.CreateAccount(
-		ctx, tx, account.NewAccount{
-			Username: credential,
-			Email:    nil,
-		},
-	)
+	id, err := s.repository.CreateAccount(ctx, tx, createAccountParams)
 	if err != nil {
 		lvl := "error"
-		if errs.IsAny(err, errs.UsernameRequired, errs.InvalidEmailFormat, errs.ResourceDuplicate) {
+		if errs.IsAny(err, errs.ResourceDuplicate) {
 			lvl = "debug"
 		}
 
