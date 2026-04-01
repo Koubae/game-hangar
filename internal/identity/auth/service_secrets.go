@@ -55,7 +55,7 @@ func (s *SecretsService) GenerateJWTAccessToken(
 	claims := jwt.MapClaims{
 		"sub":   accountID,
 		"exp":   expire,
-		"iss":   "GameHangar-Identity",
+		"iss":   common.AppID,
 		"role":  "account",
 		"scope": "",
 

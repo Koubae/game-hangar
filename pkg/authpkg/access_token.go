@@ -2,6 +2,8 @@ package authpkg
 
 import "context"
 
+var PermissionEmpty = Permissions{}
+
 type AccessToken struct {
 	Source      string
 	Type        string
@@ -12,8 +14,6 @@ type AccessToken struct {
 	Permissions Permissions
 	AccessToken string
 }
-
-var PermissionEmpty = Permissions{}
 
 func GetAccessToken(ctx context.Context) (*AccessToken, bool) {
 	accessToken, ok := ctx.Value(ContextKeyAccessToken).(*AccessToken)

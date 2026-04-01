@@ -35,6 +35,7 @@ func (c *AccountManagementController) Me(w http.ResponseWriter, r *http.Request)
 	// TODO: rem -- dev
 	permissions := authpkg.GetPermissionsOrDefault(ctx)
 	logger.Info("permissions", zap.String("permissions", fmt.Sprintf("%v", permissions)))
+	logger.Info("access_token issuer", zap.String("issuer", accessToken.Issuer))
 	// TODO: rem -- dev
 
 	_account, err := c.container.AccountManagementService(nil).GetAccount(
