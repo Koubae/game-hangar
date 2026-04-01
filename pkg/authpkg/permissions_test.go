@@ -220,6 +220,7 @@ func TestPermissions_NewPermissions(t *testing.T) {
 				},
 			},
 		},
+
 		"permissions-merges-wildcard-resources-ditching-other-duplicates": {
 			scopes: []authpkg.Scope{
 				{Service: "identity", Resource: "account", Actions: []authpkg.Action{authpkg.READ, authpkg.WRITE}},
@@ -240,6 +241,85 @@ func TestPermissions_NewPermissions(t *testing.T) {
 				},
 				"storage": {
 					"config": {authpkg.WILDCARD},
+				},
+			},
+		},
+
+		"resource-wildcard": {
+			scopes: []authpkg.Scope{
+				{Service: "identity", Resource: "*", Actions: []authpkg.Action{authpkg.READ}},
+				{Service: "identity", Resource: "account", Actions: []authpkg.Action{authpkg.WRITE}},
+				{Service: "identity", Resource: "account_credentials", Actions: []authpkg.Action{authpkg.WILDCARD}},
+
+				{Service: "storage", Resource: "*", Actions: []authpkg.Action{authpkg.READ}},
+				{Service: "storage", Resource: "config", Actions: []authpkg.Action{authpkg.WRITE}},
+			},
+			expected: authpkg.Permissions{
+				"identity": {
+					"*":                   {authpkg.READ},
+					"account":             {authpkg.WRITE},
+					"account_credentials": {authpkg.WILDCARD},
+				},
+				"storage": {
+					"*":      {authpkg.READ},
+					"config": {authpkg.WRITE},
+				},
+			},
+		},
+
+		"service-wildcard": {
+			scopes: []authpkg.Scope{
+				{Service: "*", Resource: "*", Actions: []authpkg.Action{authpkg.READ}},
+
+				{Service: "identity", Resource: "*", Actions: []authpkg.Action{authpkg.READ}},
+				{Service: "identity", Resource: "account", Actions: []authpkg.Action{authpkg.WRITE}},
+				{Service: "identity", Resource: "account_credentials", Actions: []authpkg.Action{authpkg.WILDCARD}},
+
+				{Service: "storage", Resource: "*", Actions: []authpkg.Action{authpkg.READ}},
+				{Service: "storage", Resource: "config", Actions: []authpkg.Action{authpkg.WRITE}},
+			},
+			expected: authpkg.Permissions{
+				"*": {
+					"*": {authpkg.READ},
+				},
+				"identity": {
+					"*":                   {authpkg.READ},
+					"account":             {authpkg.WRITE},
+					"account_credentials": {authpkg.WILDCARD},
+				},
+				"storage": {
+					"*":      {authpkg.READ},
+					"config": {authpkg.WRITE},
+				},
+			},
+		},
+
+		"wildcard-multiple-merges": {
+			scopes: []authpkg.Scope{
+				{Service: "*", Resource: "*", Actions: []authpkg.Action{authpkg.READ}},
+
+				{Service: "identity", Resource: "*", Actions: []authpkg.Action{authpkg.READ}},
+				{Service: "identity", Resource: "account", Actions: []authpkg.Action{authpkg.WRITE}},
+				{Service: "identity", Resource: "account_credentials", Actions: []authpkg.Action{authpkg.WILDCARD}},
+				{Service: "identity", Resource: "*", Actions: []authpkg.Action{authpkg.WRITE}},
+
+				{Service: "storage", Resource: "*", Actions: []authpkg.Action{authpkg.READ}},
+				{Service: "storage", Resource: "config", Actions: []authpkg.Action{authpkg.WRITE}},
+
+				{Service: "*", Resource: "*", Actions: []authpkg.Action{authpkg.WRITE}},
+			},
+			expected: authpkg.Permissions{
+				"*": {
+					"*": {authpkg.READ, authpkg.WRITE},
+				},
+				"identity": {
+					"*":                   {authpkg.READ, authpkg.WRITE},
+					"account":             {authpkg.WRITE},
+					"account_credentials": {authpkg.WILDCARD},
+				},
+				"storage": {
+					"*":      {authpkg.READ},
+					"config": {authpkg.WRITE},
 				},
 			},
 		},
