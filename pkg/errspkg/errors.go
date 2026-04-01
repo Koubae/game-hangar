@@ -48,6 +48,12 @@ var (
 		DefaultCode: 409,
 	}
 
+	AuthPermissionsScopeFormat = &AppError{
+		Err:         ClientErr,
+		Msg:         "permissions scope format error",
+		DefaultCode: 401,
+	}
+
 	AuthSecretHash = &AppError{
 		Err:         ServerErr,
 		Msg:         "secret hash error",
