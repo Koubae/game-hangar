@@ -30,6 +30,8 @@ func ParsePermissions(scopeRaw string) (Permissions, error) {
 		scope, err := ParseScope(s)
 		if err != nil {
 			return nil, err
+		} else if scope == nil {
+			continue
 		}
 		scopes = append(scopes, *scope)
 	}
@@ -81,8 +83,10 @@ func dedupeActions(actions []Action) []Action {
 
 func ParseScope(scope string) (*Scope, error) {
 	parts := strings.Split(scope, ":")
-
-	if len(parts) != 3 {
+	partsLen := len(parts)
+	if partsLen == 1 {
+		return nil, nil
+	} else if partsLen != 3 {
 		return nil, errspkg.AuthPermissionsScopeFormat
 	}
 

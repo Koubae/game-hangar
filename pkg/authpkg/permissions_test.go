@@ -23,6 +23,16 @@ func TestScope_ParseScope(t *testing.T) {
 			},
 			expectedErr: nil,
 		},
+		"empty-scope": {
+			scope:       "",
+			expected:    nil,
+			expectedErr: nil,
+		},
+		"empty-scope-with-spaces": {
+			scope:       "                     ",
+			expected:    nil,
+			expectedErr: nil,
+		},
 		"valid-scope-write": {
 			scope: "identity:account:write",
 			expected: &authpkg.Scope{
@@ -342,6 +352,16 @@ func TestPermissions_ParsePermissions(t *testing.T) {
 		expected    authpkg.Permissions
 		expectedErr error
 	}{
+		"empty-scope": {
+			scope:       "",
+			expected:    authpkg.Permissions{},
+			expectedErr: nil,
+		},
+		"empty-scope-with-spaces": {
+			scope:       "                     ",
+			expected:    authpkg.Permissions{},
+			expectedErr: nil,
+		},
 		"permissions-parsed-default-scope-format": {
 			scope: "identity:account:read,write|identity:account_credentials:write|storage:config:read|storage:storage:read,write",
 			expected: authpkg.Permissions{
@@ -419,6 +439,13 @@ func TestPermissions_IsActionGranted(t *testing.T) {
 	}{
 		"nil permissions returns false": {
 			permissions: nil,
+			service:     "identity",
+			resource:    "account",
+			action:      authpkg.READ,
+			expected:    false,
+		},
+		"empty permissions returns false": {
+			permissions: authpkg.Permissions{},
 			service:     "identity",
 			resource:    "account",
 			action:      authpkg.READ,
