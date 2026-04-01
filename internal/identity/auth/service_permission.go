@@ -30,7 +30,6 @@ func NewPermissionService(db database.DBTX, r IPermissionRepository) *Permission
 
 func (s *PermissionService) LoadAdminAccountPermissions(ctx context.Context, accountID string, scopeRequested string) (
 	authpkg.Permissions,
-	string,
 	error,
 ) {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
@@ -41,7 +40,7 @@ func (s *PermissionService) LoadAdminAccountPermissions(ctx context.Context, acc
 	permissionsRecords := s.repository.GetAdminAccountPermissions(ctx, s.db, accountID)
 	if len(permissionsRecords) == 0 {
 		logger.Warn("no permissions found for admin_account", zap.String("accountID", accountID))
-		return authpkg.PermissionEmpty, "", errspkg.AuthPermissionsScopeEmpty
+		return authpkg.PermissionEmpty, errspkg.AuthPermissionsScopeEmpty
 	}
 	logger.Debug(
 		"loaded permissions for admin_account",
@@ -63,7 +62,28 @@ func (s *PermissionService) LoadAdminAccountPermissions(ctx context.Context, acc
 			zap.String("scope", scope),
 			zap.Error(err),
 		)
-		return authpkg.PermissionEmpty, "", errspkg.AuthPermissionsScopeEmpty
+		return authpkg.PermissionEmpty, errspkg.AuthPermissionsScopeEmpty
 	}
-	return permissions, scope, nil
+
+	permissionsRequested, err := authpkg.ParsePermissions(scopeRequested)
+	if err != nil {
+		logger.Error(
+			"failed to parse permissions requested by admin_account",
+			zap.String("accountID", accountID),
+			zap.String("scopeRequested", scopeRequested),
+			zap.Error(err),
+		)
+		return authpkg.PermissionEmpty, errspkg.AuthPermissionsScopeEmpty
+	}
+
+	actual, missing := permissions.Differance(permissionsRequested)
+	if len(missing) > 0 {
+		logger.Warn(
+			"missing permissions for admin_account",
+			zap.String("accountID", accountID),
+			zap.Strings("missing", missing),
+		)
+	}
+
+	return actual, nil
 }

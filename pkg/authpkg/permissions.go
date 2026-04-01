@@ -1,7 +1,9 @@
 package authpkg
 
 import (
+	"fmt"
 	"slices"
+	"sort"
 	"strings"
 	"unicode/utf8"
 
@@ -202,4 +204,95 @@ func (p Permissions) IsActionGranted(service string, resource string, action Act
 
 	return false
 
+}
+
+func (p Permissions) Scope() string {
+	if p == nil {
+		return ""
+	}
+
+	services := make([]string, 0, len(p))
+	for service := range p {
+		services = append(services, service)
+	}
+	sort.Strings(services)
+
+	parts := make([]string, 0)
+
+	for _, service := range services {
+		resources := p[service]
+
+		resourceNames := make([]string, 0, len(resources))
+		for resource := range resources {
+			resourceNames = append(resourceNames, resource)
+		}
+		sort.Strings(resourceNames)
+
+		for _, resource := range resourceNames {
+			actions := resources[resource]
+			if len(actions) == 0 {
+				continue
+			}
+
+			actionNames := make([]string, 0, len(actions))
+			for _, action := range actions {
+				actionNames = append(actionNames, string(action))
+			}
+			sort.Strings(actionNames)
+
+			parts = append(parts, fmt.Sprintf("%s:%s:%s", service, resource, strings.Join(actionNames, ",")))
+		}
+	}
+
+	return strings.Join(parts, "|")
+}
+
+func (p Permissions) Differance(other Permissions) (Permissions, []string) {
+	missing := make([]string, 0)
+	if p == nil || other == nil {
+		return PermissionEmpty, missing
+	}
+
+	diff := make(Permissions)
+	for otherService, otherResources := range other {
+		resources, ok := p[otherService]
+		if !ok {
+			for otherResource, otherActions := range otherResources {
+				for _, action := range otherActions {
+					missing = append(missing, fmt.Sprintf("%s:%s:%s", otherService, otherResource, action))
+				}
+			}
+			continue
+		}
+
+		for otherResource, otherActions := range otherResources {
+			actions, ok := resources[otherResource]
+			if !ok {
+				for _, action := range otherActions {
+					missing = append(missing, fmt.Sprintf("%s:%s:%s", otherService, otherResource, action))
+				}
+				continue
+			}
+
+			matchedActions := make([]Action, 0, len(otherActions))
+			for _, oAction := range otherActions {
+				if slices.Contains(actions, oAction) {
+					matchedActions = append(matchedActions, oAction)
+					continue
+				}
+				missing = append(missing, fmt.Sprintf("%s:%s:%s", otherService, otherResource, oAction))
+			}
+
+			if len(matchedActions) > 0 {
+				if diff[otherService] == nil {
+					diff[otherService] = make(map[string][]Action)
+				}
+				diff[otherService][otherResource] = matchedActions
+			}
+
+		}
+
+	}
+
+	return diff, missing
 }

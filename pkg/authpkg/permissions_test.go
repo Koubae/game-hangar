@@ -571,3 +571,236 @@ func TestPermissions_IsActionGranted(t *testing.T) {
 		)
 	}
 }
+
+func TestPermissions_Differance(t *testing.T) {
+	tests := []struct {
+		name        string
+		p           authpkg.Permissions
+		other       authpkg.Permissions
+		wantDiff    authpkg.Permissions
+		wantMissing []string
+	}{
+		{
+			name: "all permissions match",
+			p: authpkg.Permissions{
+				"svc1": {
+					"res1": []authpkg.Action{"read", "write"},
+				},
+			},
+			other: authpkg.Permissions{
+				"svc1": {
+					"res1": []authpkg.Action{"read"},
+				},
+			},
+			wantDiff: authpkg.Permissions{
+				"svc1": {
+					"res1": []authpkg.Action{"read"},
+				},
+			},
+			wantMissing: []string{},
+		},
+		{
+			name: "missing service",
+			p: authpkg.Permissions{
+				"svc1": {
+					"res1": []authpkg.Action{"read"},
+				},
+			},
+			other: authpkg.Permissions{
+				"svc2": {
+					"res9": []authpkg.Action{"write"},
+				},
+			},
+			wantDiff:    authpkg.PermissionEmpty,
+			wantMissing: []string{"svc2:res9:write"},
+		},
+		{
+			name: "missing resource",
+			p: authpkg.Permissions{
+				"svc1": {
+					"res1": []authpkg.Action{"read"},
+				},
+			},
+			other: authpkg.Permissions{
+				"svc1": {
+					"res2": []authpkg.Action{"write"},
+				},
+			},
+			wantDiff:    authpkg.PermissionEmpty,
+			wantMissing: []string{"svc1:res2:write"},
+		},
+		{
+			name: "missing action",
+			p: authpkg.Permissions{
+				"svc1": {
+					"res1": []authpkg.Action{"read"},
+				},
+			},
+			other: authpkg.Permissions{
+				"svc1": {
+					"res1": []authpkg.Action{"write"},
+				},
+			},
+			wantDiff:    authpkg.PermissionEmpty,
+			wantMissing: []string{"svc1:res1:write"},
+		},
+		{
+			name: "partial match and partial missing",
+			p: authpkg.Permissions{
+				"svc1": {
+					"res1": []authpkg.Action{"read", "write"},
+				},
+			},
+			other: authpkg.Permissions{
+				"svc1": {
+					"res1": []authpkg.Action{"read", "delete"},
+				},
+			},
+			wantDiff: authpkg.Permissions{
+				"svc1": {
+					"res1": []authpkg.Action{"read"},
+				},
+			},
+			wantMissing: []string{"svc1:res1:delete"},
+		},
+		{
+			name: "multiple services and resources",
+			p: authpkg.Permissions{
+				"svc1": {
+					"res1": []authpkg.Action{"read", "write"},
+					"res2": []authpkg.Action{"list"},
+				},
+				"svc2": {
+					"resA": []authpkg.Action{"execute"},
+				},
+			},
+			other: authpkg.Permissions{
+				"svc1": {
+					"res1": []authpkg.Action{"read", "delete"},
+					"res2": []authpkg.Action{"list"},
+				},
+				"svc2": {
+					"resA": []authpkg.Action{"execute"},
+					"resB": []authpkg.Action{"run"},
+				},
+			},
+			wantDiff: authpkg.Permissions{
+				"svc1": {
+					"res1": []authpkg.Action{"read"},
+					"res2": []authpkg.Action{"list"},
+				},
+				"svc2": {
+					"resA": []authpkg.Action{"execute"},
+				},
+			},
+			wantMissing: []string{
+				"svc1:res1:delete",
+				"svc2:resB:run",
+			},
+		},
+		{
+			name: "nil input returns empty",
+			p:    nil,
+			other: authpkg.Permissions{
+				"svc1": {
+					"res1": []authpkg.Action{"read"},
+				},
+			},
+			wantDiff:    authpkg.PermissionEmpty,
+			wantMissing: []string{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(
+			tt.name, func(t *testing.T) {
+				gotDiff, gotMissing := tt.p.Differance(tt.other)
+
+				assert.Equal(t, tt.wantDiff, gotDiff)
+				assert.ElementsMatch(t, tt.wantMissing, gotMissing)
+			},
+		)
+	}
+}
+
+func TestPermissions_Scope(t *testing.T) {
+	tests := []struct {
+		name string
+		p    authpkg.Permissions
+		want string
+	}{
+		{
+			name: "nil permissions",
+			p:    nil,
+			want: "",
+		},
+		{
+			name: "single permission",
+			p: authpkg.Permissions{
+				"identity": {
+					"account": []authpkg.Action{"read"},
+				},
+			},
+			want: "identity:account:read",
+		},
+		{
+			name: "multiple actions same resource",
+			p: authpkg.Permissions{
+				"identity": {
+					"account": []authpkg.Action{"write", "read"},
+				},
+			},
+			want: "identity:account:read,write",
+		},
+		{
+			name: "multiple services resources and actions",
+			p: authpkg.Permissions{
+				"identity": {
+					"account":             []authpkg.Action{"write", "read"},
+					"account_credentials": []authpkg.Action{"write"},
+				},
+				"storage": {
+					"config":  []authpkg.Action{"read"},
+					"storage": []authpkg.Action{"write", "read"},
+				},
+			},
+			want: "identity:account:read,write|identity:account_credentials:write|storage:config:read|storage:storage:read,write",
+		},
+		{
+			name: "multiple services resources and actions with wildcards",
+			p: authpkg.Permissions{
+				"*": {
+					"*": []authpkg.Action{"read"},
+				},
+				"identity": {
+					"*":                   []authpkg.Action{"read"},
+					"account":             []authpkg.Action{"write", "read"},
+					"account_credentials": []authpkg.Action{"write"},
+				},
+				"storage": {
+					"config":  []authpkg.Action{"read"},
+					"storage": []authpkg.Action{"write", "read"},
+				},
+			},
+			want: "*:*:read|identity:*:read|identity:account:read,write|identity:account_credentials:write|storage:config:read|storage:storage:read,write",
+		},
+		{
+			name: "skips empty actions",
+			p: authpkg.Permissions{
+				"identity": {
+					"account": []authpkg.Action{},
+				},
+			},
+			want: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(
+			tt.name, func(t *testing.T) {
+				got := tt.p.Scope()
+				assert.Equal(t, tt.want, got)
+			},
+		)
+	}
+}

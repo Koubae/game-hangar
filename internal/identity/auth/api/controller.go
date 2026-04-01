@@ -169,13 +169,21 @@ func (c *AuthController) LoginAdminByUsername(
 		return
 	}
 
-	permissions, scope, err := c.container.PermissionService(nil).LoadAdminAccountPermissions(
+	permissions, err := c.container.PermissionService(nil).LoadAdminAccountPermissions(
 		ctx,
 		credential.AccountID.String(),
 		payload.Scope,
 	)
 	if err != nil {
 		errspkg.AppErrToClientResponseWithLog(w, errspkg.Wrap(errspkg.AuthLoginFailed, err), "", logger)
+		return
+	} else if len(permissions) == 0 {
+		errspkg.AppErrToClientResponseWithLog(
+			w,
+			errspkg.Wrap(errspkg.AuthLoginFailed, errspkg.AuthPermissionsScopeEmpty),
+			"",
+			logger,
+		)
 		return
 	}
 
@@ -196,7 +204,7 @@ func (c *AuthController) LoginAdminByUsername(
 		provider.Type,
 		credential.AccountID.String(),
 		credential.Credential,
-		scope,
+		permissions.Scope(),
 		expire,
 	)
 	if err != nil {
