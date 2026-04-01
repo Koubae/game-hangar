@@ -30,12 +30,8 @@ func (c *AuthController) RegisterByUsername(
 	w http.ResponseWriter,
 	r *http.Request,
 ) {
-	payload, ok := web.LoadJsonBody[account.DTOCreateAccount](w, r)
+	payload, ok := errs.LoadAndValidateJSON[account.DTOCreateAccount](w, r)
 	if !ok {
-		return
-	}
-	if err := payload.Validate(); err != nil {
-		errs.AppErrToClientResponse(w, err, "")
 		return
 	}
 
@@ -83,12 +79,8 @@ func (c *AuthController) LoginByUsername(
 	w http.ResponseWriter,
 	r *http.Request,
 ) {
-	payload, ok := web.LoadJsonBody[account.DTOLoginByUsername](w, r)
+	payload, ok := errs.LoadAndValidateJSON[account.DTOLoginByUsername](w, r)
 	if !ok {
-		return
-	}
-	if err := payload.Validate(); err != nil {
-		errs.AppErrToClientResponse(w, err, "")
 		return
 	}
 

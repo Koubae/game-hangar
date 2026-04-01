@@ -37,7 +37,7 @@ type DTOCreateAccount struct {
 	Password string `json:"password" binding:"required"`
 }
 
-func (dto *DTOCreateAccount) Validate() *errs.AppError {
+func (dto DTOCreateAccount) Validate() error {
 	err := errs.DTOSchemaValidation(dto)
 	if err != nil {
 		return err
@@ -51,7 +51,7 @@ type DTOLoginByUsername struct {
 	Password string `json:"password" binding:"required"`
 }
 
-func (dto *DTOLoginByUsername) Validate() *errs.AppError {
+func (dto DTOLoginByUsername) Validate() error {
 	err := errs.DTOSchemaValidation(dto)
 	if err != nil {
 		return err

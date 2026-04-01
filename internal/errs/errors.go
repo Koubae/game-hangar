@@ -146,11 +146,6 @@ var (
 	}
 )
 
-// Validator interface for validating a Request Body Payload
-type Validator interface {
-	Validate() *AppError
-}
-
 // AppError Application error that wraps any other errors.
 // The Application should be aware and directly handle this error when returning anything as reply to
 // the outside world.
