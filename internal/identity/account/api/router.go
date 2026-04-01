@@ -22,7 +22,18 @@ func RouterRegister(v1 *http.ServeMux, c di.Container) {
 	authController := NewAccountManagementController(c.(container.IdentityContainer))
 
 	// ------------------------------------------
-	// 	Account Management functions
+	// 	Account Management functions | Account Access
 	// ------------------------------------------
 	accountLoggedIn.HandleFunc("GET /me", authController.Me)
+
+	// ------------------------------------------
+	// 	Account Management functions | Backoffice Access
+	// ------------------------------------------
+	loggedAdminMiddleware := authpkg.NewAdminJWTMiddleware()
+	accountBackofficeLoggedIn := web.GroupWithMiddleware(
+		v1,
+		"/backoffice/account",
+		loggedAdminMiddleware,
+	)
+	accountBackofficeLoggedIn.HandleFunc("GET /{id}", authController.GetAccount)
 }

@@ -79,6 +79,17 @@ var (
 		Msg:         "not logged in",
 		DefaultCode: 401,
 	}
+
+	PayloadMissingID = &AppError{
+		Err:         ClientErr,
+		Msg:         "payload missing id",
+		DefaultCode: 400,
+	}
+	InvalidUUID = &AppError{
+		Err:         ClientErr,
+		Msg:         "invalid uuid",
+		DefaultCode: 400,
+	}
 )
 
 // Validator interface for validating a Request Body Payload

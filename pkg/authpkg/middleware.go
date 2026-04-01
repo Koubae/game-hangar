@@ -33,10 +33,15 @@ const (
 
 func NewJWTMiddleware() func(http.Handler) http.Handler {
 	secret := GetPublicKey()
-	return JWTMiddleware[*rsa.PublicKey](jwt.SigningMethodRS256, secret)
+	return JWTMiddleware[*rsa.PublicKey](jwt.SigningMethodRS256, secret, false)
 }
 
-func JWTMiddleware[S JWTSecret](method jwt.SigningMethod, secret S) func(http.Handler) http.Handler {
+func NewAdminJWTMiddleware() func(http.Handler) http.Handler {
+	secret := GetPublicKey() // TODO: new public key!
+	return JWTMiddleware[*rsa.PublicKey](jwt.SigningMethodRS256, secret, true)
+}
+
+func JWTMiddleware[S JWTSecret](method jwt.SigningMethod, secret S, admin bool) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(
 			func(w http.ResponseWriter, r *http.Request) {
@@ -142,6 +147,22 @@ func JWTMiddleware[S JWTSecret](method jwt.SigningMethod, secret S) func(http.Ha
 					)
 					return
 				}
+
+				if admin && role != "account_admin" {
+					logger.Warn(
+						"invalid role requested",
+						zap.String("role", role),
+						zap.Any("claims", claims),
+					)
+					web.WriteBusinessErrorResponse(
+						w, &common.ClientResponseError{
+							HTTPCode: http.StatusUnauthorized,
+							Message:  "invalid token",
+						},
+					)
+					return
+				}
+
 				credential, ok := claims["credential"].(string)
 				if !ok {
 					web.WriteBusinessErrorResponse(
