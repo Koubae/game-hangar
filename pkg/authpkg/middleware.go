@@ -68,10 +68,11 @@ func JWTMiddleware[S JWTSecret](method jwt.SigningMethod, secret S, admin bool) 
 				)
 
 				if err != nil {
+					logger.Warn("error parsing token", zap.Error(err))
 					web.WriteBusinessErrorResponse(
 						w, &common.ClientResponseError{
 							HTTPCode: http.StatusUnauthorized,
-							Message:  fmt.Sprintf("token parsing error, %v", err),
+							Message:  "invalid token",
 						},
 					)
 					return
@@ -148,10 +149,11 @@ func JWTMiddleware[S JWTSecret](method jwt.SigningMethod, secret S, admin bool) 
 					return
 				}
 
-				if admin && role != "account_admin" {
+				if admin && role != AdminAccountRole {
 					logger.Warn(
 						"invalid role requested",
-						zap.String("role", role),
+						zap.String("role_required", AdminAccountRole),
+						zap.String("role_requested", role),
 						zap.Any("claims", claims),
 					)
 					web.WriteBusinessErrorResponse(

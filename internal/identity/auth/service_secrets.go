@@ -56,8 +56,32 @@ func (s *SecretsService) GenerateJWTAccessToken(
 		"sub":   accountID,
 		"exp":   expire,
 		"iss":   common.AppID,
-		"role":  "account",
+		"role":  authpkg.AccountRole,
 		"scope": "",
+
+		"source":     source,
+		"type":       _type,
+		"credential": credential,
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
+	return token.SignedString(privateKey)
+}
+
+func (s *SecretsService) GenerateAdminJWTAccessToken(
+	source string,
+	_type string,
+	accountID string,
+	credential string,
+	scope string,
+	expire int64,
+) (string, error) {
+	privateKey := authpkg.GetAdminPrivateKey()
+	claims := jwt.MapClaims{
+		"sub":   accountID,
+		"exp":   expire,
+		"iss":   common.AppID,
+		"role":  authpkg.AdminAccountRole,
+		"scope": scope,
 
 		"source":     source,
 		"type":       _type,

@@ -116,13 +116,30 @@ func (c *AuthController) LoginByUsername(
 	}
 
 	expire := time.Now().Add(AuthTokenExpirationTime).Unix()
-	accessToken, err := secretService.GenerateJWTAccessToken(
-		provider.Source,
-		provider.Type,
-		credential.AccountID.String(),
-		credential.Credential,
-		expire,
-	)
+	// TODO: DEVELOPMENT ONLY
+	var accessToken string
+	if credential.Credential == "admin" {
+		scope := "identity:account:read,write"
+		accessToken, err = secretService.GenerateAdminJWTAccessToken(
+			provider.Source,
+			provider.Type,
+			credential.AccountID.String(),
+			credential.Credential,
+			scope,
+			expire,
+		)
+
+	} else {
+		accessToken, err = secretService.GenerateJWTAccessToken(
+			provider.Source,
+			provider.Type,
+			credential.AccountID.String(),
+			credential.Credential,
+			expire,
+		)
+
+	}
+	// TODO: DEVELOPMENT ONLY
 
 	response := auth.DTOAccessToken{
 		AccessToken: accessToken,

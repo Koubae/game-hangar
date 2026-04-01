@@ -4,6 +4,11 @@ import "context"
 
 var PermissionEmpty = Permissions{}
 
+const (
+	AccountRole      = "account"
+	AdminAccountRole = "account_admin"
+)
+
 type AccessToken struct {
 	Source      string
 	Type        string
