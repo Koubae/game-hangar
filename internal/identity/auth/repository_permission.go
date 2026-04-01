@@ -18,6 +18,7 @@ type IPermissionRepository interface {
 		db database.DBTX,
 		ids []int64,
 	) []*Permission
+	GetAdminAccountPermissions(ctx context.Context, db database.DBTX, accountID string) []*Permission
 }
 
 type PermissionRepositoryFactory func() IPermissionRepository
@@ -134,4 +135,54 @@ func (r *PermissionRepository) getPermission(
 // addPermissionInCache should be called within the r.mu.Lock
 func (r *PermissionRepository) addPermissionInCache(p *Permission) {
 	r.PermissionsCache[p.ID] = p
+}
+
+func (r *PermissionRepository) GetAdminAccountPermissions(
+	ctx context.Context,
+	db database.DBTX,
+	accountID string,
+) []*Permission {
+	const query = `
+	SELECT perm.*
+	FROM admin_account admin
+		JOIN account_permissions grants ON admin.id = grants.admin_account_id
+		JOIN permissions perm ON grants.permission_id = perm.id
+	WHERE account_id = @account_id
+	`
+
+	logger := common.GetLogger()
+
+	permissions := make([]*Permission, 0)
+	rows, err := db.SelectMany(ctx, query, pgx.StrictNamedArgs{"account_id": accountID})
+	if err != nil {
+		logger.DPanic(
+			"failed to load Permissions for admin_account, returning empty permission set",
+			zap.String("accountID", accountID),
+			zap.Error(err),
+		)
+		return permissions
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var m Permission
+		if err := rows.Scan(
+			&m.ID,
+			&m.Service,
+			&m.Resource,
+			&m.Action,
+			&m.Created,
+		); err != nil {
+			logger.Error(
+				"failed to scan Permission for admin_account",
+				zap.String("accountID", accountID),
+				zap.Error(err),
+			)
+			continue
+		}
+		permissions = append(permissions, &m)
+
+	}
+
+	return permissions
 }

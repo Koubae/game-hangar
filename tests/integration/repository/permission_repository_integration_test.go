@@ -158,3 +158,46 @@ func TestPermissionRepository_GetPermissionsNotFound(t *testing.T) {
 	expected := make([]*auth.Permission, 0)
 	assert.Equal(t, expected, permissions)
 }
+
+func TestPermissionRepository_GetAdminAccountPermissions(t *testing.T) {
+	_, connector, tearDown := integration.DBWithCleanup(t, true)
+	defer tearDown()
+
+	tests := map[string]struct {
+		accountID string
+		expected  []*auth.Permission
+	}{
+		"load-manager-permissions": {
+			accountID: "2d9b4f51-6c87-4d9e-a8b3-1f2c0d7e9a4b",
+			expected: []*auth.Permission{
+				{Service: "identity", Resource: "auth", Action: "read"},
+				{Service: "identity", Resource: "auth", Action: "write"},
+				{Service: "identity", Resource: "account", Action: "read"},
+				{Service: "identity", Resource: "account", Action: "write"},
+			},
+		},
+		"not-found": {
+			accountID: "06e1b677-a4fe-42cf-8afd-ceec867d1fa5",
+			expected:  []*auth.Permission{},
+		},
+	}
+
+	permissionRepository := auth.NewPermissionRepository()
+	for id, tt := range tests {
+		t.Run(
+			id, func(t *testing.T) {
+				permissions := permissionRepository.GetAdminAccountPermissions(
+					context.Background(),
+					connector,
+					tt.accountID,
+				)
+				for i, permission := range permissions {
+					assert.Equal(t, tt.expected[i].Service, permission.Service)
+					assert.Equal(t, tt.expected[i].Resource, permission.Resource)
+					assert.Equal(t, tt.expected[i].Action, permission.Action)
+				}
+			},
+		)
+	}
+
+}

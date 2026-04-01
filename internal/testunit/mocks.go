@@ -112,6 +112,17 @@ func (m *MockPermissionRepository) GetPermissions(
 	return permissions
 }
 
+func (m *MockPermissionRepository) GetAdminAccountPermissions(
+	ctx context.Context,
+	db database.DBTX,
+	accountID string,
+) []*auth.Permission {
+	args := m.Called(ctx, db, accountID)
+
+	permissions, _ := args.Get(0).([]*auth.Permission)
+	return permissions
+}
+
 type MockAccountRepository struct {
 	mock.Mock
 }
