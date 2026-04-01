@@ -24,6 +24,18 @@ type Scope struct {
 	Actions  []Action
 }
 
+func ParsePermissions(scopeRaw string) (Permissions, error) {
+	scopes := make([]Scope, 0)
+	for _, s := range strings.Split(scopeRaw, "|") {
+		scope, err := ParseScope(s)
+		if err != nil {
+			return nil, err
+		}
+		scopes = append(scopes, *scope)
+	}
+	return NewPermissions(scopes), nil
+}
+
 func NewPermissions(scopes []Scope) Permissions {
 	permissions := make(Permissions)
 	for _, scope := range scopes {
