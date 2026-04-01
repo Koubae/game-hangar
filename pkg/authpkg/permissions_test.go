@@ -334,3 +334,213 @@ func TestPermissions_NewPermissions(t *testing.T) {
 		)
 	}
 }
+
+func TestPermissions_ParsePermissions(t *testing.T) {
+	t.Parallel()
+	tests := map[string]struct {
+		scope       string
+		expected    authpkg.Permissions
+		expectedErr error
+	}{
+		"permissions-parsed-default-scope-format": {
+			scope: "identity:account:read,write|identity:account_credentials:write|storage:config:read|storage:storage:read,write",
+			expected: authpkg.Permissions{
+				"identity": {
+					"account":             {authpkg.READ, authpkg.WRITE},
+					"account_credentials": {authpkg.WRITE},
+				},
+				"storage": {
+					"config":  {authpkg.READ},
+					"storage": {authpkg.READ, authpkg.WRITE},
+				},
+			},
+			expectedErr: nil,
+		},
+		"permissions-parsed-duplicate-scopes": {
+			scope: "identity:account:read|identity:account:write|identity:account_credentials:write|storage:config:read|storage:storage:read|storage:storage:write",
+			expected: authpkg.Permissions{
+				"identity": {
+					"account":             {authpkg.READ, authpkg.WRITE},
+					"account_credentials": {authpkg.WRITE},
+				},
+				"storage": {
+					"config":  {authpkg.READ},
+					"storage": {authpkg.READ, authpkg.WRITE},
+				},
+			},
+			expectedErr: nil,
+		},
+		"wildcard-multiple-merges": {
+			scope: "*:*:read|identity:*:read|identity:account:write|identity:account_credentials:*|identity:*:write|storage:*:read|storage:config:write|*:*:write",
+			expected: authpkg.Permissions{
+				"*": {
+					"*": {authpkg.READ, authpkg.WRITE},
+				},
+				"identity": {
+					"*":                   {authpkg.READ, authpkg.WRITE},
+					"account":             {authpkg.WRITE},
+					"account_credentials": {authpkg.WILDCARD},
+				},
+				"storage": {
+					"*":      {authpkg.READ},
+					"config": {authpkg.WRITE},
+				},
+			},
+		},
+	}
+	for id, tt := range tests {
+		t.Run(
+			id, func(t *testing.T) {
+
+				permissions, err := authpkg.ParsePermissions(tt.scope)
+
+				if tt.expectedErr != nil {
+					assert.Nil(t, permissions)
+					assert.Error(t, err)
+					assert.ErrorAs(t, err, &tt.expectedErr)
+					return
+				}
+
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expected, permissions)
+			},
+		)
+	}
+}
+
+func TestPermissions_IsActionGranted(t *testing.T) {
+	t.Parallel()
+	tests := map[string]struct {
+		permissions authpkg.Permissions
+		service     string
+		resource    string
+		action      authpkg.Action
+		expected    bool
+	}{
+		"nil permissions returns false": {
+			permissions: nil,
+			service:     "identity",
+			resource:    "account",
+			action:      authpkg.READ,
+			expected:    false,
+		},
+		"exact match grants allowed action": {
+			permissions: authpkg.Permissions{
+				"identity": {
+					"account": {authpkg.READ, authpkg.WRITE},
+				},
+			},
+			service:  "identity",
+			resource: "account",
+			action:   authpkg.READ,
+			expected: true,
+		},
+		"exact match denies missing action": {
+			permissions: authpkg.Permissions{
+				"identity": {
+					"account": {authpkg.READ},
+				},
+			},
+			service:  "identity",
+			resource: "account",
+			action:   authpkg.WRITE,
+			expected: false,
+		},
+		"resource wildcard grants action": {
+			permissions: authpkg.Permissions{
+				"identity": {
+					"*": {authpkg.WRITE},
+				},
+			},
+			service:  "identity",
+			resource: "account",
+			action:   authpkg.WRITE,
+			expected: true,
+		},
+		"service wildcard grants action": {
+			permissions: authpkg.Permissions{
+				"*": {
+					"account": {authpkg.READ},
+				},
+			},
+			service:  "identity",
+			resource: "account",
+			action:   authpkg.READ,
+			expected: true,
+		},
+		"global wildcard grants action": {
+			permissions: authpkg.Permissions{
+				"*": {
+					"*": {authpkg.READ, authpkg.WRITE},
+				},
+			},
+			service:  "identity",
+			resource: "account",
+			action:   authpkg.READ,
+			expected: true,
+		},
+		"global wildcard does not grant action because missing": {
+			permissions: authpkg.Permissions{
+				"*": {
+					"*": {authpkg.READ, authpkg.WRITE},
+				},
+			},
+			service:  "identity",
+			resource: "account",
+			action:   authpkg.DELETE,
+			expected: false,
+		},
+		"action wildcard grants any action": {
+			permissions: authpkg.Permissions{
+				"identity": {
+					"account": {authpkg.WILDCARD},
+				},
+			},
+			service:  "identity",
+			resource: "account",
+			action:   authpkg.DELETE,
+			expected: true,
+		},
+		"no permission for different service": {
+			permissions: authpkg.Permissions{
+				"identity": {
+					"account": {authpkg.READ},
+				},
+			},
+			service:  "storage",
+			resource: "config",
+			action:   authpkg.READ,
+			expected: false,
+		},
+		"no permission for different resource": {
+			permissions: authpkg.Permissions{
+				"identity": {
+					"account": {authpkg.READ},
+				},
+			},
+			service:  "identity",
+			resource: "account_credentials",
+			action:   authpkg.READ,
+			expected: false,
+		},
+		"no permission for different action": {
+			permissions: authpkg.Permissions{
+				"identity": {
+					"account": {authpkg.READ},
+				},
+			},
+			service:  "identity",
+			resource: "account",
+			action:   authpkg.WRITE,
+			expected: false,
+		},
+	}
+	for id, tt := range tests {
+		t.Run(
+			id, func(t *testing.T) {
+				got := tt.permissions.IsActionGranted(tt.service, tt.resource, tt.action)
+				assert.Equal(t, tt.expected, got)
+			},
+		)
+	}
+}

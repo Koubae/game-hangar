@@ -43,7 +43,7 @@ func NewPermissions(scopes []Scope) Permissions {
 			permissions[scope.Service] = make(map[string][]Action)
 		}
 
-		if permissions.HasPermission(scope.Service, scope.Resource, WILDCARD) {
+		if permissions.isPermissionInActionList(scope.Service, scope.Resource, WILDCARD) {
 			continue
 		}
 
@@ -155,7 +155,7 @@ func IsWildcard(component string) bool {
 	return Action(component).IsWildcard()
 }
 
-func (p Permissions) HasPermission(service string, resource string, action Action) bool {
+func (p Permissions) isPermissionInActionList(service string, resource string, action Action) bool {
 	serviceP := p[service]
 	if serviceP == nil {
 		return false
@@ -165,5 +165,37 @@ func (p Permissions) HasPermission(service string, resource string, action Actio
 		return false
 	}
 	return slices.Contains(actions, action)
+
+}
+
+// IsActionGranted checks if the specified action is permitted for a given service and resource based on the current permissions.
+func (p Permissions) IsActionGranted(service string, resource string, action Action) bool {
+	if p == nil {
+		return false
+	}
+
+	allowed := func(actions []Action) bool {
+		return slices.Contains(actions, WILDCARD) || slices.Contains(actions, action)
+	}
+
+	if resources, ok := p[service]; ok { // Permissions contain resource
+		if actions, ok := resources[resource]; ok && allowed(actions) { // Exact Match
+			return true
+		}
+		if actions, ok := resources[string(WILDCARD)]; ok && allowed(actions) { // Resource wildcard
+			return true
+		}
+	}
+
+	if resources, ok := p[string(WILDCARD)]; ok {
+		if actions, ok := resources[resource]; ok && allowed(actions) { // service wildcard
+			return true
+		}
+		if actions, ok := resources[string(WILDCARD)]; ok && allowed(actions) {
+			return true
+		}
+	}
+
+	return false
 
 }
