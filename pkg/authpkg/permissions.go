@@ -16,12 +16,55 @@ const (
 )
 
 type Action string
-type Permissions []Scope
+type Permissions map[string]map[string][]Action
 
 type Scope struct {
 	Service  string
 	Resource string
 	Actions  []Action
+}
+
+func NewPermissions(scopes []Scope) Permissions {
+	permissions := make(Permissions)
+	for _, scope := range scopes {
+		if permissions[scope.Service] == nil {
+			permissions[scope.Service] = make(map[string][]Action)
+		}
+
+		if permissions.HasPermission(scope.Service, scope.Resource, WILDCARD) {
+			continue
+		}
+
+		actions := permissions[scope.Service][scope.Resource]
+		if slices.Contains(actions, WILDCARD) {
+			permissions[scope.Service][scope.Resource] = []Action{WILDCARD}
+			continue
+		}
+
+		merged := append(actions, scope.Actions...)
+		permissions[scope.Service][scope.Resource] = dedupeActions(merged)
+
+	}
+
+	return permissions
+}
+
+func dedupeActions(actions []Action) []Action {
+	seen := make(map[Action]bool, len(actions))
+	out := make([]Action, 0, len(actions))
+	for _, a := range actions {
+		if a.IsWildcard() {
+			return []Action{WILDCARD}
+		}
+		if seen[a] {
+			continue
+		}
+		seen[a] = true
+		out = append(out, a)
+	}
+
+	slices.Sort(out)
+	return out
 }
 
 func ParseScope(scope string) (*Scope, error) {
@@ -98,4 +141,17 @@ func (a Action) IsWildcard() bool {
 
 func IsWildcard(component string) bool {
 	return Action(component).IsWildcard()
+}
+
+func (p Permissions) HasPermission(service string, resource string, action Action) bool {
+	serviceP := p[service]
+	if serviceP == nil {
+		return false
+	}
+	actions := serviceP[resource]
+	if actions == nil {
+		return false
+	}
+	return slices.Contains(actions, action)
+
 }

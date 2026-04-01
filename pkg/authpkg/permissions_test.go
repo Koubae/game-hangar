@@ -168,3 +168,89 @@ func TestScope_ParseScope(t *testing.T) {
 	}
 
 }
+
+func TestPermissions_NewPermissions(t *testing.T) {
+	t.Parallel()
+	tests := map[string]struct {
+		scopes   []authpkg.Scope
+		expected authpkg.Permissions
+	}{
+		"permissions-created-normal": {
+			scopes: []authpkg.Scope{
+				{Service: "identity", Resource: "account", Actions: []authpkg.Action{authpkg.READ, authpkg.WRITE}},
+				{Service: "identity", Resource: "account_credentials", Actions: []authpkg.Action{authpkg.READ}},
+				{Service: "storage", Resource: "config", Actions: []authpkg.Action{authpkg.READ}},
+				{Service: "storage", Resource: "storage", Actions: []authpkg.Action{authpkg.READ, authpkg.WRITE}},
+			},
+			expected: authpkg.Permissions{
+				"identity": {
+					"account":             {authpkg.READ, authpkg.WRITE},
+					"account_credentials": {authpkg.READ},
+				},
+				"storage": {
+					"config":  {authpkg.READ},
+					"storage": {authpkg.READ, authpkg.WRITE},
+				},
+			},
+		},
+		"permissions-merges-duplicate-resources": {
+			scopes: []authpkg.Scope{
+				{Service: "identity", Resource: "account", Actions: []authpkg.Action{authpkg.READ, authpkg.WRITE}},
+				{Service: "identity", Resource: "account", Actions: []authpkg.Action{authpkg.READ, authpkg.WRITE}},
+				{Service: "identity", Resource: "account", Actions: []authpkg.Action{authpkg.DELETE}},
+				{Service: "identity", Resource: "account", Actions: []authpkg.Action{authpkg.DELETE}},
+				{Service: "identity", Resource: "account_credentials", Actions: []authpkg.Action{authpkg.READ}},
+				{Service: "identity", Resource: "account_credentials", Actions: []authpkg.Action{authpkg.READ}},
+				{Service: "identity", Resource: "account_credentials", Actions: []authpkg.Action{authpkg.WRITE}},
+				{Service: "identity", Resource: "account_credentials", Actions: []authpkg.Action{authpkg.WRITE}},
+				{Service: "storage", Resource: "config", Actions: []authpkg.Action{authpkg.READ}},
+				{Service: "storage", Resource: "config", Actions: []authpkg.Action{authpkg.READ}},
+				{Service: "storage", Resource: "config", Actions: []authpkg.Action{authpkg.WRITE}},
+				{Service: "storage", Resource: "config", Actions: []authpkg.Action{authpkg.WRITE}},
+				{Service: "storage", Resource: "config", Actions: []authpkg.Action{authpkg.DELETE}},
+				{Service: "storage", Resource: "config", Actions: []authpkg.Action{authpkg.DELETE}},
+			},
+			expected: authpkg.Permissions{
+				"identity": {
+					"account":             {authpkg.DELETE, authpkg.READ, authpkg.WRITE},
+					"account_credentials": {authpkg.READ, authpkg.WRITE},
+				},
+				"storage": {
+					"config": {authpkg.DELETE, authpkg.READ, authpkg.WRITE},
+				},
+			},
+		},
+		"permissions-merges-wildcard-resources-ditching-other-duplicates": {
+			scopes: []authpkg.Scope{
+				{Service: "identity", Resource: "account", Actions: []authpkg.Action{authpkg.READ, authpkg.WRITE}},
+				{Service: "identity", Resource: "account", Actions: []authpkg.Action{authpkg.DELETE}},
+				{Service: "identity", Resource: "account", Actions: []authpkg.Action{authpkg.WILDCARD}},
+				{Service: "identity", Resource: "account_credentials", Actions: []authpkg.Action{authpkg.READ}},
+				{Service: "identity", Resource: "account_credentials", Actions: []authpkg.Action{authpkg.WRITE}},
+				{Service: "identity", Resource: "account_credentials", Actions: []authpkg.Action{authpkg.WILDCARD}},
+				{Service: "storage", Resource: "config", Actions: []authpkg.Action{authpkg.READ}},
+				{Service: "storage", Resource: "config", Actions: []authpkg.Action{authpkg.WRITE}},
+				{Service: "storage", Resource: "config", Actions: []authpkg.Action{authpkg.DELETE}},
+				{Service: "storage", Resource: "config", Actions: []authpkg.Action{authpkg.WILDCARD}},
+			},
+			expected: authpkg.Permissions{
+				"identity": {
+					"account":             {authpkg.WILDCARD},
+					"account_credentials": {authpkg.WILDCARD},
+				},
+				"storage": {
+					"config": {authpkg.WILDCARD},
+				},
+			},
+		},
+	}
+	for id, tt := range tests {
+		t.Run(
+			id, func(t *testing.T) {
+
+				permissions := authpkg.NewPermissions(tt.scopes)
+				assert.Equal(t, tt.expected, permissions)
+			},
+		)
+	}
+}
