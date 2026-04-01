@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/koubae/game-hangar/internal/errs"
 	"github.com/koubae/game-hangar/internal/identity/account"
 	"github.com/koubae/game-hangar/internal/testunit"
+	"github.com/koubae/game-hangar/pkg/errspkg"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -39,7 +39,7 @@ func TestAccountManagementController_Me(t *testing.T) {
 			accountID: testunit.AccountIDTest01Str,
 
 			expected:    nil,
-			expectedErr: errs.ResourceNotFound,
+			expectedErr: errspkg.ResourceNotFound,
 
 			expectedCode:        404,
 			expectedErrResponse: `{"code":404,"message":"resource not found"}`,

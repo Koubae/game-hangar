@@ -3,10 +3,10 @@ package api
 import (
 	"net/http"
 
-	"github.com/koubae/game-hangar/internal/errs"
 	"github.com/koubae/game-hangar/internal/identity/account"
 	"github.com/koubae/game-hangar/internal/identity/container"
 	"github.com/koubae/game-hangar/pkg/authpkg"
+	"github.com/koubae/game-hangar/pkg/errspkg"
 	"github.com/koubae/game-hangar/pkg/web"
 )
 
@@ -24,7 +24,7 @@ func (c *AccountManagementController) Me(w http.ResponseWriter, r *http.Request)
 	ctx := r.Context()
 	accessToken, ok := authpkg.GetAccessToken(ctx)
 	if !ok {
-		errs.AppErrToClientResponse(w, errs.AuthNotLoggedIn, "")
+		errspkg.AppErrToClientResponse(w, errspkg.AuthNotLoggedIn, "")
 		return
 	}
 
@@ -35,7 +35,7 @@ func (c *AccountManagementController) Me(w http.ResponseWriter, r *http.Request)
 		accessToken.AccountID,
 	)
 	if err != nil {
-		errs.AppErrToClientResponseWithLog(w, err, "", logger)
+		errspkg.AppErrToClientResponseWithLog(w, err, "", logger)
 		return
 	}
 

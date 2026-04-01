@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/koubae/game-hangar/internal/errs"
 	"github.com/koubae/game-hangar/internal/identity/account"
+	"github.com/koubae/game-hangar/pkg/errspkg"
 	"github.com/koubae/game-hangar/tests/integration"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -38,7 +38,7 @@ func TestAccountRepository_CreateAccount(t *testing.T) {
 				Username: username1,
 				Email:    &email1,
 			},
-			errReturned: errs.ResourceDuplicate,
+			errReturned: errspkg.ResourceDuplicate,
 		},
 		{
 			id: "account-created-email-can-be-null",
@@ -113,7 +113,7 @@ func TestAccountRepository_GetAccount(t *testing.T) {
 			id:          "record-is-not-found",
 			accountID:   uuid.NewString(),
 			expected:    nil,
-			errReturned: errs.ResourceNotFound,
+			errReturned: errspkg.ResourceNotFound,
 		},
 	}
 	for _, tt := range tests {

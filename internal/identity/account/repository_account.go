@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/koubae/game-hangar/internal/errs"
 	"github.com/koubae/game-hangar/pkg/database"
+	"github.com/koubae/game-hangar/pkg/errspkg"
 )
 
 type IAccountRepository interface {
@@ -61,7 +61,7 @@ func (r *AccountRepository) CreateAccount(
 	).
 		Scan(&id)
 	if err != nil {
-		return nil, errs.DBErrToAppErr(db.MapDBErrToDomainErr(err), "account")
+		return nil, errspkg.DBErrToAppErr(db.MapDBErrToDomainErr(err), "account")
 	}
 
 	return &id, nil
@@ -93,7 +93,7 @@ func (r *AccountRepository) GetAccount(
 		&m.Created,
 		&m.Updated,
 	); err != nil {
-		return nil, errs.DBErrToAppErr(db.MapDBErrToDomainErr(err), "account")
+		return nil, errspkg.DBErrToAppErr(db.MapDBErrToDomainErr(err), "account")
 	}
 
 	return &m, nil

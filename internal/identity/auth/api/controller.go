@@ -4,10 +4,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/koubae/game-hangar/internal/errs"
 	"github.com/koubae/game-hangar/internal/identity/account"
 	"github.com/koubae/game-hangar/internal/identity/auth"
 	"github.com/koubae/game-hangar/internal/identity/container"
+	"github.com/koubae/game-hangar/pkg/errspkg"
 	"github.com/koubae/game-hangar/pkg/web"
 	"go.uber.org/zap"
 )
@@ -30,7 +30,7 @@ func (c *AuthController) RegisterByUsername(
 	w http.ResponseWriter,
 	r *http.Request,
 ) {
-	payload, ok := errs.LoadAndValidateJSON[account.DTOCreateAccount](w, r)
+	payload, ok := errspkg.LoadAndValidateJSON[account.DTOCreateAccount](w, r)
 	if !ok {
 		return
 	}
@@ -46,13 +46,13 @@ func (c *AuthController) RegisterByUsername(
 	secretService := c.container.SecretsService()
 	err := secretService.ValidatePasswordDefaultRules(payload.Password)
 	if err != nil {
-		errs.AppErrToClientResponseWithLog(w, err, "", logger)
+		errspkg.AppErrToClientResponseWithLog(w, err, "", logger)
 		return
 	}
 
 	secret, err := secretService.HashSecret(payload.Password)
 	if err != nil {
-		errs.AppErrToClientResponseWithLog(w, err, "hash secret error on registration by username", logger)
+		errspkg.AppErrToClientResponseWithLog(w, err, "hash secret error on registration by username", logger)
 		return
 	}
 
@@ -63,7 +63,7 @@ func (c *AuthController) RegisterByUsername(
 		secret,
 	)
 	if err != nil {
-		errs.AppErrToClientResponseWithLog(w, err, "could not create account: ", logger)
+		errspkg.AppErrToClientResponseWithLog(w, err, "could not create account: ", logger)
 		return
 	}
 
@@ -79,7 +79,7 @@ func (c *AuthController) LoginByUsername(
 	w http.ResponseWriter,
 	r *http.Request,
 ) {
-	payload, ok := errs.LoadAndValidateJSON[account.DTOLoginByUsername](w, r)
+	payload, ok := errspkg.LoadAndValidateJSON[account.DTOLoginByUsername](w, r)
 	if !ok {
 		return
 	}
@@ -94,21 +94,21 @@ func (c *AuthController) LoginByUsername(
 
 	provider, err := c.container.ProviderService(nil).GetEnabledProvider(ctx, payload.Source, string(auth.Username))
 	if err != nil {
-		errs.AppErrToClientResponseWithLog(w, errs.Wrap(errs.AuthLoginFailed, err), "", logger)
+		errspkg.AppErrToClientResponseWithLog(w, errspkg.Wrap(errspkg.AuthLoginFailed, err), "", logger)
 		return
 	}
 
 	credential, err := c.container.CredentialService(nil).GetCredentialByProvider(ctx, provider.ID, payload.Username)
 	if err != nil {
-		errs.AppErrToClientResponseWithLog(w, errs.Wrap(errs.AuthLoginFailed, err), "credential ", logger)
+		errspkg.AppErrToClientResponseWithLog(w, errspkg.Wrap(errspkg.AuthLoginFailed, err), "credential ", logger)
 		return
 	}
 
 	secretService := c.container.SecretsService()
 	if !secretService.VerifySecret(credential.Secret, payload.Password) {
-		errs.AppErrToClientResponseWithLog(
+		errspkg.AppErrToClientResponseWithLog(
 			w,
-			errs.Wrap(errs.AuthLoginFailed, errs.AuthLoginPasswordMismatch),
+			errspkg.Wrap(errspkg.AuthLoginFailed, errspkg.AuthLoginPasswordMismatch),
 			"credential ",
 			logger,
 		)

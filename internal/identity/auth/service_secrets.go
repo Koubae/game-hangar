@@ -6,9 +6,9 @@ import (
 	"unicode/utf8"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/koubae/game-hangar/internal/errs"
 	"github.com/koubae/game-hangar/pkg/authpkg"
 	"github.com/koubae/game-hangar/pkg/common"
+	"github.com/koubae/game-hangar/pkg/errspkg"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -33,7 +33,7 @@ func NewSecretsService() *SecretsService {
 func (s *SecretsService) HashSecret(secret string) (string, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(secret), bcrypt.DefaultCost)
 	if err != nil {
-		return "", errs.Wrap(errs.AuthSecretHash, err)
+		return "", errspkg.Wrap(errspkg.AuthSecretHash, err)
 	}
 
 	return string(hash), nil
@@ -153,7 +153,7 @@ func (e *PasswordValidationErrList) Error() string {
 func (s *SecretsService) ValidatePasswordDefaultRules(password string) error {
 	err := s.ValidatePassword(password, *passwordRules)
 	if err != nil {
-		return errs.Wrap(errs.AuthPasswordValidation, err)
+		return errspkg.Wrap(errspkg.AuthPasswordValidation, err)
 	}
 	return nil
 }

@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/koubae/game-hangar/internal/errs"
 	auth2 "github.com/koubae/game-hangar/internal/identity/auth"
+	"github.com/koubae/game-hangar/pkg/errspkg"
 	"github.com/koubae/game-hangar/tests/integration"
 	"github.com/stretchr/testify/assert"
 )
@@ -204,14 +204,14 @@ func TestProviderRepository_GetProviderNotFound(t *testing.T) {
 			source:      "global",
 			_type:       "not-exists",
 			expected:    nil,
-			errReturned: errs.ResourceNotFound,
+			errReturned: errspkg.ResourceNotFound,
 		},
 		{
 			id:          "not-found-because-source-not-exists",
 			source:      "not-exists",
 			_type:       "username",
 			expected:    nil,
-			errReturned: errs.ResourceNotFound,
+			errReturned: errspkg.ResourceNotFound,
 		},
 	}
 

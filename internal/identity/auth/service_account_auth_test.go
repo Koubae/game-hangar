@@ -8,6 +8,7 @@ import (
 	"github.com/koubae/game-hangar/internal/identity/account"
 	"github.com/koubae/game-hangar/internal/identity/auth"
 	"github.com/koubae/game-hangar/internal/testunit"
+	"github.com/koubae/game-hangar/pkg/errspkg"
 	"github.com/koubae/game-hangar/tests/testobj"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -42,7 +43,7 @@ func TestAccountAuthService_RegisterByUsernameProviderErr(t *testing.T) {
 						"provider-does-not-exists",
 						"username",
 					).
-					Return(nil, errs.ResourceNotFound).
+					Return(nil, errspkg.ResourceNotFound).
 					Once()
 			},
 			expected:    nil,
@@ -156,11 +157,11 @@ func TestAccountAuthService_RegisterByUsernameCredentialErr(t *testing.T) {
 						int64(1),
 						"test-cred",
 					).
-					Return(nil, errs.DBError).
+					Return(nil, errspkg.DBError).
 					Once()
 			},
 			expected:    nil,
-			errExpected: errs.DBError,
+			errExpected: errspkg.DBError,
 		},
 	}
 
@@ -241,12 +242,12 @@ func TestAccountAuthService_RegisterByUsernameAccountAndCredentialCreation(
 							Email:    nil,
 						},
 					).
-					Return(nil, errs.DBError).
+					Return(nil, errspkg.DBError).
 					Once()
 			},
 			setupMockCred: nil,
 			expected:      nil,
-			errExpected:   errs.DBError,
+			errExpected:   errspkg.DBError,
 		},
 		{
 			id:         "account-credential-created",
@@ -310,11 +311,11 @@ func TestAccountAuthService_RegisterByUsernameAccountAndCredentialCreation(
 						mock.Anything,
 						mock.Anything,
 					).
-					Return(nil, errs.DBError).
+					Return(nil, errspkg.DBError).
 					Once()
 			},
 			expected:    nil,
-			errExpected: errs.DBError,
+			errExpected: errspkg.DBError,
 		},
 		{
 			id:         "account-credential-created",
@@ -372,7 +373,7 @@ func TestAccountAuthService_RegisterByUsernameAccountAndCredentialCreation(
 		int64(1),
 		"test-cred",
 	).
-		Return(nil, errs.ResourceNotFound)
+		Return(nil, errspkg.ResourceNotFound)
 
 	ctx := context.Background()
 	for _, tt := range tests {

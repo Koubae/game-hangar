@@ -1,12 +1,12 @@
-package errs_test
+package errspkg_test
 
 import (
 	"errors"
 	"fmt"
 	"testing"
 
-	"github.com/koubae/game-hangar/internal/errs"
 	"github.com/koubae/game-hangar/pkg/database"
+	"github.com/koubae/game-hangar/pkg/errspkg"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -16,13 +16,13 @@ func TestAppError_AsAppError_WhenUnmappedWrapsOriginalError(t *testing.T) {
 
 	errCustom := errors.New("custom error")
 
-	appError := errs.AsAppError(errCustom)
+	appError := errspkg.AsAppError(errCustom)
 
-	assert.IsType(t, &errs.AppError{}, appError)
+	assert.IsType(t, &errspkg.AppError{}, appError)
 	assert.Equal(t, "unknown error", appError.Msg)
 	assert.True(t, appError.IsUnmapped())
 
-	assert.True(t, errors.Is(appError, errs.Unmapped))
+	assert.True(t, errors.Is(appError, errspkg.Unmapped))
 	assert.True(t, errors.Is(appError, errCustom))
 }
 
@@ -30,12 +30,12 @@ func TestAppError_MultipleWrappedErrorsContainChainedErrorContext(t *testing.T) 
 	t.Parallel()
 
 	serviceErr := errors.New("service-a-error")
-	appError := &errs.AppError{
+	appError := &errspkg.AppError{
 		Msg: "service-a-error",
 		Err: errors.Join(
-			serviceErr, &errs.AppError{
+			serviceErr, &errspkg.AppError{
 				Msg: "repository-error",
-				Err: &errs.AppError{
+				Err: &errspkg.AppError{
 					Msg: "record not found",
 					Err: database.ErrNotFound,
 				},
@@ -66,7 +66,7 @@ func TestAppError_ErrorWrapChaining(t *testing.T) {
 		"unmapped": {
 			err:        errors.New("unknown-error"),
 			switchCase: 0,
-			expected:   []error{errs.Unmapped},
+			expected:   []error{errspkg.Unmapped},
 		},
 		"lvl-1": {
 			err:        errLevel1,
@@ -85,7 +85,7 @@ func TestAppError_ErrorWrapChaining(t *testing.T) {
 			id, func(t *testing.T) {
 				t.Parallel()
 
-				err := errs.AsAppError(tt.err)
+				err := errspkg.AsAppError(tt.err)
 
 				switch tt.switchCase {
 				case 1:
@@ -97,7 +97,7 @@ func TestAppError_ErrorWrapChaining(t *testing.T) {
 				case 4:
 					require.ErrorAs(t, err, &errLevel4)
 				default:
-					require.ErrorAs(t, err, &errs.Unmapped)
+					require.ErrorAs(t, err, &errspkg.Unmapped)
 				}
 
 				for _, errExpected := range tt.expected {
@@ -133,19 +133,19 @@ func TestAppError_DBErrToAppErr(t *testing.T) {
 	}{
 		"unknown-db-err": {
 			err:      errors.New("unknown-error"),
-			expected: errs.DBError,
+			expected: errspkg.DBError,
 		},
 		"open-transaction-error": {
 			err:      &database.ErrOpenTransaction{Err: errors.New("open-transaction-error")},
-			expected: errs.DBError,
+			expected: errspkg.DBError,
 		},
 		"duplicate-error": {
 			err:      &database.ErrDuplicate{Err: errors.New("duplicate-error")},
-			expected: errs.ResourceDuplicate,
+			expected: errspkg.ResourceDuplicate,
 		},
 		"not-found-error": {
 			err:      database.ErrNotFound,
-			expected: errs.ResourceNotFound,
+			expected: errspkg.ResourceNotFound,
 		},
 	}
 
@@ -154,9 +154,9 @@ func TestAppError_DBErrToAppErr(t *testing.T) {
 			id, func(t *testing.T) {
 				t.Parallel()
 
-				err := errs.DBErrToAppErr(tt.err, "test")
+				err := errspkg.DBErrToAppErr(tt.err, "test")
 
-				assert.IsType(t, &errs.AppError{}, err)
+				assert.IsType(t, &errspkg.AppError{}, err)
 				assert.False(t, err.IsUnmapped())
 				assert.ErrorAs(t, err, &tt.expected)
 			},
@@ -173,12 +173,12 @@ func TestAppError_IsServerErr_IsClientErr(t *testing.T) {
 		isClientErr bool
 	}{
 		"is-server-err-1": {
-			err:         errs.ServerErr,
+			err:         errspkg.ServerErr,
 			isServerErr: true,
 			isClientErr: false,
 		},
 		"is-server-err-2": {
-			err:         errs.Unmapped,
+			err:         errspkg.Unmapped,
 			isServerErr: true,
 			isClientErr: false,
 		},
@@ -189,12 +189,12 @@ func TestAppError_IsServerErr_IsClientErr(t *testing.T) {
 			id, func(t *testing.T) {
 				t.Parallel()
 
-				err := errs.AsAppError(tt.err)
+				err := errspkg.AsAppError(tt.err)
 
 				isServerErr := err.IsServerErr()
 				isClientErr := err.IsClientErr()
 
-				assert.IsType(t, &errs.AppError{}, err)
+				assert.IsType(t, &errspkg.AppError{}, err)
 				assert.Equal(t, tt.isServerErr, isServerErr)
 				assert.Equal(t, tt.isClientErr, isClientErr)
 			},
@@ -206,60 +206,51 @@ func TestAppError_GetDefaultCode(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
-		appErr   *errs.AppError
+		appErr   *errspkg.AppError
 		expected int
 	}{
 		"default-when-code-is-500-not-set-nor-client-or-server-err": {
-			appErr:   &errs.AppError{Err: errors.New("unknown-error")},
+			appErr:   &errspkg.AppError{Err: errors.New("unknown-error")},
 			expected: 500,
 		},
 		"default-when-code-is-500-when-is-server-err": {
-			appErr:   &errs.AppError{Err: errs.ServerErr, Msg: "some-server-error"},
+			appErr:   &errspkg.AppError{Err: errspkg.ServerErr, Msg: "some-server-error"},
 			expected: 500,
 		},
 		"default-when-code-is-400-when-is-client-err": {
-			appErr:   &errs.AppError{Err: errs.ClientErr, Msg: "some-client-error"},
+			appErr:   &errspkg.AppError{Err: errspkg.ClientErr, Msg: "some-client-error"},
 			expected: 400,
 		},
 
 		"ServerErr": {
-			appErr:   errs.ServerErr,
+			appErr:   errspkg.ServerErr,
 			expected: 500,
 		},
 		"ClientErr": {
-			appErr:   errs.ClientErr,
+			appErr:   errspkg.ClientErr,
 			expected: 400,
 		},
 		"Unmapped": {
-			appErr:   errs.Unmapped,
+			appErr:   errspkg.Unmapped,
 			expected: 500,
 		},
 
 		"DBError": {
-			appErr:   errs.DBError,
+			appErr:   errspkg.DBError,
 			expected: 503,
 		},
 		"ResourceNotFound": {
-			appErr:   errs.ResourceNotFound,
+			appErr:   errspkg.ResourceNotFound,
 			expected: 404,
 		},
 		"ResourceDuplicate": {
-			appErr:   errs.ResourceDuplicate,
+			appErr:   errspkg.ResourceDuplicate,
 			expected: 409,
 		},
 
 		"AuthSecretHash": {
-			appErr:   errs.AuthSecretHash,
+			appErr:   errspkg.AuthSecretHash,
 			expected: 500,
-		},
-		"ProviderNotFound": {
-			appErr:   errs.ProviderNotFound,
-			expected: 404,
-		},
-
-		"ProviderDisabled": {
-			appErr:   errs.ProviderDisabled,
-			expected: 403,
 		},
 	}
 
@@ -269,7 +260,7 @@ func TestAppError_GetDefaultCode(t *testing.T) {
 				t.Parallel()
 
 				code := tt.appErr.GetDefaultCode()
-				assert.IsType(t, &errs.AppError{}, tt.appErr)
+				assert.IsType(t, &errspkg.AppError{}, tt.appErr)
 				assert.Equal(t, tt.expected, code)
 			},
 		)

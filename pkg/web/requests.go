@@ -8,12 +8,7 @@ import (
 	"github.com/koubae/game-hangar/pkg/common"
 )
 
-// Validator interface for validating a Request Body Payload
-type Validator interface {
-	Validate() error
-}
-
-func LoadJsonBody[T Validator](w http.ResponseWriter, r *http.Request) (*T, bool) {
+func LoadJsonBody[T any](w http.ResponseWriter, r *http.Request) (*T, bool) {
 	var payload T
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		WriteBusinessErrorResponse(

@@ -3,7 +3,7 @@ package account
 import (
 	"time"
 
-	"github.com/koubae/game-hangar/internal/errs"
+	"github.com/koubae/game-hangar/pkg/errspkg"
 )
 
 type DTOAccount struct {
@@ -38,7 +38,7 @@ type DTOCreateAccount struct {
 }
 
 func (dto DTOCreateAccount) Validate() error {
-	err := errs.DTOSchemaValidation(dto)
+	err := errspkg.DTOSchemaValidation(dto)
 	if err != nil {
 		return err
 	}
@@ -52,7 +52,7 @@ type DTOLoginByUsername struct {
 }
 
 func (dto DTOLoginByUsername) Validate() error {
-	err := errs.DTOSchemaValidation(dto)
+	err := errspkg.DTOSchemaValidation(dto)
 	if err != nil {
 		return err
 	}

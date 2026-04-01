@@ -11,6 +11,7 @@ import (
 	"github.com/koubae/game-hangar/internal/errs"
 	"github.com/koubae/game-hangar/internal/identity/auth"
 	"github.com/koubae/game-hangar/internal/testunit"
+	"github.com/koubae/game-hangar/pkg/errspkg"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -22,7 +23,10 @@ func TestAuthController_RegisterByUsername(t *testing.T) {
 	handler := *handlerPtr
 
 	mocker.MockGetDefaultUsernameProvider()
-	mocker.MockGetCredentialByProvider(testunit.ProviderUsernameID, testunit.UsernameTest01, nil, errs.ResourceNotFound)
+	mocker.MockGetCredentialByProvider(
+		testunit.ProviderUsernameID, testunit.UsernameTest01, nil,
+		errspkg.ResourceNotFound,
+	)
 	mocker.MockCreateAccountCredential(testunit.CredIDTest01, nil)
 	mocker.MockCreateAccount(testunit.UsernameTest01, nil, testunit.AccountIDTest01Str, nil)
 
@@ -62,7 +66,10 @@ func TestAuthController_RegisterByUsername_ErrOnInValidPassword(t *testing.T) {
 	handler := *handlerPtr
 
 	mocker.MockGetDefaultUsernameProvider()
-	mocker.MockGetCredentialByProvider(testunit.ProviderUsernameID, testunit.UsernameTest01, nil, errs.ResourceNotFound)
+	mocker.MockGetCredentialByProvider(
+		testunit.ProviderUsernameID, testunit.UsernameTest01, nil,
+		errspkg.ResourceNotFound,
+	)
 	mocker.MockCreateAccountCredential(testunit.CredIDTest01, nil)
 	mocker.MockCreateAccount(testunit.UsernameTest01, nil, testunit.AccountIDTest01Str, nil)
 
@@ -96,7 +103,7 @@ func TestAuthController_RegisterByUsername_ErrOnInValidUsername(t *testing.T) {
 	username := "!invalid-username"
 
 	mocker.MockGetDefaultUsernameProvider()
-	mocker.MockGetCredentialByProvider(testunit.ProviderUsernameID, username, nil, errs.ResourceNotFound)
+	mocker.MockGetCredentialByProvider(testunit.ProviderUsernameID, username, nil, errspkg.ResourceNotFound)
 	mocker.MockCreateAccountCredential(testunit.CredIDTest01, nil)
 	mocker.MockCreateAccount(username, nil, testunit.AccountIDTest01Str, nil)
 
