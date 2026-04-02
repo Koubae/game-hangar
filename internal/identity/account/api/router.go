@@ -37,5 +37,9 @@ func RouterRegister(v1 *http.ServeMux, c di.Container) {
 		"",
 		loggedAdminMiddleware,
 	)
-	accountBackofficeLoggedIn.HandleFunc("GET /{id}", authController.GetAccount)
+
+	accountBackofficeLoggedIn.HandleFunc(
+		"GET /{id}",
+		authpkg.Protected("account", authpkg.READ, authController.GetAccount),
+	)
 }

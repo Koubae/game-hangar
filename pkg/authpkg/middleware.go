@@ -18,12 +18,31 @@ type JWTSecret interface {
 }
 
 type Middleware func(http.Handler) http.Handler
-type contextKey string
 
-const (
-	ContextKeyPermissions contextKey = "permissions"
-	ContextKeyAccessToken contextKey = "access_token"
+type (
+	contextKeyPermissions = struct{}
+	contextKeyAccessToken = struct{}
 )
+
+func Protected(resource string, action Action, next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+
+		service := common.AppID
+		permissions := GetPermissionsOrDefault(ctx)
+		if !permissions.IsActionGranted(service, resource, action) {
+			web.WriteBusinessErrorResponse(
+				w, &common.ClientResponseError{
+					HTTPCode: http.StatusForbidden,
+					Message:  fmt.Sprintf("user does not have permission to %s %s", action, resource),
+				},
+			)
+			return
+		}
+
+		next(w, r)
+	}
+}
 
 func NewJWTMiddleware() func(http.Handler) http.Handler {
 	secret := GetPublicKey()
@@ -66,8 +85,8 @@ func JWTMiddleware[S JWTSecret](method jwt.SigningMethod, secret S, admin bool) 
 					return
 				}
 
-				ctx := context.WithValue(r.Context(), ContextKeyPermissions, accessToken.Permissions)
-				ctx = context.WithValue(ctx, ContextKeyAccessToken, accessToken)
+				ctx := context.WithValue(r.Context(), contextKeyPermissions{}, accessToken.Permissions)
+				ctx = context.WithValue(ctx, contextKeyAccessToken{}, accessToken)
 
 				next.ServeHTTP(w, r.WithContext(ctx))
 			},

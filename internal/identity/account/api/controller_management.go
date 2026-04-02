@@ -1,7 +1,6 @@
 package api
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -10,7 +9,6 @@ import (
 	"github.com/koubae/game-hangar/pkg/authpkg"
 	"github.com/koubae/game-hangar/pkg/errspkg"
 	"github.com/koubae/game-hangar/pkg/web"
-	"go.uber.org/zap"
 )
 
 type AccountManagementController struct {
@@ -58,26 +56,9 @@ func (c *AccountManagementController) GetAccount(w http.ResponseWriter, r *http.
 	}
 
 	ctx := r.Context()
-	accessToken, ok := authpkg.GetAccessToken(ctx)
-	if !ok {
-		errspkg.AppErrToClientResponse(w, errspkg.AuthNotLoggedIn, "")
-		return
-	}
-
-	logger := c.container.Logger()
-
-	// TODO: rem -- dev
-	permissions := authpkg.GetPermissionsOrDefault(ctx)
-	logger.Info("permissions", zap.String("permissions", fmt.Sprintf("%v", permissions)))
-	logger.Info("access_token issuer", zap.String("issuer", accessToken.Issuer))
-	// TODO: rem -- dev
-
-	_account, err := c.container.AccountManagementService(nil).GetAccount(
-		ctx,
-		accessToken.AccountID,
-	)
+	_account, err := c.container.AccountManagementService(nil).GetAccount(ctx, id)
 	if err != nil {
-		errspkg.AppErrToClientResponseWithLog(w, err, "", logger)
+		errspkg.AppErrToClientResponseWithLog(w, err, "", c.container.Logger())
 		return
 	}
 
