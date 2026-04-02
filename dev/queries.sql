@@ -23,3 +23,16 @@ FROM admin_account admin
          JOIN permissions perm ON grants.permission_id = perm.id
 WHERE account_id = (SELECT id FROM account WHERE username = 'manager');
 
+
+SELECT perm.*
+FROM admin_account admin
+         JOIN account_permissions grants ON admin.id = grants.admin_account_id
+         JOIN permissions perm ON grants.permission_id = perm.id
+WHERE account_id = (SELECT id FROM account WHERE username = 'root');
+
+
+SELECT perm.*
+FROM admin_account admin
+         JOIN account_permissions grants ON admin.id = grants.admin_account_id
+         JOIN permissions perm ON grants.permission_id = perm.id
+WHERE account_id = (SELECT id FROM account WHERE username = 'employee');

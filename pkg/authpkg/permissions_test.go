@@ -723,6 +723,167 @@ func TestPermissions_Differance(t *testing.T) {
 	}
 }
 
+func TestPermissions_Differance_Wildcards(t *testing.T) {
+	tests := []struct {
+		name        string
+		p           authpkg.Permissions
+		other       authpkg.Permissions
+		wantDiff    authpkg.Permissions
+		wantMissing []string
+	}{
+		{
+			name: "permission wildcard grants any action in same service and resource",
+			p: authpkg.Permissions{
+				"identity": {
+					"account": []authpkg.Action{"*"},
+				},
+			},
+			other: authpkg.Permissions{
+				"identity": {
+					"account": []authpkg.Action{"read"},
+				},
+			},
+			wantDiff: authpkg.Permissions{
+				"identity": {
+					"account": []authpkg.Action{"read"},
+				},
+			},
+			wantMissing: []string{},
+		},
+		{
+			name: "permission wildcard grants any resource in same service for requested action",
+			p: authpkg.Permissions{
+				"identity": {
+					"*": []authpkg.Action{"read"},
+				},
+			},
+			other: authpkg.Permissions{
+				"identity": {
+					"account": []authpkg.Action{"read"},
+					"auth":    []authpkg.Action{"read"},
+				},
+			},
+			wantDiff: authpkg.Permissions{
+				"identity": {
+					"account": []authpkg.Action{"read"},
+					"auth":    []authpkg.Action{"read"},
+				},
+			},
+			wantMissing: []string{},
+		},
+		{
+			name: "permission wildcard grants whole service",
+			p: authpkg.Permissions{
+				"*": {
+					"*": []authpkg.Action{"*"},
+				},
+			},
+			other: authpkg.Permissions{
+				"identity": {
+					"account": []authpkg.Action{"write"},
+				},
+			},
+			wantDiff: authpkg.Permissions{
+				"identity": {
+					"account": []authpkg.Action{"write"},
+				},
+			},
+			wantMissing: []string{},
+		},
+		{
+			name: "requested wildcard returns all granted actions for same resource",
+			p: authpkg.Permissions{
+				"identity": {
+					"account": []authpkg.Action{"write", "read"},
+				},
+			},
+			other: authpkg.Permissions{
+				"identity": {
+					"account": []authpkg.Action{"*"},
+				},
+			},
+			wantDiff: authpkg.Permissions{
+				"identity": {
+					"account": []authpkg.Action{"write", "read"},
+				},
+			},
+			wantMissing: []string{},
+		},
+		{
+			name: "requested wildcard returns all granted read actions across wildcard service/resource",
+			p: authpkg.Permissions{
+				"identity": {
+					"account": []authpkg.Action{"write", "read"},
+					"auth":    []authpkg.Action{"read"},
+				},
+			},
+			other: authpkg.Permissions{
+				"*": {
+					"*": []authpkg.Action{"read"},
+				},
+			},
+			wantDiff: authpkg.Permissions{
+				"identity": {
+					"account": []authpkg.Action{"read"},
+					"auth":    []authpkg.Action{"read"},
+				},
+			},
+			wantMissing: []string{},
+		},
+		{
+			name: "requested wildcard on service and resource returns all granted actions",
+			p: authpkg.Permissions{
+				"identity": {
+					"account": []authpkg.Action{"write", "read"},
+					"auth":    []authpkg.Action{"read"},
+				},
+			},
+			other: authpkg.Permissions{
+				"*": {
+					"*": []authpkg.Action{"*"},
+				},
+			},
+			wantDiff: authpkg.Permissions{
+				"identity": {
+					"account": []authpkg.Action{"write", "read"},
+					"auth":    []authpkg.Action{"read"},
+				},
+			},
+			wantMissing: []string{},
+		},
+		{
+			name: "partial match with missing action",
+			p: authpkg.Permissions{
+				"identity": {
+					"account": []authpkg.Action{"read"},
+				},
+			},
+			other: authpkg.Permissions{
+				"identity": {
+					"account": []authpkg.Action{"read", "write"},
+				},
+			},
+			wantDiff: authpkg.Permissions{
+				"identity": {
+					"account": []authpkg.Action{"read"},
+				},
+			},
+			wantMissing: []string{"identity:account:write"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(
+			tt.name, func(t *testing.T) {
+				gotDiff, gotMissing := tt.p.Differance(tt.other)
+
+				assert.Equal(t, tt.wantDiff, gotDiff)
+				assert.ElementsMatch(t, tt.wantMissing, gotMissing)
+			},
+		)
+	}
+}
+
 func TestPermissions_Scope(t *testing.T) {
 	tests := []struct {
 		name string

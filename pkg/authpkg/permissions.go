@@ -247,6 +247,19 @@ func (p Permissions) Scope() string {
 	return strings.Join(parts, "|")
 }
 
+// Differance returns the difference between two permissions.
+// The first return value is the permissions that are missing from the second.
+// The second return value is the permissions that are present in the first but not in the second.
+//
+// The difference is calculated by checking if the requested permissions are present in the granted permissions.
+// If the requested permission is a wildcard, it is granted if ANY of the granted permissions match.
+// If the requested permission is not a wildcard, it is granted if ANY of the granted permissions match and the requested permission is also granted.
+//
+// For example, if the requested permissions are:
+//   - service:resource:read,write
+// TODO: At some point must check this function (and all other one that are being called ) since it was created using
+// AI late at evening without checking too much. It seems it works but there may be some bugs as well as some
+// inefficiencies. It is recommended to review and test thoroughly before using in production.
 func (p Permissions) Differance(other Permissions) (Permissions, []string) {
 	missing := make([]string, 0)
 	if p == nil || other == nil {
@@ -254,45 +267,192 @@ func (p Permissions) Differance(other Permissions) (Permissions, []string) {
 	}
 
 	diff := make(Permissions)
-	for otherService, otherResources := range other {
-		resources, ok := p[otherService]
-		if !ok {
-			for otherResource, otherActions := range otherResources {
-				for _, action := range otherActions {
-					missing = append(missing, fmt.Sprintf("%s:%s:%s", otherService, otherResource, action))
+
+	for requestedService, requestedResources := range other {
+		servicesToCheck := make([]string, 0)
+		if requestedService == "*" {
+			for s := range p {
+				servicesToCheck = append(servicesToCheck, s)
+			}
+		} else {
+			if _, ok := p[requestedService]; ok {
+				servicesToCheck = append(servicesToCheck, requestedService)
+			}
+			if _, ok := p["*"]; ok {
+				servicesToCheck = append(servicesToCheck, "*")
+			}
+		}
+
+		if len(servicesToCheck) == 0 {
+			for requestedResource, requestedActions := range requestedResources {
+				for _, requestedAction := range requestedActions {
+					missing = append(
+						missing,
+						fmt.Sprintf("%s:%s:%s", requestedService, requestedResource, requestedAction),
+					)
 				}
 			}
 			continue
 		}
 
-		for otherResource, otherActions := range otherResources {
-			actions, ok := resources[otherResource]
-			if !ok {
-				for _, action := range otherActions {
-					missing = append(missing, fmt.Sprintf("%s:%s:%s", otherService, otherResource, action))
+		for requestedResource, requestedActions := range requestedResources {
+			matchedAtLeastOneResource := false
+
+			for _, grantedService := range servicesToCheck {
+				grantedResources := p[grantedService]
+
+				// Determine which resources to check for this granted service
+				resourcesToCheck := make([]string, 0)
+				if requestedResource == "*" {
+					for r := range grantedResources {
+						resourcesToCheck = append(resourcesToCheck, r)
+					}
+				} else {
+					if _, ok := grantedResources[requestedResource]; ok {
+						resourcesToCheck = append(resourcesToCheck, requestedResource)
+					}
+					if _, ok := grantedResources["*"]; ok {
+						resourcesToCheck = append(resourcesToCheck, "*")
+					}
 				}
-				continue
+
+				for _, grantedResource := range resourcesToCheck {
+					grantedActions := grantedResources[grantedResource]
+
+					// Map wildcard service/resource back to requested if necessary
+					targetService := requestedService
+					if targetService == "*" {
+						targetService = grantedService
+					}
+					targetResource := requestedResource
+					if targetResource == "*" {
+						targetResource = grantedResource
+					}
+
+					collectMatchedActions(
+						diff,
+						targetService,
+						targetResource,
+						grantedActions,
+						requestedActions,
+					)
+					matchedAtLeastOneResource = true
+				}
 			}
 
-			matchedActions := make([]Action, 0, len(otherActions))
-			for _, oAction := range otherActions {
-				if slices.Contains(actions, oAction) {
-					matchedActions = append(matchedActions, oAction)
-					continue
+			if !matchedAtLeastOneResource {
+				for _, requestedAction := range requestedActions {
+					missing = append(
+						missing,
+						fmt.Sprintf("%s:%s:%s", requestedService, requestedResource, requestedAction),
+					)
 				}
-				missing = append(missing, fmt.Sprintf("%s:%s:%s", otherService, otherResource, oAction))
-			}
+			} else {
+				// If we did match some resources, we still need to check if all requested actions were satisfied
+				// by at least one of the matched granted resources.
+				for _, requestedAction := range requestedActions {
+					found := false
 
-			if len(matchedActions) > 0 {
-				if diff[otherService] == nil {
-					diff[otherService] = make(map[string][]Action)
+					// A bit inefficient but correct: check if this action is in the diff for ANY of the possible targets
+					// for this requested service/resource.
+					// Actually, it's easier to check if it was ever added to diff for any of the target Service/Resource
+					// that correspond to this request.
+
+					for _, grantedService := range servicesToCheck {
+						targetService := requestedService
+						if targetService == "*" {
+							targetService = grantedService
+						}
+
+						// Check if this service is in diff
+						if resources, ok := diff[targetService]; ok {
+							// Determine target resources for this granted service
+							grantedResources := p[grantedService]
+							for grantedResource := range grantedResources {
+								// Check if this grantedResource matches the requestedResource
+								if requestedResource != "*" && requestedResource != grantedResource && grantedResource != "*" {
+									continue
+								}
+
+								targetResource := requestedResource
+								if targetResource == "*" {
+									targetResource = grantedResource
+								}
+
+								if actions, ok := resources[targetResource]; ok {
+									if requestedAction == "*" {
+										// requested * is special, if we have ANY granted actions here, it's partially or fully satisfied.
+										// But the logic for * is that it should return everything.
+										// If we have any actions, we consider it found.
+										if len(actions) > 0 {
+											found = true
+											break
+										}
+									} else if slices.Contains(actions, requestedAction) {
+										found = true
+										break
+									}
+								}
+							}
+						}
+						if found {
+							break
+						}
+					}
+
+					if !found {
+						missing = append(
+							missing,
+							fmt.Sprintf("%s:%s:%s", requestedService, requestedResource, requestedAction),
+						)
+					}
 				}
-				diff[otherService][otherResource] = matchedActions
 			}
-
 		}
-
 	}
 
 	return diff, missing
+}
+
+func collectMatchedActions(
+	diff Permissions,
+	service string,
+	resource string,
+	grantedActions []Action,
+	requestedActions []Action,
+) {
+	for _, requestedAction := range requestedActions {
+		if requestedAction == "*" {
+			for _, grantedAction := range grantedActions {
+				ensureDiffBucket(diff, service, resource)
+				if !slices.Contains(diff[service][resource], grantedAction) {
+					diff[service][resource] = append(diff[service][resource], grantedAction)
+				}
+			}
+			continue
+		}
+
+		if slices.Contains(grantedActions, requestedAction) || slices.Contains(grantedActions, Action("*")) {
+			ensureDiffBucket(diff, service, resource)
+			if !slices.Contains(diff[service][resource], requestedAction) {
+				diff[service][resource] = append(diff[service][resource], requestedAction)
+			}
+			continue
+		}
+
+		// Only add to missing if it hasn't been found via some other matched granted service/resource
+		// This check is a bit tricky because collectMatchedActions is called multiple times.
+		// For now, let's keep it and see if it duplicates.
+		// Actually, if we have multiple granted matches, one might satisfy it while another doesn't.
+		// We should only mark as missing if NO granted match satisfies it.
+	}
+}
+
+func ensureDiffBucket(diff Permissions, service string, resource string) {
+	if diff[service] == nil {
+		diff[service] = make(map[string][]Action)
+	}
+	if diff[service][resource] == nil {
+		diff[service][resource] = make([]Action, 0)
+	}
 }
