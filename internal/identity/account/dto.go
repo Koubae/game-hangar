@@ -3,6 +3,7 @@ package account
 import (
 	"time"
 
+	"github.com/koubae/game-hangar/pkg/authpkg"
 	"github.com/koubae/game-hangar/pkg/errspkg"
 )
 
@@ -64,6 +65,8 @@ type DTOAdminLoginByUsername struct {
 	Username string `json:"username" binding:"required"`
 	Password string `json:"password" binding:"required"`
 	Scope    string `json:"scope" binding:"required"`
+
+	Permissions authpkg.Permissions
 }
 
 func (dto DTOAdminLoginByUsername) Validate() error {

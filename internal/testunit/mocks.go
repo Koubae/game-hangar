@@ -274,6 +274,21 @@ func (m *Mocker) MockGetCredentialByProvider(
 
 }
 
+func (m *Mocker) MockGetAdminAccountPermissions(
+	accountID string,
+	returnPermissions []*auth.Permission,
+) {
+	repo := m.container.PermissionRepository().(*MockPermissionRepository)
+	repo.On(
+		"GetAdminAccountPermissions",
+		mock.Anything,
+		mock.Anything,
+		accountID,
+	).
+		Return(returnPermissions, nil)
+
+}
+
 func (m *Mocker) MockCreateAccountCredential(returnCredID int64, returnErr error) {
 	repo := m.container.CredentialRepository().(*MockCredentialRepository)
 	repo.On(

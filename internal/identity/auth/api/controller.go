@@ -7,6 +7,7 @@ import (
 	"github.com/koubae/game-hangar/internal/identity/account"
 	"github.com/koubae/game-hangar/internal/identity/auth"
 	"github.com/koubae/game-hangar/internal/identity/container"
+	"github.com/koubae/game-hangar/pkg/authpkg"
 	"github.com/koubae/game-hangar/pkg/errspkg"
 	"github.com/koubae/game-hangar/pkg/web"
 	"go.uber.org/zap"
@@ -158,6 +159,16 @@ func (c *AuthController) LoginAdminByUsername(
 		zap.String("username", string(auth.Username)),
 	)
 
+	permissionsRequested, err := authpkg.ParsePermissions(payload.Scope)
+	if err != nil {
+		logger.Error(
+			"failed to parse permissions requested for admin_account",
+			zap.String("scopeRequested", payload.Scope),
+			zap.Error(err),
+		)
+		errspkg.AppErrToClientResponseWithLog(w, errspkg.Wrap(errspkg.AuthLoginFailed, err), "", logger)
+		return
+	}
 	provider, err := c.container.ProviderService(nil).GetEnabledProvider(ctx, payload.Source, string(auth.Username))
 	if err != nil {
 		errspkg.AppErrToClientResponseWithLog(w, errspkg.Wrap(errspkg.AuthLoginFailed, err), "", logger)
@@ -172,7 +183,7 @@ func (c *AuthController) LoginAdminByUsername(
 	permissions, err := c.container.PermissionService(nil).LoadAdminAccountPermissions(
 		ctx,
 		credential.AccountID.String(),
-		payload.Scope,
+		permissionsRequested,
 	)
 	if err != nil {
 		errspkg.AppErrToClientResponseWithLog(w, errspkg.Wrap(errspkg.AuthLoginFailed, err), "", logger)

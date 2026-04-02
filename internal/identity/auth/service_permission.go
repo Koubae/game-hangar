@@ -28,7 +28,11 @@ func NewPermissionService(db database.DBTX, r IPermissionRepository) *Permission
 	}
 }
 
-func (s *PermissionService) LoadAdminAccountPermissions(ctx context.Context, accountID string, scopeRequested string) (
+func (s *PermissionService) LoadAdminAccountPermissions(
+	ctx context.Context,
+	accountID string,
+	permissionsRequested authpkg.Permissions,
+) (
 	authpkg.Permissions,
 	error,
 ) {
@@ -60,17 +64,6 @@ func (s *PermissionService) LoadAdminAccountPermissions(ctx context.Context, acc
 			"failed to parse permissions for admin_account",
 			zap.String("accountID", accountID),
 			zap.String("scope", scope),
-			zap.Error(err),
-		)
-		return authpkg.PermissionEmpty, errspkg.AuthPermissionsScopeEmpty
-	}
-
-	permissionsRequested, err := authpkg.ParsePermissions(scopeRequested)
-	if err != nil {
-		logger.Error(
-			"failed to parse permissions requested by admin_account",
-			zap.String("accountID", accountID),
-			zap.String("scopeRequested", scopeRequested),
 			zap.Error(err),
 		)
 		return authpkg.PermissionEmpty, errspkg.AuthPermissionsScopeEmpty

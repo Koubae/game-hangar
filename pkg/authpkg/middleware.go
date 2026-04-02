@@ -21,12 +21,6 @@ type Middleware func(http.Handler) http.Handler
 type contextKey string
 
 const (
-	ContextKeySource      contextKey = "source"
-	ContextKeyType        contextKey = "type"
-	ContextKeyAccountID   contextKey = "account_id"
-	ContextKeyCredential  contextKey = "credential"
-	ContextKeyIssuer      contextKey = "issuer"
-	ContextKeyRole        contextKey = "role"
 	ContextKeyPermissions contextKey = "permissions"
 	ContextKeyAccessToken contextKey = "access_token"
 )
@@ -56,28 +50,13 @@ func JWTMiddleware[S JWTSecret](method jwt.SigningMethod, secret S, admin bool) 
 					return
 				}
 
-				logger := common.GetLogger()
-
-				token, err := jwt.Parse(
-					tokenString, func(t *jwt.Token) (interface{}, error) {
-						if t.Method.Alg() != method.Alg() {
-							return nil, fmt.Errorf("unexpected signing method")
-						}
-						return secret, nil
-					},
+				accessToken, err := ParseJWToken[S](
+					method,
+					secret,
+					tokenString,
+					admin,
 				)
-
 				if err != nil {
-					logger.Warn("error parsing token", zap.Error(err))
-					web.WriteBusinessErrorResponse(
-						w, &common.ClientResponseError{
-							HTTPCode: http.StatusUnauthorized,
-							Message:  "invalid token",
-						},
-					)
-					return
-				}
-				if !token.Valid {
 					web.WriteBusinessErrorResponse(
 						w, &common.ClientResponseError{
 							HTTPCode: http.StatusUnauthorized,
@@ -87,134 +66,156 @@ func JWTMiddleware[S JWTSecret](method jwt.SigningMethod, secret S, admin bool) 
 					return
 				}
 
-				claims, ok := token.Claims.(jwt.MapClaims)
-				if !ok {
-					web.WriteBusinessErrorResponse(
-						w, &common.ClientResponseError{
-							HTTPCode: http.StatusUnauthorized,
-							Message:  "invalid token",
-						},
-					)
-					return
-				}
-
-				source, ok := claims["source"].(string)
-				if !ok {
-					web.WriteBusinessErrorResponse(
-						w, &common.ClientResponseError{
-							HTTPCode: http.StatusUnauthorized,
-							Message:  "invalid token",
-						},
-					)
-					return
-				}
-				_type, ok := claims["type"].(string)
-				if !ok {
-					web.WriteBusinessErrorResponse(
-						w, &common.ClientResponseError{
-							HTTPCode: http.StatusUnauthorized,
-							Message:  "invalid token",
-						},
-					)
-					return
-				}
-				accountID, ok := claims["sub"].(string)
-				if !ok {
-					web.WriteBusinessErrorResponse(
-						w, &common.ClientResponseError{
-							HTTPCode: http.StatusUnauthorized,
-							Message:  "invalid token",
-						},
-					)
-					return
-				}
-				issuer, ok := claims["iss"].(string)
-				if !ok {
-					web.WriteBusinessErrorResponse(
-						w, &common.ClientResponseError{
-							HTTPCode: http.StatusUnauthorized,
-							Message:  "invalid token",
-						},
-					)
-					return
-				}
-				role, ok := claims["role"].(string)
-				if !ok {
-					web.WriteBusinessErrorResponse(
-						w, &common.ClientResponseError{
-							HTTPCode: http.StatusUnauthorized,
-							Message:  "invalid token",
-						},
-					)
-					return
-				}
-
-				if admin && role != AdminAccountRole {
-					logger.Warn(
-						"invalid role requested",
-						zap.String("role_required", AdminAccountRole),
-						zap.String("role_requested", role),
-						zap.Any("claims", claims),
-					)
-					web.WriteBusinessErrorResponse(
-						w, &common.ClientResponseError{
-							HTTPCode: http.StatusUnauthorized,
-							Message:  "invalid token",
-						},
-					)
-					return
-				}
-
-				credential, ok := claims["credential"].(string)
-				if !ok {
-					web.WriteBusinessErrorResponse(
-						w, &common.ClientResponseError{
-							HTTPCode: http.StatusUnauthorized,
-							Message:  "invalid token",
-						},
-					)
-					return
-				}
-				scope, ok := claims["scope"].(string)
-				if !ok {
-					scope = ""
-				}
-				permissions, err := ParsePermissions(scope)
-				if err != nil {
-					logger.Error("error parsing scopes", zap.String("scope", scope), zap.Error(err))
-					web.WriteBusinessErrorResponse(
-						w, &common.ClientResponseError{
-							HTTPCode: http.StatusUnauthorized,
-							Message:  "invalid token",
-						},
-					)
-					return
-				}
-
-				accessToken := &AccessToken{
-					Source:      source,
-					Type:        _type,
-					AccountID:   accountID,
-					Credential:  credential,
-					Issuer:      issuer,
-					Role:        role,
-					Permissions: permissions,
-					AccessToken: tokenString,
-				}
-
-				ctx := context.WithValue(r.Context(), ContextKeySource, source)
-				ctx = context.WithValue(ctx, ContextKeyType, _type)
-				ctx = context.WithValue(ctx, ContextKeyAccountID, accountID)
-				ctx = context.WithValue(ctx, ContextKeyCredential, credential)
-				ctx = context.WithValue(ctx, ContextKeyIssuer, issuer)
-				ctx = context.WithValue(ctx, ContextKeyRole, role)
-				ctx = context.WithValue(ctx, ContextKeyPermissions, permissions)
+				ctx := context.WithValue(r.Context(), ContextKeyPermissions, accessToken.Permissions)
 				ctx = context.WithValue(ctx, ContextKeyAccessToken, accessToken)
 
 				next.ServeHTTP(w, r.WithContext(ctx))
 			},
 		)
 	}
+}
+
+func ParseJWToken[S JWTSecret](
+	method jwt.SigningMethod,
+	secret S,
+	tokenString string,
+	admin bool,
+) (*AccessToken, error) {
+	token, err := jwt.Parse(
+		tokenString, func(t *jwt.Token) (interface{}, error) {
+			if t.Method.Alg() != method.Alg() {
+				return nil, fmt.Errorf("unexpected signing method")
+			}
+			return secret, nil
+		},
+	)
+
+	logger := common.GetLogger()
+	if err != nil {
+		logger.Warn("[access_token] error parsing token", zap.Bool("admin", admin), zap.Error(err))
+		return nil, err
+	}
+	if !token.Valid {
+		logger.Warn("[access_token] is not valid", zap.Bool("admin", admin))
+		return nil, err
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		logger.Warn("[access_token] claims are not valid", zap.Bool("admin", admin))
+		return nil, err
+	}
+
+	source, ok := claims["source"].(string)
+	if !ok {
+		logger.Warn(
+			"[access_token] 'source' not found in claims",
+			zap.String("role_required", AdminAccountRole),
+			zap.Bool("admin", admin),
+			zap.Any("claims", claims),
+		)
+		return nil, err
+	}
+	_type, ok := claims["type"].(string)
+	if !ok {
+		logger.Warn(
+			"[access_token] 'type' not found in claims",
+			zap.String("role_required", AdminAccountRole),
+			zap.Bool("admin", admin),
+			zap.Any("claims", claims),
+		)
+		return nil, err
+	}
+	accountID, ok := claims["sub"].(string)
+	if !ok {
+		logger.Warn(
+			"[access_token] 'sub' not found in claims",
+			zap.String("role_required", AdminAccountRole),
+			zap.Bool("admin", admin),
+			zap.Any("claims", claims),
+		)
+		return nil, err
+	}
+	issuer, ok := claims["iss"].(string)
+	if !ok {
+		logger.Warn(
+			"[access_token] 'iss' not found in claims",
+			zap.String("role_required", AdminAccountRole),
+			zap.Bool("admin", admin),
+			zap.Any("claims", claims),
+		)
+		return nil, err
+	}
+	role, ok := claims["role"].(string)
+	if !ok {
+		logger.Warn(
+			"[access_token] 'role' not found in claims",
+			zap.String("role_required", AdminAccountRole),
+			zap.Bool("admin", admin),
+			zap.Any("claims", claims),
+		)
+		return nil, err
+	}
+
+	if admin && role != AdminAccountRole {
+		logger.Warn(
+			"[access_token] invalid role requested",
+			zap.String("role_required", AdminAccountRole),
+			zap.String("role_requested", role),
+			zap.Bool("admin", admin),
+			zap.Any("claims", claims),
+		)
+		return nil, err
+	}
+
+	credential, ok := claims["credential"].(string)
+	if !ok {
+		logger.Warn(
+			"[access_token] 'credential' not found in claims",
+			zap.String("role_required", AdminAccountRole),
+			zap.Bool("admin", admin),
+			zap.Any("claims", claims),
+		)
+		return nil, err
+	}
+	scope, ok := claims["scope"].(string)
+	if !ok {
+		lvl := "debug"
+		if admin {
+			lvl = "warn"
+		}
+		logger.L(
+			lvl,
+			"[access_token] 'scope' not found in claims",
+			zap.String("role_required", AdminAccountRole),
+			zap.Bool("admin", admin),
+			zap.Any("claims", claims),
+		)
+		scope = ""
+	}
+	permissions, err := ParsePermissions(scope)
+	if err != nil {
+		logger.Error(
+			"[access_token] error parsing scopes",
+			zap.String("scope", scope),
+			zap.Bool("admin", admin),
+			zap.Any("claims", claims),
+			zap.Error(err),
+		)
+		return nil, err
+	}
+
+	accessToken := &AccessToken{
+		Source:      source,
+		Type:        _type,
+		AccountID:   accountID,
+		Credential:  credential,
+		Issuer:      issuer,
+		Role:        role,
+		Permissions: permissions,
+		AccessToken: tokenString,
+	}
+	return accessToken, nil
 }
 
 func extractToken(r *http.Request) (string, bool) {

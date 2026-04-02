@@ -52,4 +52,92 @@ var (
 		Created:  testutil.Now,
 		Updated:  testutil.Now,
 	}
+
+	AccountCredentialTest01 = &authModels.AccountCredential{
+		ID:         1,
+		Credential: UsernameTest01,
+		AccountID:  AccountIDTest01,
+		ProviderID: 1,
+		Secret:     StrongPasswordHash,
+	}
+
+	AdminAccountPermissions = []*authModels.Permission{
+		{
+			ID:       1,
+			Service:  "identity",
+			Resource: "auth",
+			Action:   "read",
+			Created:  testutil.Now,
+		},
+		{
+			ID:       2,
+			Service:  "identity",
+			Resource: "auth",
+			Action:   "write",
+			Created:  testutil.Now,
+		},
+		{
+			ID:       3,
+			Service:  "identity",
+			Resource: "auth",
+			Action:   "delete",
+			Created:  testutil.Now,
+		},
+		{
+			ID:       4,
+			Service:  "identity",
+			Resource: "account",
+			Action:   "read",
+			Created:  testutil.Now,
+		},
+		{
+			ID:       5,
+			Service:  "identity",
+			Resource: "account",
+			Action:   "write",
+			Created:  testutil.Now,
+		},
+		{
+			ID:       6,
+			Service:  "identity",
+			Resource: "account",
+			Action:   "delete",
+			Created:  testutil.Now,
+		},
+		{
+			ID:       7,
+			Service:  "storage",
+			Resource: "config",
+			Action:   "read",
+			Created:  testutil.Now,
+		},
+		{
+			ID:       8,
+			Service:  "storage",
+			Resource: "setting",
+			Action:   "read",
+			Created:  testutil.Now,
+		},
+		{
+			ID:       9,
+			Service:  "storage",
+			Resource: "setting",
+			Action:   "write",
+			Created:  testutil.Now,
+		},
+		{
+			ID:       10,
+			Service:  "leaderboard",
+			Resource: "leaderboard",
+			Action:   "read",
+			Created:  testutil.Now,
+		},
+		{
+			ID:       11,
+			Service:  "chat",
+			Resource: "*",
+			Action:   "*",
+			Created:  testutil.Now,
+		},
+	}
 )
