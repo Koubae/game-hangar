@@ -5,6 +5,12 @@ Game Hangar
 
 todo
 
+### Documentation
+
+* [GameHangar -- Documentation](docs/README.MD)
+  * [Identity (Account & Authorization)](docs/identity/README.MD)
+
+
 
 ### QuickStart
 

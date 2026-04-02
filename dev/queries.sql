@@ -1,6 +1,9 @@
 
 
 
+
+select * from permissions;
+
 SELECT id FROM account WHERE username = 'manager';
 SELECT id FROM admin_account WHERE account_id = (SELECT id FROM account WHERE username = 'manager');
 SELECT * FROM admin_account WHERE account_id = (SELECT id FROM account WHERE username = 'manager');

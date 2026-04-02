@@ -7,5 +7,7 @@ todo
 Architecture
 -----------
 
+* **_[Identity](./identity/README.MD)_**
+
 ![gh-architecture-1.png](img/gh-architecture-1.png)
 
