@@ -61,6 +61,27 @@ var (
 		Secret:     StrongPasswordHash,
 	}
 
+	AdminUsernameTest01     = "unit-test-admin-01"
+	AdminAccountIDTest01    = uuid.New()
+	AdminAccountIDTest01Str = AdminAccountIDTest01.String()
+	AdminAccountEmail       = "admin-test@test.com"
+	AdminAccountTest01      = &account.Account{
+		ID:       AdminAccountIDTest01Str,
+		Username: AdminUsernameTest01,
+		Email:    &AdminAccountEmail,
+		Disabled: false,
+		Created:  testutil.Now,
+		Updated:  testutil.Now,
+	}
+
+	AdminAccountCredentialTest01 = &authModels.AccountCredential{
+		ID:         2,
+		Credential: AdminUsernameTest01,
+		AccountID:  AdminAccountIDTest01,
+		ProviderID: 1,
+		Secret:     StrongPasswordHash,
+	}
+
 	AdminAccountPermissions = []*authModels.Permission{
 		{
 			ID:       1,

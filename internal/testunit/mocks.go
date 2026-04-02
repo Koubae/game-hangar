@@ -184,7 +184,7 @@ func (m *Mocker) GenAdminAccessToken(
 	t *testing.T,
 	accountID string,
 	credential string,
-	source string,
+	scope string,
 ) string {
 	t.Helper()
 
@@ -195,7 +195,7 @@ func (m *Mocker) GenAdminAccessToken(
 		"username",
 		accountID,
 		credential,
-		source,
+		scope,
 		expire,
 	)
 	require.NoError(t, err)
@@ -220,11 +220,11 @@ func (m *Mocker) GenAdminAccessTokenAndSetInReq(
 	req *http.Request,
 	accountID string,
 	credential string,
-	source string,
+	scope string,
 ) {
 	t.Helper()
 
-	token := m.GenAdminAccessToken(t, accountID, credential, source)
+	token := m.GenAdminAccessToken(t, accountID, credential, scope)
 	req.Header.Set("Authorization", "Bearer "+token)
 }
 

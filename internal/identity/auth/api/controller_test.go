@@ -266,7 +266,7 @@ func TestAuthController_LoginAdminByUsername(t *testing.T) {
 			providerReturned: testunit.ProviderUsername,
 			providerGetErr:   nil,
 
-			credentialReturned: testunit.AccountCredentialTest01,
+			credentialReturned: testunit.AdminAccountCredentialTest01,
 			credentialGetErr:   nil,
 
 			accountPermissionsReturned: testunit.AdminAccountPermissions,
@@ -281,7 +281,7 @@ func TestAuthController_LoginAdminByUsername(t *testing.T) {
 			providerReturned: testunit.ProviderUsername,
 			providerGetErr:   nil,
 
-			credentialReturned: testunit.AccountCredentialTest01,
+			credentialReturned: testunit.AdminAccountCredentialTest01,
 			credentialGetErr:   nil,
 
 			accountPermissionsReturned: testunit.AdminAccountPermissions,
@@ -296,7 +296,7 @@ func TestAuthController_LoginAdminByUsername(t *testing.T) {
 			providerReturned: testunit.ProviderUsername,
 			providerGetErr:   nil,
 
-			credentialReturned: testunit.AccountCredentialTest01,
+			credentialReturned: testunit.AdminAccountCredentialTest01,
 			credentialGetErr:   nil,
 
 			accountPermissionsReturned: testunit.AdminAccountPermissions,
@@ -311,7 +311,7 @@ func TestAuthController_LoginAdminByUsername(t *testing.T) {
 			providerReturned: testunit.ProviderUsername,
 			providerGetErr:   nil,
 
-			credentialReturned: testunit.AccountCredentialTest01,
+			credentialReturned: testunit.AdminAccountCredentialTest01,
 			credentialGetErr:   nil,
 
 			accountPermissionsReturned: testunit.AdminAccountPermissions,
@@ -326,7 +326,7 @@ func TestAuthController_LoginAdminByUsername(t *testing.T) {
 			providerReturned: testunit.ProviderUsername,
 			providerGetErr:   nil,
 
-			credentialReturned: testunit.AccountCredentialTest01,
+			credentialReturned: testunit.AdminAccountCredentialTest01,
 			credentialGetErr:   nil,
 
 			accountPermissionsReturned: testunit.AdminAccountPermissions,
@@ -341,7 +341,7 @@ func TestAuthController_LoginAdminByUsername(t *testing.T) {
 			providerReturned: testunit.ProviderUsername,
 			providerGetErr:   nil,
 
-			credentialReturned: testunit.AccountCredentialTest01,
+			credentialReturned: testunit.AdminAccountCredentialTest01,
 			credentialGetErr:   nil,
 
 			accountPermissionsReturned: testunit.AdminAccountPermissions,
@@ -357,7 +357,7 @@ func TestAuthController_LoginAdminByUsername(t *testing.T) {
 			providerReturned: testunit.ProviderUsername,
 			providerGetErr:   nil,
 
-			credentialReturned: testunit.AccountCredentialTest01,
+			credentialReturned: testunit.AdminAccountCredentialTest01,
 			credentialGetErr:   nil,
 
 			accountPermissionsReturned: testunit.AdminAccountPermissions,
@@ -418,7 +418,7 @@ func TestAuthController_LoginAdminByUsername(t *testing.T) {
 			providerReturned: testunit.ProviderUsername,
 			providerGetErr:   nil,
 
-			credentialReturned: testunit.AccountCredentialTest01,
+			credentialReturned: testunit.AdminAccountCredentialTest01,
 			credentialGetErr:   nil,
 
 			accountPermissionsReturned: []*auth.Permission{},
@@ -433,7 +433,7 @@ func TestAuthController_LoginAdminByUsername(t *testing.T) {
 			providerReturned: testunit.ProviderUsername,
 			providerGetErr:   nil,
 
-			credentialReturned: testunit.AccountCredentialTest01,
+			credentialReturned: testunit.AdminAccountCredentialTest01,
 			credentialGetErr:   nil,
 
 			accountPermissionsReturned: testunit.AdminAccountPermissions,
@@ -454,11 +454,11 @@ func TestAuthController_LoginAdminByUsername(t *testing.T) {
 				mocker.MockGetProvider("global", "username", tt.providerReturned, tt.providerGetErr)
 				mocker.MockGetCredentialByProvider(
 					testunit.ProviderUsernameID,
-					testunit.UsernameTest01,
+					testunit.AdminUsernameTest01,
 					tt.credentialReturned,
 					tt.credentialGetErr,
 				)
-				mocker.MockGetAdminAccountPermissions(testunit.AccountIDTest01Str, tt.accountPermissionsReturned)
+				mocker.MockGetAdminAccountPermissions(testunit.AdminAccountIDTest01Str, tt.accountPermissionsReturned)
 
 				payload := fmt.Sprintf(
 					`{
@@ -466,7 +466,7 @@ func TestAuthController_LoginAdminByUsername(t *testing.T) {
 					"username": "%s",
 					"password": "%s",
 					"scope": "%s"
-				}`, testunit.UsernameTest01,
+				}`, testunit.AdminUsernameTest01,
 					testunit.StrongPassword,
 					tt.scope,
 				)
