@@ -1,4 +1,7 @@
 
+
+
+
 select * from permissions;
 
 SELECT id FROM account WHERE username = 'manager';
