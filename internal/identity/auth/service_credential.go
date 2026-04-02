@@ -9,6 +9,7 @@ import (
 	"github.com/koubae/game-hangar/internal/errs"
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/database"
+	"github.com/koubae/game-hangar/pkg/errspkg"
 	"go.uber.org/zap"
 )
 
@@ -71,7 +72,7 @@ func (s *CredentialService) CreateCredentialTypeUsername(
 
 	id, err := s.repository.CreateAccountCredential(ctx, s.db, params)
 	if err != nil {
-		if !errors.Is(err, errs.ResourceDuplicate) {
+		if !errors.Is(err, errspkg.ResourceDuplicate) {
 			logger.Error(
 				"[CredentialService] unexpected error while creating new credential",
 				zap.Error(err),
@@ -122,7 +123,7 @@ func (s *CredentialService) getCredentialByProvider(
 		credential,
 	)
 	if err != nil {
-		if !errors.Is(err, errs.ResourceNotFound) {
+		if !errors.Is(err, errspkg.ResourceNotFound) {
 			logger.Error(
 				"[CredentialService] error while getting credential by provider",
 				zap.Int64("providerID", providerID),

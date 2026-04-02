@@ -7,10 +7,10 @@ import (
 	"testing"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/koubae/game-hangar/internal/errs"
 	account2 "github.com/koubae/game-hangar/internal/identity/account"
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/database/postgres"
+	"github.com/koubae/game-hangar/pkg/errspkg"
 	"github.com/koubae/game-hangar/pkg/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -46,7 +46,7 @@ func TestAccountRepository_CreateAccount(t *testing.T) {
 			},
 			expected:    "",
 			errThrown:   testutil.DBMockErrDuplicateKey,
-			errReturned: errs.ResourceDuplicate,
+			errReturned: errspkg.ResourceDuplicate,
 		},
 		{
 			id: "on-db-error-any",
@@ -127,7 +127,7 @@ func TestAccountRepository_GetAccount(t *testing.T) {
 			accountID:   "06e1b677-a4fe-42cf-8afd-ceec867d1fa5",
 			expected:    nil,
 			errThrown:   pgx.ErrNoRows,
-			errReturned: errs.ResourceNotFound,
+			errReturned: errspkg.ResourceNotFound,
 		},
 	}
 

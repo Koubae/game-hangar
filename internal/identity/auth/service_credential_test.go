@@ -8,6 +8,7 @@ import (
 	"github.com/koubae/game-hangar/internal/errs"
 	"github.com/koubae/game-hangar/internal/identity/auth"
 	"github.com/koubae/game-hangar/internal/testunit"
+	"github.com/koubae/game-hangar/pkg/errspkg"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -67,11 +68,11 @@ func TestCredentialService_GetCredentialByProvider(t *testing.T) {
 						providerID,
 						username,
 					).
-					Return(nil, errs.ResourceNotFound).
+					Return(nil, errspkg.ResourceNotFound).
 					Once()
 			},
 			expected:      nil,
-			errorReturned: errs.ResourceNotFound,
+			errorReturned: errspkg.ResourceNotFound,
 		},
 		{
 			id:         "on-db-error",
@@ -192,11 +193,11 @@ func TestCredentialService_CreateCredentialTypeUsername(t *testing.T) {
 							)
 						},
 					).
-					Return(int64(0), errs.ResourceDuplicate).
+					Return(int64(0), errspkg.ResourceDuplicate).
 					Once()
 			},
 			expected:      int64(0),
-			errorReturned: errs.ResourceDuplicate,
+			errorReturned: errspkg.ResourceDuplicate,
 		},
 		{
 			id:         "on-db-error",

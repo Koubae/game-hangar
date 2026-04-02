@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/koubae/game-hangar/internal/errs"
 	"github.com/koubae/game-hangar/internal/identity/account"
 	"github.com/koubae/game-hangar/internal/testunit"
+	"github.com/koubae/game-hangar/pkg/errspkg"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -26,7 +26,7 @@ func TestManagementService_GetAccount(t *testing.T) {
 		"record-is-not-found": {
 			accountID:   testunit.AccountIDTest01Str,
 			expected:    nil,
-			expectedErr: errs.ResourceNotFound,
+			expectedErr: errspkg.ResourceNotFound,
 		},
 	}
 

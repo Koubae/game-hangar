@@ -6,9 +6,9 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/koubae/game-hangar/internal/errs"
 	"github.com/koubae/game-hangar/internal/identity/auth"
 	"github.com/koubae/game-hangar/pkg/database/postgres"
+	"github.com/koubae/game-hangar/pkg/errspkg"
 	"github.com/koubae/game-hangar/tests/integration"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -108,14 +108,14 @@ func TestCredentialRepository_GetCredentialByProvider(t *testing.T) {
 			providerID:  1,
 			username:    "does-not-exists",
 			expected:    nil,
-			errReturned: errs.ResourceNotFound,
+			errReturned: errspkg.ResourceNotFound,
 		},
 		{
 			id:          "record-is-not-found-wrong-provider",
 			providerID:  2,
 			username:    testData.username1,
 			expected:    nil,
-			errReturned: errs.ResourceNotFound,
+			errReturned: errspkg.ResourceNotFound,
 		},
 	}
 
@@ -180,7 +180,7 @@ func TestCredentialRepository_CreateAccountCredential(t *testing.T) {
 				ProviderID: 1,
 				Secret:     "secret-hash-sha256",
 			},
-			errReturned: errs.ResourceDuplicate,
+			errReturned: errspkg.ResourceDuplicate,
 		},
 	}
 

@@ -3,7 +3,8 @@ package account
 import (
 	"time"
 
-	"github.com/koubae/game-hangar/internal/errs"
+	"github.com/koubae/game-hangar/pkg/authpkg"
+	"github.com/koubae/game-hangar/pkg/errspkg"
 )
 
 type DTOAccount struct {
@@ -37,8 +38,8 @@ type DTOCreateAccount struct {
 	Password string `json:"password" binding:"required"`
 }
 
-func (dto *DTOCreateAccount) Validate() *errs.AppError {
-	err := errs.DTOSchemaValidation(dto)
+func (dto DTOCreateAccount) Validate() error {
+	err := errspkg.DTOSchemaValidation(dto)
 	if err != nil {
 		return err
 	}
@@ -51,8 +52,25 @@ type DTOLoginByUsername struct {
 	Password string `json:"password" binding:"required"`
 }
 
-func (dto *DTOLoginByUsername) Validate() *errs.AppError {
-	err := errs.DTOSchemaValidation(dto)
+func (dto DTOLoginByUsername) Validate() error {
+	err := errspkg.DTOSchemaValidation(dto)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type DTOAdminLoginByUsername struct {
+	Source   string `json:"source"   binding:"required"`
+	Username string `json:"username" binding:"required"`
+	Password string `json:"password" binding:"required"`
+	Scope    string `json:"scope" binding:"required"`
+
+	Permissions authpkg.Permissions
+}
+
+func (dto DTOAdminLoginByUsername) Validate() error {
+	err := errspkg.DTOSchemaValidation(dto)
 	if err != nil {
 		return err
 	}

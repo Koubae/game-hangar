@@ -20,8 +20,11 @@ const (
 )
 
 var Environments = [4]Environment{EnvTesting, EnvDev, EnvStating, EnvProd}
+var Env Environment
+var AppID string
 
 type Config struct {
+	AppID       string
 	AppName     string
 	AppVersion  string
 	AppCommitID string
@@ -66,6 +69,7 @@ func NewConfig(logger Logger, envFileName string, envPrefix string) *Config {
 		logger.Panic("failed to load env file", zap.Error(err))
 	}
 
+	appID := GetEnvString(envPrefix+"APP_ID", "unknown")
 	appName := GetEnvString(envPrefix+"APP_NAME", "unknown")
 	appVersion := GetEnvString(envPrefix+"APP_VERSION", "0.0.1-dev")
 	appCommitID := GetEnvString(envPrefix+"APP_COMMIT_ID", "")
@@ -77,6 +81,9 @@ func NewConfig(logger Logger, envFileName string, envPrefix string) *Config {
 			zap.Any("supported_envs", Environments),
 		)
 	}
+
+	Env = env
+	AppID = appID
 
 	// server
 	host := GetEnvString(envPrefix+"APP_SERVER_HOST", "")
@@ -100,6 +107,7 @@ func NewConfig(logger Logger, envFileName string, envPrefix string) *Config {
 	corsConfig := NewCors(logger)
 
 	config = &Config{
+		AppID:                      appID,
 		AppName:                    appName,
 		AppVersion:                 appVersion,
 		AppCommitID:                appCommitID,

@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/koubae/game-hangar/internal/identity/container"
+	"github.com/koubae/game-hangar/pkg/authpkg"
 	"github.com/koubae/game-hangar/pkg/di"
 	"github.com/koubae/game-hangar/pkg/web"
 )
@@ -25,4 +26,22 @@ func RouterRegister(v1 *http.ServeMux, c di.Container) {
 	// 	Login functions
 	// ------------------------------------------
 	auth.HandleFunc("POST /login/username", authController.LoginByUsername)
+
+	// ------------------------------------------
+	// 	BackOffice Access
+	// ------------------------------------------
+	loggedAdminMiddleware := authpkg.NewAdminJWTMiddleware()
+
+	authBackoffice := web.Group(v1, "/backoffice/auth")
+	authBackofficeLoggedIn := web.GroupWithMiddleware(
+		authBackoffice,
+		"",
+		loggedAdminMiddleware,
+	)
+
+	authBackoffice.HandleFunc("POST /login/username", authController.LoginAdminByUsername)
+	authBackofficeLoggedIn.HandleFunc(
+		"POST /register/username",
+		authController.RegisterByUsername,
+	)
 }

@@ -5,9 +5,9 @@ import (
 	"sync"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/koubae/game-hangar/internal/errs"
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/database"
+	"github.com/koubae/game-hangar/pkg/errspkg"
 	"go.uber.org/zap"
 )
 
@@ -134,7 +134,7 @@ func (r *ProviderRepository) getProvider(
 		&m.Created,
 		&m.Updated,
 	); err != nil {
-		return nil, errs.DBErrToAppErr(db.MapDBErrToDomainErr(err), "provider")
+		return nil, errspkg.DBErrToAppErr(db.MapDBErrToDomainErr(err), "provider")
 	}
 
 	return &m, nil

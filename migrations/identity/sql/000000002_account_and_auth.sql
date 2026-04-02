@@ -35,7 +35,7 @@ $$
         END IF;
     END
 $$;
--- +migrate StatemeºntEnd
+-- +migrate StatementBegin
 
 -- ///////////////////
 -- // PROVIDERS

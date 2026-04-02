@@ -5,38 +5,10 @@ TODO (Game Hangar)
 Identity
 ========
 
-* CredRepo: Get Cred by Provider (repo) ✅
-* CredRepo: Create Credential  (repo) ✅ 
-* CredService: Create Username Creadential ✅ 
-* CredService: Get Credential by provider ✅
+* Create a way to generate an initial Root user. (for now must be done manually in DB)
 
-* Create Account (repo) ✅
-* ~Create Account (service)~ ❌ ->  Create smaller and dedicated services for common Account features instead 
+## 
 
-* Container Dependency Injector Provider  ✅ 
-
-* Create AccountAuth (service) ✅
-  * Dependencies: 
-    - AccountRepository
-    - CredentialService 
-    - ProviderService 
-    - AuthService 
-      1. Hash passwords & Secrets 
-      2. Create JWT Token 
-  * Register by username
-    * Service 
-      0. Does Provider exists? 
-      1. Cred exists?
-      2. Create Account (transaction) -> get id 
-      3. Create Credential (transaction) -> get id
-
-* AuthService 
-  1. Hash passwords & Secrets 
-  2. Create JWT Token 
-  3. Auth type: username (JWT Access-Token)
-
-* AuthRegister Controller
-   * API endpoint + handler/controller
 
 ### Auth API Endpoints
 

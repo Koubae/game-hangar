@@ -33,12 +33,14 @@ func NewTestIdentityAppContainer(t *testing.T) *identityContainer.AppContainer {
 
 	providerRepositoryFactory := NewMockProviderRepository
 	credentialRepositoryFactory := NewMockCredentialRepository
+	permissionRepositoryFactory := NewMockPermissionRepository
 	accountRepositoryFactory := NewMockAccountRepository
 
 	// NOTE: Services
 	authServiceFactory := auth.NewSecretsService
 	providerServiceFactory := auth.NewProviderService
 	credentialServiceFactory := auth.NewCredentialService
+	permissionServiceFactory := auth.NewPermissionService
 	accountAuthServiceFactory := auth.NewAccountAuthService
 	accountManagementServiceFactory := account.NewManagementService
 
@@ -49,10 +51,12 @@ func NewTestIdentityAppContainer(t *testing.T) *identityContainer.AppContainer {
 		AuthServiceFactory:          authServiceFactory,
 		ProviderRepositoryFactory:   providerRepositoryFactory,
 		CredentialRepositoryFactory: credentialRepositoryFactory,
+		PermissionRepositoryFactory: permissionRepositoryFactory,
 		AccountRepositoryFactory:    accountRepositoryFactory,
 
 		ProviderServiceFactory:          providerServiceFactory,
 		CredentialServiceFactory:        credentialServiceFactory,
+		PermissionServiceFactory:        permissionServiceFactory,
 		AccountAuthServiceFactory:       accountAuthServiceFactory,
 		AccountManagementServiceFactory: accountManagementServiceFactory,
 	}

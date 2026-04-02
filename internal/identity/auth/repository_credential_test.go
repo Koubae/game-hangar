@@ -7,11 +7,11 @@ import (
 	"testing"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/koubae/game-hangar/internal/errs"
 	"github.com/koubae/game-hangar/internal/identity/auth"
 	"github.com/koubae/game-hangar/internal/testunit"
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/database/postgres"
+	"github.com/koubae/game-hangar/pkg/errspkg"
 	"github.com/koubae/game-hangar/pkg/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -55,7 +55,7 @@ func TestCredentialRepository_GetCredentialByProvider(t *testing.T) {
 			username:    username,
 			expected:    nil,
 			errThrown:   pgx.ErrNoRows,
-			errReturned: errs.ResourceNotFound,
+			errReturned: errspkg.ResourceNotFound,
 		},
 	}
 
@@ -200,7 +200,7 @@ func TestCredentialRepository_CreateAccountCredentialOnErrors(t *testing.T) {
 			},
 			expectedID:  int64(0),
 			errThrown:   testutil.DBMockErrDuplicateKey,
-			errReturned: errs.ResourceDuplicate,
+			errReturned: errspkg.ResourceDuplicate,
 		},
 	}
 

@@ -1,6 +1,10 @@
 package auth
 
-import "time"
+import (
+	"time"
+
+	"github.com/koubae/game-hangar/pkg/authpkg"
+)
 
 type DTOProvider struct {
 	ID          int64     `json:"id"`
@@ -22,4 +26,10 @@ type DTOAccountLoggedIn struct {
 type DTOAccessToken struct {
 	AccessToken string `json:"access_token"`
 	ExpiresIn   int64  `json:"expires"`
+}
+
+type DTOAdminAccessToken struct {
+	AccessToken string              `json:"access_token"`
+	ExpiresIn   int64               `json:"expires"`
+	Permissions authpkg.Permissions `json:"permissions"`
 }

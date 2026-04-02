@@ -11,6 +11,7 @@ todo
 
 * 1) Install [air-verse/air](https://github.com/air-verse/air) globally
 
+
 ```bash
 go install github.com/air-verse/air@latest
 
@@ -25,6 +26,11 @@ export PATH=$PATH:$GOROOT/bin
 make quickstart
 ```
 
+### Admin / Management
+
+* Root User: 
+  * Username: `root`
+  * Password: `Q7m!v2Zp#9tX`
 
 ### Services
 

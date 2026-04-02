@@ -1,4 +1,4 @@
-package errs
+package errspkg
 
 import (
 	"fmt"
@@ -46,4 +46,20 @@ func DTOSchemaValidation(dto any) *AppError {
 		return Wrap(PayloadValidation, err)
 	}
 	return nil
+}
+
+func LoadAndValidateJSON[T Validator](w http.ResponseWriter, r *http.Request) (T, bool) {
+	payload, ok := web.LoadJsonBody[T](w, r)
+	if !ok {
+		var zero T
+		return zero, false
+	}
+
+	if err := any(payload).(Validator).Validate(); err != nil {
+		AppErrToClientResponse(w, err, "")
+		var zero T
+		return zero, false
+	}
+
+	return *payload, true
 }

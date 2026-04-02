@@ -6,10 +6,10 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/koubae/game-hangar/internal/errs"
 	"github.com/koubae/game-hangar/internal/identity/auth"
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/database/postgres"
+	"github.com/koubae/game-hangar/pkg/errspkg"
 	"github.com/koubae/game-hangar/pkg/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -75,7 +75,7 @@ func TestProviderRepository_GetProvider_CacheMiss(t *testing.T) {
 		{
 			id:       "record-is-not-found",
 			expected: nil,
-			err:      errs.ResourceNotFound,
+			err:      errspkg.ResourceNotFound,
 		},
 	}
 

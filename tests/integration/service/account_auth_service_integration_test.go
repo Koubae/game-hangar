@@ -66,10 +66,9 @@ func TestAccountAuthService_RegisterByUsername(t *testing.T) {
 					tt.username,
 					testobj.PassHash,
 				)
-
 				if tt.errExpected != nil {
 					assert.Error(t, err)
-					assert.ErrorIs(t, err, tt.errExpected)
+					assert.ErrorAs(t, err, &tt.errExpected)
 					assert.Nil(t, accountID)
 					assert.Nil(t, credID)
 				} else {

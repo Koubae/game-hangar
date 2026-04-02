@@ -86,6 +86,43 @@ func (m *MockCredentialRepository) CreateAccountCredential(
 	return id, args.Error(1)
 }
 
+type MockPermissionRepository struct {
+	mock.Mock
+}
+
+func NewMockPermissionRepository() auth.IPermissionRepository {
+	return new(MockPermissionRepository)
+}
+
+func (m *MockPermissionRepository) LoadPermissions(
+	ctx context.Context,
+	db database.DBTX,
+) {
+	_ = m.Called(ctx, db)
+}
+
+func (m *MockPermissionRepository) GetPermissions(
+	ctx context.Context,
+	db database.DBTX,
+	ids []int64,
+) []*auth.Permission {
+	args := m.Called(ctx, db, ids)
+
+	permissions, _ := args.Get(0).([]*auth.Permission)
+	return permissions
+}
+
+func (m *MockPermissionRepository) GetAdminAccountPermissions(
+	ctx context.Context,
+	db database.DBTX,
+	accountID string,
+) []*auth.Permission {
+	args := m.Called(ctx, db, accountID)
+
+	permissions, _ := args.Get(0).([]*auth.Permission)
+	return permissions
+}
+
 type MockAccountRepository struct {
 	mock.Mock
 }
@@ -143,6 +180,29 @@ func (m *Mocker) GenAccessToken(
 	return accessToken
 }
 
+func (m *Mocker) GenAdminAccessToken(
+	t *testing.T,
+	accountID string,
+	credential string,
+	scope string,
+) string {
+	t.Helper()
+
+	secretService := m.container.SecretsService()
+	expire := time.Now().Add(AuthTokenExpirationTime).Unix()
+	accessToken, err := secretService.GenerateAdminJWTAccessToken(
+		"global",
+		"username",
+		accountID,
+		credential,
+		scope,
+		expire,
+	)
+	require.NoError(t, err)
+
+	return accessToken
+}
+
 func (m *Mocker) GenAccessTokenAndSetInReq(
 	t *testing.T,
 	req *http.Request,
@@ -152,6 +212,19 @@ func (m *Mocker) GenAccessTokenAndSetInReq(
 	t.Helper()
 
 	token := m.GenAccessToken(t, accountID, credential)
+	req.Header.Set("Authorization", "Bearer "+token)
+}
+
+func (m *Mocker) GenAdminAccessTokenAndSetInReq(
+	t *testing.T,
+	req *http.Request,
+	accountID string,
+	credential string,
+	scope string,
+) {
+	t.Helper()
+
+	token := m.GenAdminAccessToken(t, accountID, credential, scope)
 	req.Header.Set("Authorization", "Bearer "+token)
 }
 
@@ -198,6 +271,21 @@ func (m *Mocker) MockGetCredentialByProvider(
 		credential,
 	).
 		Return(returnCred, returnErr)
+
+}
+
+func (m *Mocker) MockGetAdminAccountPermissions(
+	accountID string,
+	returnPermissions []*auth.Permission,
+) {
+	repo := m.container.PermissionRepository().(*MockPermissionRepository)
+	repo.On(
+		"GetAdminAccountPermissions",
+		mock.Anything,
+		mock.Anything,
+		accountID,
+	).
+		Return(returnPermissions, nil)
 
 }
 

@@ -3,10 +3,11 @@ package api
 import (
 	"net/http"
 
-	"github.com/koubae/game-hangar/internal/errs"
+	"github.com/google/uuid"
 	"github.com/koubae/game-hangar/internal/identity/account"
 	"github.com/koubae/game-hangar/internal/identity/container"
 	"github.com/koubae/game-hangar/pkg/authpkg"
+	"github.com/koubae/game-hangar/pkg/errspkg"
 	"github.com/koubae/game-hangar/pkg/web"
 )
 
@@ -24,7 +25,7 @@ func (c *AccountManagementController) Me(w http.ResponseWriter, r *http.Request)
 	ctx := r.Context()
 	accessToken, ok := authpkg.GetAccessToken(ctx)
 	if !ok {
-		errs.AppErrToClientResponse(w, errs.AuthNotLoggedIn, "")
+		errspkg.AppErrToClientResponse(w, errspkg.AuthNotLoggedIn, "")
 		return
 	}
 
@@ -35,7 +36,29 @@ func (c *AccountManagementController) Me(w http.ResponseWriter, r *http.Request)
 		accessToken.AccountID,
 	)
 	if err != nil {
-		errs.AppErrToClientResponseWithLog(w, err, "", logger)
+		errspkg.AppErrToClientResponseWithLog(w, err, "", logger)
+		return
+	}
+
+	response := account.NewDTOAccountFromAccount(_account)
+	web.WriteJSONResponse(w, http.StatusOK, response)
+}
+
+func (c *AccountManagementController) GetAccount(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if id == "" {
+		errspkg.AppErrToClientResponse(w, errspkg.PayloadMissingID, "")
+		return
+	}
+	if _, err := uuid.Parse(id); err != nil {
+		errspkg.AppErrToClientResponse(w, errspkg.InvalidUUID, "")
+		return
+	}
+
+	ctx := r.Context()
+	_account, err := c.container.AccountManagementService(nil).GetAccount(ctx, id)
+	if err != nil {
+		errspkg.AppErrToClientResponseWithLog(w, err, "", c.container.Logger())
 		return
 	}
 

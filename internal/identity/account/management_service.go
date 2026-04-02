@@ -5,9 +5,9 @@ import (
 	"errors"
 	"time"
 
-	"github.com/koubae/game-hangar/internal/errs"
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/database"
+	"github.com/koubae/game-hangar/pkg/errspkg"
 	"go.uber.org/zap"
 )
 
@@ -36,7 +36,7 @@ func (s *ManagementService) GetAccount(ctx context.Context, accountID string) (*
 
 	account, err := s.repository.GetAccount(ctx, s.db, accountID)
 	if err != nil {
-		if !errors.Is(err, errs.ResourceNotFound) {
+		if !errors.Is(err, errspkg.ResourceNotFound) {
 			logger.Error(
 				"[ManagementService] error while getting account",
 				zap.String("accountID", accountID),

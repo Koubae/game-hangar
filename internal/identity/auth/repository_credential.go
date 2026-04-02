@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/koubae/game-hangar/internal/errs"
 	"github.com/koubae/game-hangar/pkg/database"
+	"github.com/koubae/game-hangar/pkg/errspkg"
 )
 
 type ICredentialRepository interface {
@@ -73,7 +73,7 @@ func (r *CredentialRepository) CreateAccountCredential(
 		},
 	).Scan(&id)
 	if err != nil {
-		return 0, errs.DBErrToAppErr(db.MapDBErrToDomainErr(err), "account_credential")
+		return 0, errspkg.DBErrToAppErr(db.MapDBErrToDomainErr(err), "account_credential")
 	}
 
 	return id, nil
@@ -118,7 +118,7 @@ func (r *CredentialRepository) GetCredentialByProvider(
 		&m.Created,
 		&m.Updated,
 	); err != nil {
-		return nil, errs.DBErrToAppErr(db.MapDBErrToDomainErr(err), "account_credential")
+		return nil, errspkg.DBErrToAppErr(db.MapDBErrToDomainErr(err), "account_credential")
 	}
 
 	return &m, nil

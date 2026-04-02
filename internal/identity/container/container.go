@@ -14,10 +14,12 @@ import (
 type IdentityAuthContainer interface {
 	ProviderRepository() auth.IProviderRepository
 	CredentialRepository() auth.ICredentialRepository
+	PermissionRepository() auth.IPermissionRepository
 
 	SecretsService() *auth.SecretsService
 	ProviderService(db database.DBTX) *auth.ProviderService
 	CredentialService(db database.DBTX) *auth.CredentialService
+	PermissionService(db database.DBTX) *auth.PermissionService
 	AccountAuthService(db database.Connector) *auth.AccountAuthService
 }
 
@@ -46,6 +48,9 @@ type AppContainer struct {
 	credentialRepository        auth.ICredentialRepository
 	credentialRepositoryFactory auth.CredentialRepositoryFactory
 
+	permissionRepository        auth.IPermissionRepository
+	permissionRepositoryFactory auth.PermissionRepositoryFactory
+
 	accountRepository        account.IAccountRepository
 	accountRepositoryFactory account.AccountRepositoryFactory
 
@@ -54,6 +59,7 @@ type AppContainer struct {
 	authServiceFactory              auth.SecretsServiceFactory
 	providerServiceFactory          auth.ProviderServiceFactory
 	credentialServiceFactory        auth.CredentialServiceFactory
+	permissionServiceFactory        auth.PermissionServiceFactory
 	accountAuthServiceFactory       auth.AccountAuthServiceFactory
 	accountManagementServiceFactory account.ManagementServiceFactory
 }
@@ -64,10 +70,12 @@ type AppDependencies struct {
 
 	ProviderRepositoryFactory       auth.ProviderRepositoryFactory
 	CredentialRepositoryFactory     auth.CredentialRepositoryFactory
+	PermissionRepositoryFactory     auth.PermissionRepositoryFactory
 	AccountRepositoryFactory        account.AccountRepositoryFactory
 	AuthServiceFactory              auth.SecretsServiceFactory
 	ProviderServiceFactory          auth.ProviderServiceFactory
 	CredentialServiceFactory        auth.CredentialServiceFactory
+	PermissionServiceFactory        auth.PermissionServiceFactory
 	AccountAuthServiceFactory       auth.AccountAuthServiceFactory
 	AccountManagementServiceFactory account.ManagementServiceFactory
 }
@@ -100,10 +108,12 @@ func NewAppContainer(
 		providerRepository:              providerRepository,
 		providerRepositoryFactory:       dependencies.ProviderRepositoryFactory,
 		credentialRepositoryFactory:     dependencies.CredentialRepositoryFactory,
+		permissionRepositoryFactory:     dependencies.PermissionRepositoryFactory,
 		accountRepositoryFactory:        dependencies.AccountRepositoryFactory,
 		authServiceFactory:              dependencies.AuthServiceFactory,
 		providerServiceFactory:          dependencies.ProviderServiceFactory,
 		credentialServiceFactory:        dependencies.CredentialServiceFactory,
+		permissionServiceFactory:        dependencies.PermissionServiceFactory,
 		accountAuthServiceFactory:       dependencies.AccountAuthServiceFactory,
 		accountManagementServiceFactory: dependencies.AccountManagementServiceFactory,
 	}, nil
@@ -137,12 +147,14 @@ func LoadAppDependenciesWithDefaultFactories(
 	// NOTE: Repositories
 	providerRepositoryFactory := auth.NewProviderRepository
 	credentialRepositoryFactory := auth.NewCredentialRepository
+	permissionRepositoryFactory := auth.NewPermissionRepository
 	accountRepositoryFactory := account.NewAccountRepository
 
 	// NOTE: Services
 	authServiceFactory := auth.NewSecretsService
 	providerServiceFactory := auth.NewProviderService
 	credentialServiceFactory := auth.NewCredentialService
+	permissionServiceFactory := auth.NewPermissionService
 	accountAuthServiceFactory := auth.NewAccountAuthService
 	accountManagementServiceFactory := account.NewManagementService
 
@@ -152,11 +164,13 @@ func LoadAppDependenciesWithDefaultFactories(
 
 		ProviderRepositoryFactory:   providerRepositoryFactory,
 		CredentialRepositoryFactory: credentialRepositoryFactory,
+		PermissionRepositoryFactory: permissionRepositoryFactory,
 		AccountRepositoryFactory:    accountRepositoryFactory,
 
 		AuthServiceFactory:              authServiceFactory,
 		ProviderServiceFactory:          providerServiceFactory,
 		CredentialServiceFactory:        credentialServiceFactory,
+		PermissionServiceFactory:        permissionServiceFactory,
 		AccountAuthServiceFactory:       accountAuthServiceFactory,
 		AccountManagementServiceFactory: accountManagementServiceFactory,
 	}, nil
@@ -217,6 +231,14 @@ func (c *AppContainer) CredentialRepository() auth.ICredentialRepository {
 	return c.credentialRepository
 }
 
+func (c *AppContainer) PermissionRepository() auth.IPermissionRepository {
+	if c.permissionRepository == nil {
+		c.permissionRepository = c.permissionRepositoryFactory()
+	}
+
+	return c.permissionRepository
+}
+
 func (c *AppContainer) AccountRepository() account.IAccountRepository {
 	if c.accountRepository == nil {
 		c.accountRepository = c.accountRepositoryFactory()
@@ -248,6 +270,15 @@ func (c *AppContainer) CredentialService(
 		db = c.connector
 	}
 	return c.credentialServiceFactory(db, c.CredentialRepository())
+}
+
+func (c *AppContainer) PermissionService(
+	db database.DBTX,
+) *auth.PermissionService {
+	if db == nil {
+		db = c.connector
+	}
+	return c.permissionServiceFactory(db, c.PermissionRepository())
 }
 
 func (c *AppContainer) AccountAuthService(

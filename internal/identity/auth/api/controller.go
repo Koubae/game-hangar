@@ -4,10 +4,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/koubae/game-hangar/internal/errs"
 	"github.com/koubae/game-hangar/internal/identity/account"
 	"github.com/koubae/game-hangar/internal/identity/auth"
 	"github.com/koubae/game-hangar/internal/identity/container"
+	"github.com/koubae/game-hangar/pkg/authpkg"
+	"github.com/koubae/game-hangar/pkg/errspkg"
 	"github.com/koubae/game-hangar/pkg/web"
 	"go.uber.org/zap"
 )
@@ -30,12 +31,8 @@ func (c *AuthController) RegisterByUsername(
 	w http.ResponseWriter,
 	r *http.Request,
 ) {
-	payload, ok := web.LoadJsonBody[account.DTOCreateAccount](w, r)
+	payload, ok := errspkg.LoadAndValidateJSON[account.DTOCreateAccount](w, r)
 	if !ok {
-		return
-	}
-	if err := payload.Validate(); err != nil {
-		errs.AppErrToClientResponse(w, err, "")
 		return
 	}
 
@@ -50,13 +47,13 @@ func (c *AuthController) RegisterByUsername(
 	secretService := c.container.SecretsService()
 	err := secretService.ValidatePasswordDefaultRules(payload.Password)
 	if err != nil {
-		errs.AppErrToClientResponseWithLog(w, err, "", logger)
+		errspkg.AppErrToClientResponseWithLog(w, err, "", logger)
 		return
 	}
 
 	secret, err := secretService.HashSecret(payload.Password)
 	if err != nil {
-		errs.AppErrToClientResponseWithLog(w, err, "hash secret error on registration by username", logger)
+		errspkg.AppErrToClientResponseWithLog(w, err, "hash secret error on registration by username", logger)
 		return
 	}
 
@@ -67,7 +64,7 @@ func (c *AuthController) RegisterByUsername(
 		secret,
 	)
 	if err != nil {
-		errs.AppErrToClientResponseWithLog(w, err, "could not create account: ", logger)
+		errspkg.AppErrToClientResponseWithLog(w, err, "could not create account: ", logger)
 		return
 	}
 
@@ -83,12 +80,8 @@ func (c *AuthController) LoginByUsername(
 	w http.ResponseWriter,
 	r *http.Request,
 ) {
-	payload, ok := web.LoadJsonBody[account.DTOLoginByUsername](w, r)
+	payload, ok := errspkg.LoadAndValidateJSON[account.DTOLoginByUsername](w, r)
 	if !ok {
-		return
-	}
-	if err := payload.Validate(); err != nil {
-		errs.AppErrToClientResponse(w, err, "")
 		return
 	}
 
@@ -102,21 +95,21 @@ func (c *AuthController) LoginByUsername(
 
 	provider, err := c.container.ProviderService(nil).GetEnabledProvider(ctx, payload.Source, string(auth.Username))
 	if err != nil {
-		errs.AppErrToClientResponseWithLog(w, errs.Wrap(errs.AuthLoginFailed, err), "", logger)
+		errspkg.AppErrToClientResponseWithLog(w, errspkg.Wrap(errspkg.AuthLoginFailed, err), "", logger)
 		return
 	}
 
 	credential, err := c.container.CredentialService(nil).GetCredentialByProvider(ctx, provider.ID, payload.Username)
 	if err != nil {
-		errs.AppErrToClientResponseWithLog(w, errs.Wrap(errs.AuthLoginFailed, err), "credential ", logger)
+		errspkg.AppErrToClientResponseWithLog(w, errspkg.Wrap(errspkg.AuthLoginFailed, err), "credential ", logger)
 		return
 	}
 
 	secretService := c.container.SecretsService()
 	if !secretService.VerifySecret(credential.Secret, payload.Password) {
-		errs.AppErrToClientResponseWithLog(
+		errspkg.AppErrToClientResponseWithLog(
 			w,
-			errs.Wrap(errs.AuthLoginFailed, errs.AuthLoginPasswordMismatch),
+			errspkg.Wrap(errspkg.AuthLoginFailed, errspkg.AuthLoginPasswordMismatch),
 			"credential ",
 			logger,
 		)
@@ -131,10 +124,114 @@ func (c *AuthController) LoginByUsername(
 		credential.Credential,
 		expire,
 	)
+	if err != nil {
+		errspkg.AppErrToClientResponseWithLog(
+			w,
+			errspkg.AuthLoginFailed,
+			"access-token generation error ",
+			logger,
+		)
+		return
+	}
 
 	response := auth.DTOAccessToken{
 		AccessToken: accessToken,
 		ExpiresIn:   expire,
+	}
+	web.WriteJSONResponse(w, http.StatusOK, response)
+
+}
+
+func (c *AuthController) LoginAdminByUsername(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
+	payload, ok := errspkg.LoadAndValidateJSON[account.DTOAdminLoginByUsername](w, r)
+	if !ok {
+		return
+	}
+
+	ctx := r.Context()
+	logger := c.container.Logger()
+	logger.Debug(
+		"LoginByUsername called",
+		zap.String("source", payload.Source),
+		zap.String("username", string(auth.Username)),
+	)
+
+	permissionsRequested, err := authpkg.ParsePermissions(payload.Scope)
+	if err != nil {
+		logger.Error(
+			"failed to parse permissions requested for admin_account",
+			zap.String("scopeRequested", payload.Scope),
+			zap.Error(err),
+		)
+		errspkg.AppErrToClientResponseWithLog(w, errspkg.Wrap(errspkg.AuthLoginFailed, err), "", logger)
+		return
+	}
+	provider, err := c.container.ProviderService(nil).GetEnabledProvider(ctx, payload.Source, string(auth.Username))
+	if err != nil {
+		errspkg.AppErrToClientResponseWithLog(w, errspkg.Wrap(errspkg.AuthLoginFailed, err), "", logger)
+		return
+	}
+	credential, err := c.container.CredentialService(nil).GetCredentialByProvider(ctx, provider.ID, payload.Username)
+	if err != nil {
+		errspkg.AppErrToClientResponseWithLog(w, errspkg.Wrap(errspkg.AuthLoginFailed, err), "credential ", logger)
+		return
+	}
+
+	permissions, err := c.container.PermissionService(nil).LoadAdminAccountPermissions(
+		ctx,
+		credential.AccountID.String(),
+		permissionsRequested,
+	)
+	if err != nil {
+		errspkg.AppErrToClientResponseWithLog(w, errspkg.Wrap(errspkg.AuthLoginFailed, err), "", logger)
+		return
+	} else if len(permissions) == 0 {
+		errspkg.AppErrToClientResponseWithLog(
+			w,
+			errspkg.Wrap(errspkg.AuthLoginFailed, errspkg.AuthPermissionsScopeEmpty),
+			"",
+			logger,
+		)
+		return
+	}
+
+	secretService := c.container.SecretsService()
+	if !secretService.VerifySecret(credential.Secret, payload.Password) {
+		errspkg.AppErrToClientResponseWithLog(
+			w,
+			errspkg.Wrap(errspkg.AuthLoginFailed, errspkg.AuthLoginPasswordMismatch),
+			"credential ",
+			logger,
+		)
+		return
+	}
+
+	expire := time.Now().Add(AuthTokenExpirationTime).Unix()
+	accessToken, err := secretService.GenerateAdminJWTAccessToken(
+		provider.Source,
+		provider.Type,
+		credential.AccountID.String(),
+		credential.Credential,
+		permissions.Scope(),
+		expire,
+	)
+	if err != nil {
+		errspkg.AppErrToClientResponseWithLog(
+			w,
+			errspkg.AuthLoginFailed,
+			"access-token generation error ",
+			logger,
+		)
+		return
+	}
+
+	response := auth.DTOAdminAccessToken{
+		AccessToken: accessToken,
+		ExpiresIn:   expire,
+		Permissions: permissions,
 	}
 	web.WriteJSONResponse(w, http.StatusOK, response)
 

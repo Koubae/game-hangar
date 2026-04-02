@@ -11,6 +11,7 @@ import (
 	"github.com/koubae/game-hangar/internal/identity/account"
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/database"
+	"github.com/koubae/game-hangar/pkg/errspkg"
 	"go.uber.org/zap"
 )
 
@@ -93,7 +94,7 @@ func (s *AccountAuthService) RegisterByUsername(
 		)
 		return nil, nil, errs.AccountCredDuplicate
 	} else if err != nil {
-		if !errors.Is(err, errs.ResourceNotFound) {
+		if !errors.Is(err, errspkg.ResourceNotFound) {
 			return nil, nil, err
 		}
 	}
@@ -120,7 +121,7 @@ func (s *AccountAuthService) RegisterByUsername(
 	id, err := s.repository.CreateAccount(ctx, tx, createAccountParams)
 	if err != nil {
 		lvl := "error"
-		if errs.IsAny(err, errs.ResourceDuplicate) {
+		if errspkg.IsAny(err, errspkg.ResourceDuplicate) {
 			lvl = "debug"
 		}
 
@@ -138,7 +139,7 @@ func (s *AccountAuthService) RegisterByUsername(
 	)
 	if err != nil {
 		lvl := "error"
-		if errs.IsAny(err, errs.AccountCredCreateIncorrectProviderType, errs.ResourceDuplicate) {
+		if errspkg.IsAny(err, errs.AccountCredCreateIncorrectProviderType, errspkg.ResourceDuplicate) {
 			lvl = "debug"
 		}
 
