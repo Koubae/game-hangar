@@ -120,61 +120,6 @@ func (m *MockRow) MockScan(argsN int, err error, values ...any) {
 				return
 			}
 
-			set := func(ptr any, _index, val any) {
-				switch ptr := ptr.(type) {
-				case *int:
-					*ptr = val.(int)
-				case **int:
-					*ptr = val.(*int)
-
-				case *int64:
-					*ptr = val.(int64)
-				case **int64:
-					*ptr = val.(*int64)
-
-				case *string:
-					*ptr = val.(string)
-				case **string:
-					*ptr = val.(*string)
-
-				case *bool:
-					*ptr = val.(bool)
-				case **bool:
-					*ptr = val.(*bool)
-
-				case *uuid.UUID:
-					*ptr = val.(uuid.UUID)
-				case **uuid.UUID:
-					*ptr = val.(*uuid.UUID)
-
-				case *time.Time:
-					*ptr = val.(time.Time)
-				case **time.Time:
-					*ptr = val.(*time.Time)
-
-				case *any:
-					*ptr = val
-
-				default:
-					panic(fmt.Sprintf("MockScan: untyped or unhandled destination at index %d (%T)", _index, ptr))
-				}
-			}
-
-			setNil := func(ptr any) {
-				switch p := ptr.(type) {
-				case **string:
-					*p = nil
-				case **int64:
-					*p = nil
-				case **bool:
-					*p = nil
-				case **uuid.UUID:
-					*p = nil
-				case **time.Time:
-					*p = nil
-				}
-			}
-
 			for i, val := range values {
 				if i >= len(args) {
 					break
@@ -182,14 +127,108 @@ func (m *MockRow) MockScan(argsN int, err error, values ...any) {
 
 				ptr := args.Get(i)
 				if val == nil {
-					setNil(ptr)
+					scanNil(ptr)
 					continue
 				}
 
-				set(ptr, i, val)
+				scan(ptr, i, val)
 			}
 		},
 	).Return(err)
+}
+
+type MockRows struct {
+	Data    [][]any
+	idx     int
+	err     error
+	ScanErr error
+}
+
+func (r *MockRows) Close()                                       {}
+func (r *MockRows) Err() error                                   { return r.err }
+func (r *MockRows) CommandTag() pgconn.CommandTag                { return pgconn.CommandTag{} }
+func (r *MockRows) FieldDescriptions() []pgconn.FieldDescription { return nil }
+func (r *MockRows) Next() bool {
+	r.idx++
+	return r.idx <= len(r.Data)
+}
+func (r *MockRows) Scan(dest ...any) error {
+	if r.ScanErr != nil {
+		return r.ScanErr
+	}
+
+	row := r.Data[r.idx-1]
+	for i := range dest {
+		ptr := dest[i]
+		val := row[i]
+		if val == nil {
+			scanNil(ptr)
+			continue
+		}
+		scan(ptr, i, val)
+	}
+
+	return nil
+}
+func (r *MockRows) Values() ([]any, error) {
+	return r.Data[r.idx-1], nil
+}
+func (r *MockRows) RawValues() [][]byte { return nil }
+func (r *MockRows) Conn() *pgx.Conn     { return nil }
+
+func scan(ptr any, _index, val any) {
+	switch ptr := ptr.(type) {
+	case *int:
+		*ptr = val.(int)
+	case **int:
+		*ptr = val.(*int)
+
+	case *int64:
+		*ptr = val.(int64)
+	case **int64:
+		*ptr = val.(*int64)
+
+	case *string:
+		*ptr = val.(string)
+	case **string:
+		*ptr = val.(*string)
+
+	case *bool:
+		*ptr = val.(bool)
+	case **bool:
+		*ptr = val.(*bool)
+
+	case *uuid.UUID:
+		*ptr = val.(uuid.UUID)
+	case **uuid.UUID:
+		*ptr = val.(*uuid.UUID)
+
+	case *time.Time:
+		*ptr = val.(time.Time)
+	case **time.Time:
+		*ptr = val.(*time.Time)
+
+	case *any:
+		*ptr = val
+
+	default:
+		panic(fmt.Sprintf("MockScan: untyped or unhandled destination at index %d (%T)", _index, ptr))
+	}
+}
+
+func scanNil(ptr any) {
+	switch p := ptr.(type) {
+	case **string:
+		*p = nil
+	case **int64:
+		*p = nil
+	case **bool:
+		*p = nil
+	case **uuid.UUID:
+		*p = nil
+	case **time.Time:
+		*p = nil
+	}
 }
 
 var DefaultStubPgxTx pgx.Tx = &stubPgxTx{}

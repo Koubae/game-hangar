@@ -155,7 +155,7 @@ func (r *PermissionRepository) GetAdminAccountPermissions(
 	permissions := make([]*Permission, 0)
 	rows, err := db.SelectMany(ctx, query, pgx.StrictNamedArgs{"account_id": accountID})
 	if err != nil {
-		logger.DPanic(
+		logger.Error(
 			"failed to load Permissions for admin_account, returning empty permission set",
 			zap.String("accountID", accountID),
 			zap.Error(err),

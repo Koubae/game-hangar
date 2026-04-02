@@ -6,6 +6,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/koubae/game-hangar/internal/identity/auth"
+	"github.com/koubae/game-hangar/internal/testunit"
 	"github.com/koubae/game-hangar/pkg/common"
 	"github.com/koubae/game-hangar/pkg/database/postgres"
 	"github.com/koubae/game-hangar/pkg/testutil"
@@ -125,6 +126,123 @@ func TestPermissionRepository_GetPermissions_CacheMiss(t *testing.T) {
 					context.Background(),
 					&connector,
 					[]int64{1},
+				)
+
+				assert.Equal(t, tt.expected, got)
+				mockPool.AssertExpectations(t)
+			},
+		)
+	}
+}
+
+func TestPermissionRepository_GetAdminAccountPermissions(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		accountID  string
+		rows       [][]any
+		errOnQuery error
+		errOnScan  error
+		expected   []*auth.Permission
+	}{
+		"records-are-found": {
+			accountID:  testunit.AccountIDTest01Str,
+			errOnQuery: nil,
+			errOnScan:  nil,
+			expected: []*auth.Permission{
+				{
+					ID:       1,
+					Service:  "identity",
+					Resource: "account",
+					Action:   "read",
+					Created:  testutil.Now,
+				},
+				{
+					ID:       2,
+					Service:  "identity",
+					Resource: "account",
+					Action:   "write",
+					Created:  testutil.Now,
+				},
+				{
+					ID:       3,
+					Service:  "identity",
+					Resource: "account",
+					Action:   "delete",
+					Created:  testutil.Now,
+				},
+				{
+					ID:       4,
+					Service:  "identity",
+					Resource: "account",
+					Action:   "*",
+					Created:  testutil.Now,
+				},
+			},
+
+			rows: [][]any{
+				{int64(1), "identity", "account", "read", testutil.Now},
+				{int64(2), "identity", "account", "write", testutil.Now},
+				{int64(3), "identity", "account", "delete", testutil.Now},
+				{int64(4), "identity", "account", "*", testutil.Now},
+			},
+		},
+		"records-are-not-found": {
+			accountID:  testunit.AccountIDTest01Str,
+			errOnQuery: nil,
+			errOnScan:  nil,
+			expected:   []*auth.Permission{},
+			rows:       [][]any{},
+		},
+		"on-err-query": {
+			accountID:  testunit.AccountIDTest01Str,
+			errOnQuery: testunit.ErrDBGeneric,
+			errOnScan:  nil,
+			expected:   []*auth.Permission{},
+			rows: [][]any{
+				{int64(1), "identity", "account", "read", testutil.Now},
+				{int64(2), "identity", "account", "write", testutil.Now},
+				{int64(3), "identity", "account", "delete", testutil.Now},
+				{int64(4), "identity", "account", "*", testutil.Now},
+			},
+		},
+		"on-err-scan": {
+			accountID:  testunit.AccountIDTest01Str,
+			errOnQuery: nil,
+			errOnScan:  testunit.ErrDBGeneric,
+			expected:   []*auth.Permission{},
+			rows: [][]any{
+				{int64(1), "identity", "account", "read", testutil.Now},
+				{int64(2), "identity", "account", "write", testutil.Now},
+				{int64(3), "identity", "account", "delete", testutil.Now},
+				{int64(4), "identity", "account", "*", testutil.Now},
+			},
+		},
+	}
+
+	common.CreateLogger(common.LogLevelDPanic, "")
+	for id, tt := range tests {
+		t.Run(
+			id, func(t *testing.T) {
+				mockRows := &testutil.MockRows{
+					Data:    tt.rows,
+					ScanErr: tt.errOnScan,
+				}
+				mockPool := new(testutil.MockDBPool)
+				mockPool.On(
+					"Query", mock.Anything, mock.Anything, pgx.StrictNamedArgs{
+						"account_id": tt.accountID,
+					},
+				).
+					Return(mockRows, tt.errOnQuery)
+
+				connector := postgres.ConnectorPostgres{Pool: mockPool}
+				repo := auth.NewPermissionRepository()
+
+				got := repo.GetAdminAccountPermissions(
+					context.Background(),
+					&connector,
+					tt.accountID,
 				)
 
 				assert.Equal(t, tt.expected, got)
