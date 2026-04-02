@@ -20,8 +20,8 @@ type JWTSecret interface {
 type Middleware func(http.Handler) http.Handler
 
 type (
-	contextKeyPermissions = struct{}
-	contextKeyAccessToken = struct{}
+	contextKeyPermissions struct{}
+	contextKeyAccessToken struct{}
 )
 
 func Protected(resource string, action Action, next http.HandlerFunc) http.HandlerFunc {
