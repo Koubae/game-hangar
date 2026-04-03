@@ -9,7 +9,7 @@ todo
 
 * [GameHangar -- Documentation](docs/README.MD)
   * [Identity (Account & Authorization)](docs/identity/README.MD)
-
+  * **_[Storage](./storage/README.MD)_**
 
 
 ### QuickStart
