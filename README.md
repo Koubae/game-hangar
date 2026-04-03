@@ -78,3 +78,11 @@ make run-server-local
 
 * Check out a "clean" db pool implementation: [clean-net-http)](https://github.com/Koubae/go-example/tree/master/workspace/web/clean-net-http)
 
+Development
+-----------
+
+To use [gotestsum](https://github.com/gotestyourself/gotestsum) run:
+
+```bash
+go install gotest.tools/gotestsum@latest
+```

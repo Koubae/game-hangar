@@ -47,6 +47,7 @@ init: install-deps update-env-file
 
 install-deps:
 	go mod tidy
+	go install gotest.tools/gotestsum@latest
 
 update-env-file:
 	@echo 'Updating .env from .env.example 🖋️...'
@@ -57,18 +58,24 @@ update-env-file:
 # 	Tests
 # ============================
 COVERAGE_THRESHOLD ?= 80
-TESTS_PKGS := $(shell go list ./... | grep -v '/internal/mocks' | grep -v '/pkg/generated' | grep -v '/cmd/demo' | grep -v '/cmd' | grep -v '/internal/run')
+TESTS_PKGS := $(shell go list ./... | grep -v '/internal/mocks' | grep -v '/pkg/generated' | grep -v '/cmd/demo' | grep -v '/cmd' | grep -v '/internal/run' | grep -v '/tests')
+TESTS_ALL_PKGS := $(shell go list ./... | grep -v '/internal/mocks' | grep -v '/pkg/generated' | grep -v '/cmd/demo' | grep -v '/cmd' | grep -v '/internal/run')
 COVERAGE_PKGS := $(shell go list ./... | grep -v '/pkg'  | grep -v '/internal/mocks' | grep -v '/pkg/generated' | grep -v '/cmd/demo' | grep -v '/cmd' | grep -v '/internal/run')
 
 test-all:
-	go test -v $(TESTS_PKGS) -cover
-
+	gotestsum --format pkgname -- $(TESTS_ALL_PKGS)
+test-all-no-summary:
+	go test -v $(TESTS_ALL_PKGS)
 
 test-unit:
-	go test -v -short $(TESTS_PKGS) -cover
+	gotestsum --format pkgname -- $(TESTS_PKGS)
+test-unit-no-summary:
+	go test -v -short $(TESTS_PKGS)
 
 test-integration:
-	go test -v ./tests/integration/... -cover
+	gotestsum --format pkgname -- ./tests/integration/...
+test-integration-no-summary:
+	go test -v ./tests/integration/...
 
 # TODO: Check whether there is a better way to do this. This was AI generated and seems a mess
 # Intention here is:
